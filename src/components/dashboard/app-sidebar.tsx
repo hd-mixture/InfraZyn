@@ -30,14 +30,14 @@ export function AppSidebar() {
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
             <CreateProjectForm>
-              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full">
+              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center">
                   <PlusCircle />
                   <span className="group-data-[collapsible=icon]:hidden">Create new project</span>
               </Button>
             </CreateProjectForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} tooltip="Dashboard">
+                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
                   <Link href="/">
                     <LayoutDashboard />
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
@@ -45,37 +45,37 @@ export function AppSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')} tooltip="Projects">
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
                 <Folders />
                 <span className="group-data-[collapsible=icon]:hidden">Projects</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')} tooltip="Tasks">
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
                 <ListChecks />
                 <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')} tooltip="Dashboard Link">
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')} tooltip="Dashboard Link" className="group-data-[collapsible=icon]:justify-center">
                 <Package />
                 <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')} tooltip="Time Log">
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')} tooltip="Time Log" className="group-data-[collapsible=icon]:justify-center">
                 <Timer />
                 <span className="group-data-[collapsible=icon]:hidden">Time log</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')} tooltip="Resource Mgmt">
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')} tooltip="Resource Mgmt" className="group-data-[collapsible=icon]:justify-center">
                 <ClipboardList />
                 <span className="group-data-[collapsible=icon]:hidden">Resource mgnt</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users">
+                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users" className="group-data-[collapsible=icon]:justify-center">
                   <Link href="/?view=users">
                     <Users />
                     <span className="group-data-[collapsible=icon]:hidden">Users</span>
@@ -86,7 +86,7 @@ export function AppSidebar() {
         </div>
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Logout">
+                <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center">
                     <Link href="/login">
                       <LogOut />
                       <span className="group-data-[collapsible=icon]:hidden">Logout</span>
