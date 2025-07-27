@@ -1,4 +1,4 @@
-import { Search, Bell, PlusCircle } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CreateTaskForm } from "./create-task-form";
 import { DelayPredictor } from "./delay-predictor";
 
 export function DashboardHeader() {
@@ -26,12 +25,6 @@ export function DashboardHeader() {
           />
         </div>
         <DelayPredictor />
-        <CreateTaskForm>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Task
-          </Button>
-        </CreateTaskForm>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Toggle notifications</span>
