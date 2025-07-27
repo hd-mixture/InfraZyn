@@ -1,7 +1,6 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -17,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { MoreHorizontal, Trash2, Edit, Star, Folders } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc } from "firebase/firestore";
@@ -25,6 +24,9 @@ import { format } from "date-fns";
 import { EditProjectForm } from "./edit-project-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Progress } from "../ui/progress";
+
 
 export type Project = {
     id: string;
@@ -35,24 +37,16 @@ export type Project = {
     status: string;
     description?: string;
     progress?: number;
-}
-
-const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-    "Completed": "outline",
-    "In Progress": "secondary",
-    "On Hold": "default",
-    "Delayed": "destructive",
-    "At risk": "default",
-    "Not Started": "secondary",
+    logoUrl?: string;
 }
 
 const statusColor: { [key: string]: string } = {
-    "Completed": "text-green-500 border-green-500/50 bg-green-500/10",
-    "In Progress": "text-blue-500 border-blue-500/50 bg-blue-500/10",
-    "On Hold": "text-gray-500 border-gray-500/50 bg-gray-500/10",
-    "Delayed": "text-red-500 border-red-500/50 bg-red-500/10",
-    "At risk": "text-yellow-500 border-yellow-500/50 bg-yellow-500/10",
-    "Not Started": "text-gray-500 border-gray-500/50 bg-gray-500/10"
+    "Completed": "text-green-500 border-green-500",
+    "In Progress": "text-blue-500 border-blue-500",
+    "On Hold": "text-gray-500 border-gray-500",
+    "Delayed": "text-red-500 border-red-500",
+    "At risk": "text-yellow-500 border-yellow-500",
+    "Not Started": "text-gray-500 border-gray-500"
 }
 
 const progressColor: { [key: string]: string } = {
@@ -65,6 +59,88 @@ const progressColor: { [key: string]: string } = {
 }
 
 const ALL_FILTER = 'all';
+
+function ProjectCard({ project, onEdit, onDelete }: { project: Project, onEdit: (project: Project) => void, onDelete: (id: string) => void }) {
+    return (
+        <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col">
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div className="flex items-center gap-4">
+                    <Avatar className="w-12 h-12">
+                        <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
+                        <AvatarFallback>
+                            {project.projectName.charAt(0)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{project.projectManager}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="w-8 h-8">
+                        <Star className="w-4 h-4" />
+                    </Button>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEdit(project)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDelete(project.id)} className="text-destructive">
+                                 <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col justify-between">
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                         <Badge variant="outline" className={statusColor[project.status] || ''}>
+                            {project.status}
+                         </Badge>
+                         <Badge variant="destructive" className="border-red-500 text-red-500">HIGH PRIORITY</Badge>
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                            <span>Progress</span>
+                            <span>{project.progress || 0}%</span>
+                        </div>
+                        <Progress value={project.progress || 0} className={progressColor[project.status]} />
+                    </div>
+                     <div className="flex items-center -space-x-2">
+                        <Avatar className="w-8 h-8 border-2 border-card">
+                            <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                            <AvatarFallback>U1</AvatarFallback>
+                        </Avatar>
+                         <Avatar className="w-8 h-8 border-2 border-card">
+                            <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                            <AvatarFallback>U2</AvatarFallback>
+                        </Avatar>
+                         <Avatar className="w-8 h-8 border-2 border-card">
+                            <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                            <AvatarFallback>U3</AvatarFallback>
+                        </Avatar>
+                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-xs font-medium border-2 border-card">+5</div>
+                    </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                        Due Date: <span className="font-medium text-foreground">{project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}</span>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function ProjectSummary() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -93,7 +169,8 @@ export function ProjectSummary() {
             endDate: data.endDate,
             status: data.status,
             description: data.description,
-            progress: data.progress || 0
+            progress: data.progress || 0,
+            logoUrl: data.logoUrl,
         });
       });
       setProjects(projectsData);
@@ -188,70 +265,21 @@ export function ProjectSummary() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Project manager</TableHead>
-              <TableHead>Due date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center">Loading projects...</TableCell>
-                </TableRow>
-            ) : filteredProjects.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center">No projects match the current filters.</TableCell>
-                </TableRow>
-            ) : (
-                filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                    <TableCell className="font-medium">{project.projectName}</TableCell>
-                    <TableCell>{project.projectManager}</TableCell>
-                    <TableCell>{project.endDate ? format(project.endDate.toDate(), 'PP') : 'N/A'}</TableCell>
-                    <TableCell>
-                    <Badge variant={statusVariant[project.status] || 'default'} className={statusColor[project.status] || ''}>
-                        {project.status}
-                    </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2">
-                            <div className="w-20 h-2 bg-muted rounded-full">
-                                <div className={`h-full rounded-full ${progressColor[project.status]}`} style={{ width: `${project.progress || 0}%` }}></div>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{project.progress || 0}%</span>
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(project)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Edit</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openDeleteDialog(project.id)} className="text-destructive">
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    <span>Delete</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                </TableRow>
-                ))
-            )}
-          </TableBody>
-        </Table>
+        {loading ? (
+            <div className="text-center py-10">Loading projects...</div>
+        ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4">
+                <Folders className="w-16 h-16" />
+                <p>No projects match the current filters.</p>
+                <p className="text-sm">Try adjusting your filters or create a new project.</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
+                ))}
+            </div>
+        )}
       </CardContent>
     </Card>
 

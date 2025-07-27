@@ -34,11 +34,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -47,6 +48,7 @@ const formSchema = z.object({
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold']),
+  logo: z.any().optional(),
 });
 
 type User = {
@@ -60,6 +62,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<User[]>([]);
   const { toast } = useToast();
+  const fileRef = useForm<z.infer<typeof formSchema>>().register('logo');
 
   useEffect(() => {
     const fetchManagers = async () => {
@@ -95,8 +98,17 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     try {
+        let logoUrl = '';
+        if (values.logo && values.logo.length > 0) {
+            const file = values.logo[0];
+            const storageRef = ref(storage, `project-logos/${Date.now()}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            logoUrl = await getDownloadURL(snapshot.ref);
+        }
+
         await addDoc(collection(db, "projects"), {
             ...values,
+            logoUrl,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
             createdAt: Timestamp.now()
@@ -199,6 +211,40 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
               )}
             />
             
+             <FormField
+                control={form.control}
+                name="logo"
+                render={({ field: { onChange, value, ...rest } }) => (
+                    <FormItem>
+                        <FormLabel>Project Logo</FormLabel>
+                        <FormControl>
+                            <div className="flex items-center gap-2">
+                                <label
+                                    htmlFor="logo-upload"
+                                    className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80"
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    <span>Upload Logo</span>
+                                </label>
+                                <Input
+                                    id="logo-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    {...fileRef}
+                                />
+                                {value && value.length > 0 && (
+                                    <span className="text-sm text-muted-foreground">
+                                        {value[0].name}
+                                    </span>
+                                )}
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
                 <FormField
                 control={form.control}
