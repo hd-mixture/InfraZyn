@@ -1,14 +1,16 @@
 'use client';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
+import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { CreateProjectForm } from "./create-project-form";
+import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { toggleSidebar, state } = useSidebar();
   const currentView = searchParams.get('view');
 
   const isActive = (view: string | null) => {
@@ -21,11 +23,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-            <CodeXml className="w-8 h-8 text-primary" />
+        <div className="flex items-center gap-2 group/logo-toggle" onClick={toggleSidebar} >
+            <div className="relative h-8 w-8 flex items-center justify-center">
+                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200", state === 'expanded' ? 'group-hover/logo-toggle:opacity-0' : 'opacity-100')} />
+                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
+                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
+                </div>
+            </div>
             <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">DevTeXhHub</h1>
         </div>
-        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
