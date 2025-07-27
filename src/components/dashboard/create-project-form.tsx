@@ -63,7 +63,17 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<User[]>([]);
   const { toast } = useToast();
-  const fileRef = useForm<z.infer<typeof formSchema>>().register('logo');
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      projectName: '',
+      description: '',
+      status: 'Not Started',
+      priority: 'Medium',
+    },
+  });
+
+  const fileRef = form.register('logo');
 
   useEffect(() => {
     const fetchManagers = async () => {
@@ -87,15 +97,6 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     }
   }, [open, toast]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      projectName: '',
-      description: '',
-      status: 'Not Started',
-      priority: 'Medium',
-    },
-  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -108,8 +109,10 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             logoUrl = await getDownloadURL(snapshot.ref);
         }
 
+        const { logo, ...projectData } = values;
+
         await addDoc(collection(db, "projects"), {
-            ...values,
+            ...projectData,
             logoUrl,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
@@ -216,7 +219,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
              <FormField
                 control={form.control}
                 name="logo"
-                render={({ field: { onChange, value, ...rest } }) => (
+                render={({ field }) => (
                     <FormItem>
                         <FormLabel>Project Logo</FormLabel>
                         <FormControl>
@@ -235,9 +238,9 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                     className="hidden"
                                     {...fileRef}
                                 />
-                                {value && value.length > 0 && (
+                                {form.watch('logo') && form.watch('logo').length > 0 && (
                                     <span className="text-sm text-muted-foreground">
-                                        {value[0].name}
+                                        {form.watch('logo')[0].name}
                                     </span>
                                 )}
                             </div>
@@ -386,3 +389,5 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
+
+    
