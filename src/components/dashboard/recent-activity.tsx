@@ -52,7 +52,7 @@ export function RecentActivity() {
     }, []);
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow flex-1 flex flex-col">
+        <Card className="shadow-sm hover:shadow-md transition-shadow flex-1 flex flex-col min-h-0">
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>

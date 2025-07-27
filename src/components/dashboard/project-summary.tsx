@@ -260,7 +260,7 @@ export function ProjectSummary() {
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-[calc(100vh-250px)]">
+    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
@@ -306,7 +306,7 @@ export function ProjectSummary() {
                     <p className="text-sm">Try adjusting your filters or create a new project.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
                     {filteredProjects.map((project) => (
                         <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} onPin={handlePinProject} />
                     ))}
