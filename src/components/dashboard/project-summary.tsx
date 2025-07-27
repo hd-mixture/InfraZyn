@@ -262,7 +262,7 @@ export function ProjectSummary() {
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-[calc(100vh-220px)]">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>

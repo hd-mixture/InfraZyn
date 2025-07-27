@@ -78,7 +78,7 @@ export function OverallProgress() {
     ]
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow h-full">
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Overall Progress</CardTitle>
                 <Select>
