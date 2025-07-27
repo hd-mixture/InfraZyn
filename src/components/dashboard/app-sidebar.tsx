@@ -19,7 +19,7 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <CodeXml className="w-8 h-8 text-primary" />
@@ -40,45 +40,45 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} tooltip="Dashboard">
                   <Link href="/">
                     <LayoutDashboard />
-                    <span>Dashboard</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')} tooltip="Projects">
                 <Folders />
-                <span>Projects</span>
+                <span className="group-data-[collapsible=icon]:hidden">Projects</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')} tooltip="Tasks">
                 <ListChecks />
-                <span>Tasks</span>
+                <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')} tooltip="Dashboard Link">
                 <Package />
-                <span>Dashboard</span>
+                <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')} tooltip="Time Log">
                 <Timer />
-                <span>Time log</span>
+                <span className="group-data-[collapsible=icon]:hidden">Time log</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')} tooltip="Resource Mgmt">
                 <ClipboardList />
-                <span>Resource mgnt</span>
+                <span className="group-data-[collapsible=icon]:hidden">Resource mgnt</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                  <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users">
                   <Link href="/?view=users">
                     <Users />
-                    <span>Users</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Users</span>
                   </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
