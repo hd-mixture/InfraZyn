@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Edit, Star, Folders } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, Timestamp, doc, deleteDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { EditProjectForm } from "./edit-project-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
@@ -40,6 +41,7 @@ export type Project = {
     description?: string;
     progress?: number;
     logoUrl?: string;
+    pinned?: boolean;
 }
 
 const statusColor: { [key: string]: string } = {
@@ -68,7 +70,7 @@ const progressColor: { [key: string]: string } = {
 
 const ALL_FILTER = 'all';
 
-function ProjectCard({ project, onEdit, onDelete }: { project: Project, onEdit: (project: Project) => void, onDelete: (id: string) => void }) {
+function ProjectCard({ project, onEdit, onDelete, onPin }: { project: Project, onEdit: (project: Project) => void, onDelete: (id: string) => void, onPin: (id: string, pinned: boolean) => void }) {
     return (
         <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col">
             <CardHeader className="flex flex-row items-start justify-between">
@@ -85,8 +87,8 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project, onEdit: 
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="w-8 h-8">
-                        <Star className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => onPin(project.id, !project.pinned)}>
+                        <Star className={`w-4 h-4 ${project.pinned ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                     </Button>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -177,15 +179,7 @@ export function ProjectSummary() {
         const data = doc.data();
         projectsData.push({
             id: doc.id,
-            projectName: data.projectName,
-            projectManager: data.projectManager,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            status: data.status,
-            priority: data.priority || 'Medium',
-            description: data.description,
-            progress: data.progress || 0,
-            logoUrl: data.logoUrl,
+            ...data
         } as Project);
       });
       setProjects(projectsData);
@@ -229,22 +223,42 @@ export function ProjectSummary() {
     setIsDeleteDialogOpen(true);
   }
 
+  const handlePinProject = async (projectId: string, pinned: boolean) => {
+    try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, { pinned });
+    } catch(e) {
+        console.error("Error pinning project: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem pinning the project.",
+        });
+    }
+  };
+
   const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
 
   const filteredProjects = useMemo(() => {
-    return projects.filter(project => {
+    return projects
+    .filter(project => {
       const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
       const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
       const statusMatch = filterStatus === ALL_FILTER || project.status === filterStatus;
       return projectMatch && managerMatch && statusMatch;
+    })
+    .sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return 0;
     });
   }, [projects, filterProject, filterManager, filterStatus]);
 
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col">
+    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
@@ -279,8 +293,8 @@ export function ProjectSummary() {
             </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[60vh] pr-6 -mr-6">
+      <CardContent className="flex-1">
+        <ScrollArea className="h-[calc(100vh-22rem)] pr-6 -mr-6">
             {loading ? (
                 <div className="text-center py-10">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
@@ -290,9 +304,9 @@ export function ProjectSummary() {
                     <p className="text-sm">Try adjusting your filters or create a new project.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {filteredProjects.map((project) => (
-                        <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
+                        <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} onPin={handlePinProject} />
                     ))}
                 </div>
             )}

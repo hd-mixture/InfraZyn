@@ -9,13 +9,14 @@ import { OverallProgress } from "@/components/dashboard/overall-progress";
 import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from "react";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
 
   return (
-    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
+    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1 overflow-y-auto">
       {view === 'users' ? (
         <>
           <h2 className="text-xl font-semibold">User Management</h2>
@@ -29,8 +30,9 @@ function DashboardContent() {
             <div className="lg:col-span-5">
               <ProjectSummary />
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col gap-6">
               <OverallProgress />
+              <RecentActivity />
             </div>
           </div>
         </>
@@ -45,9 +47,9 @@ export default function DashboardPage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen overflow-hidden">
           <DashboardHeader />
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
             <DashboardContent />
           </Suspense>
         </div>
