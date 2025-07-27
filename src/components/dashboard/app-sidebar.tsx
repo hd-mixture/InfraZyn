@@ -3,6 +3,7 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, S
 import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Button } from "../ui/button";
+import Link from "next/link";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -17,9 +18,11 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
-            <Button className="w-full bg-primary text-primary-foreground h-12 rounded-full mb-4">
+            <Button className="w-full bg-primary text-primary-foreground h-12 rounded-full mb-4" asChild>
+              <Link href="/projects/new">
                 <PlusCircle />
                 <span>Create new project</span>
+              </Link>
             </Button>
             <SidebarMenu>
             <SidebarMenuItem>
@@ -29,7 +32,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')}>
+                <SidebarMenuButton href="/projects" isActive={pathname.startsWith('/projects')}>
                 <Folders />
                 <span>Projects</span>
                 </SidebarMenuButton>
