@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -89,7 +90,7 @@ export function OverallProgress() {
                     </SelectContent>
                 </Select>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center">
+            <CardContent className="flex flex-col items-center justify-center relative">
                  <ChartContainer
                     config={chartConfig}
                     className="mx-auto aspect-square h-[200px]"
