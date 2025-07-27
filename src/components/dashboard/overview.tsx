@@ -1,13 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react";
+import { Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react";
+
+// Custom Rupee Icon
+const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M6 3h12" />
+    <path d="M6 8h12" />
+    <path d="m19 13-10 8" />
+    <path d="M6 13h4" />
+    <path d="M6 21h4" />
+  </svg>
+);
+
 
 export function Overview() {
   const overviewData = [
     {
       title: "Total revenue",
-      value: "$53,00,989",
+      value: "₹53,00,989",
       change: "+12% increase from last month",
-      icon: <DollarSign className="h-6 w-6 text-muted-foreground" />,
+      icon: <RupeeIcon className="h-6 w-6 text-muted-foreground" />,
       changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
     },
     {
