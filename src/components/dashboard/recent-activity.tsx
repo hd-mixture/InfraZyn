@@ -2,7 +2,6 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, limit, Timestamp } from "firebase/firestore"
@@ -28,7 +27,7 @@ export function RecentActivity() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const projectsQuery = query(collection(db, "projects"), orderBy("createdAt", "desc"), limit(5));
+        const projectsQuery = query(collection(db, "projects"), orderBy("createdAt", "desc"), limit(15));
 
         const unsubscribe = onSnapshot(projectsQuery, (querySnapshot) => {
             const fetchedActivities: Activity[] = [];
@@ -52,12 +51,12 @@ export function RecentActivity() {
     }, []);
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow flex-grow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow flex-grow flex flex-col">
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
-            <CardContent>
-                <ScrollArea className="h-[24.5rem] pr-4 -mr-4">
+            <CardContent className="flex-grow">
+                <ScrollArea className="h-[26rem] pr-4 -mr-4">
                     <div className="space-y-6">
                         {loading ? (
                             <p>Loading activities...</p>
