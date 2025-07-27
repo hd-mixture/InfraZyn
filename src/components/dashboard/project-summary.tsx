@@ -288,7 +288,7 @@ export function ProjectSummary() {
                 <p className="text-sm">Try adjusting your filters or create a new project.</p>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
                 {filteredProjects.map((project) => (
                     <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
                 ))}
