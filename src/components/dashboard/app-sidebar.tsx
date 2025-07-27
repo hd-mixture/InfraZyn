@@ -1,13 +1,22 @@
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { CreateProjectForm } from "./create-project-form";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get('view');
+
+  const isActive = (view: string | null) => {
+    if (view === null) {
+      return currentView === null;
+    }
+    return currentView === view;
+  }
 
   return (
     <Sidebar>
@@ -27,13 +36,15 @@ export function AppSidebar() {
             </CreateProjectForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton href="/" isActive={pathname === '/'} >
-                <LayoutDashboard />
-                <span>Dashboard</span>
+                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} >
+                  <Link href="/">
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="/projects" isActive={pathname.startsWith('/projects')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')}>
                 <Folders />
                 <span>Projects</span>
                 </SidebarMenuButton>
@@ -63,18 +74,22 @@ export function AppSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="/users" isActive={pathname.startsWith('/users')}>
-                <Users />
-                <span>Users</span>
+                 <SidebarMenuButton asChild isActive={isActive('users')}>
+                  <Link href="/?view=users">
+                    <Users />
+                    <span>Users</span>
+                  </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             </SidebarMenu>
         </div>
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton href="/login">
-                    <LogOut />
-                    <span>Logout</span>
+                <SidebarMenuButton asChild>
+                    <Link href="/login">
+                      <LogOut />
+                      <span>Logout</span>
+                    </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
          </SidebarMenu>
