@@ -23,11 +23,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2 group/logo-toggle" onClick={toggleSidebar} >
+        <div className="flex items-center gap-2 group/logo-toggle cursor-pointer" onClick={toggleSidebar} >
             <div className="relative h-8 w-8 flex items-center justify-center">
                 <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200", state === 'expanded' ? 'group-hover/logo-toggle:opacity-0' : 'opacity-100')} />
                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
-                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
+                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
                 </div>
             </div>
             <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">DevTeXhHub</h1>
