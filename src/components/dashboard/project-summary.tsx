@@ -10,17 +10,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Trash2, Edit } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, Timestamp } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { format } from "date-fns";
+import { EditProjectForm } from "./edit-project-form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
-type Project = {
+export type Project = {
     id: string;
     projectName: string;
     projectManager: string;
+    startDate: Timestamp;
     endDate: Timestamp;
     status: string;
+    description?: string;
     progress?: number;
 }
 
@@ -55,6 +68,11 @@ const progressColor: { [key: string]: string } = {
 export function ProjectSummary() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const q = query(collection(db, "projects"));
@@ -62,13 +80,15 @@ export function ProjectSummary() {
       const projectsData: Project[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        projectsData.push({ 
+        projectsData.push({
             id: doc.id,
             projectName: data.projectName,
             projectManager: data.projectManager,
+            startDate: data.startDate,
             endDate: data.endDate,
             status: data.status,
-            progress: data.progress || 0 // Add a fallback for progress
+            description: data.description,
+            progress: data.progress || 0
         });
       });
       setProjects(projectsData);
@@ -81,7 +101,40 @@ export function ProjectSummary() {
     return () => unsubscribe();
   }, []);
 
+  const handleEdit = (project: Project) => {
+    setEditingProject(project);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if(!deletingProjectId) return;
+    try {
+        await deleteDoc(doc(db, "projects", deletingProjectId));
+        toast({
+            title: "Project Deleted!",
+            description: "The project has been successfully deleted.",
+        });
+    } catch(e) {
+        console.error("Error deleting document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem deleting the project.",
+        });
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setDeletingProjectId(null);
+    }
+  }
+
+  const openDeleteDialog = (projectId: string) => {
+    setDeletingProjectId(projectId);
+    setIsDeleteDialogOpen(true);
+  }
+
+
   return (
+    <>
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -123,16 +176,17 @@ export function ProjectSummary() {
               <TableHead>Due date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Progress</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading projects...</TableCell>
+                    <TableCell colSpan={6} className="text-center">Loading projects...</TableCell>
                 </TableRow>
             ) : projects.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center">No projects found. Create one to get started!</TableCell>
+                    <TableCell colSpan={6} className="text-center">No projects found. Create one to get started!</TableCell>
                 </TableRow>
             ) : (
                 projects.map((project) => (
@@ -153,6 +207,26 @@ export function ProjectSummary() {
                             <span className="text-xs text-muted-foreground">{project.progress || 0}%</span>
                         </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Edit</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openDeleteDialog(project.id)} className="text-destructive">
+                                     <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Delete</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
                 </TableRow>
                 ))
             )}
@@ -160,5 +234,33 @@ export function ProjectSummary() {
         </Table>
       </CardContent>
     </Card>
+
+    {editingProject && (
+        <EditProjectForm
+            project={editingProject}
+            isOpen={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+        />
+    )}
+
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this project
+                and remove its data from our servers.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingProjectId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    </>
   );
 }
