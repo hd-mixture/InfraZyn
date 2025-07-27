@@ -4,7 +4,7 @@ import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCirc
 import { usePathname } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { CreateTaskForm } from "./create-task-form";
+import { CreateProjectForm } from "./create-project-form";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -19,12 +19,12 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
-            <CreateTaskForm>
+            <CreateProjectForm>
               <Button className="w-full bg-primary text-primary-foreground h-12 rounded-full mb-4">
                   <PlusCircle />
-                  <span>Create new task</span>
+                  <span>Create new project</span>
               </Button>
-            </CreateTaskForm>
+            </CreateProjectForm>
             <SidebarMenu>
             <SidebarMenuItem>
                 <SidebarMenuButton href="/" isActive={pathname === '/'} >
