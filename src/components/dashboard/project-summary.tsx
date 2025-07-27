@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Edit } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { format } from "date-fns";
@@ -64,6 +64,7 @@ const progressColor: { [key: string]: string } = {
     "Not Started": "bg-gray-200"
 }
 
+const ALL_FILTER = 'all';
 
 export function ProjectSummary() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -73,6 +74,10 @@ export function ProjectSummary() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const [filterProject, setFilterProject] = useState(ALL_FILTER);
+  const [filterManager, setFilterManager] = useState(ALL_FILTER);
+  const [filterStatus, setFilterStatus] = useState(ALL_FILTER);
 
   useEffect(() => {
     const q = query(collection(db, "projects"));
@@ -132,6 +137,18 @@ export function ProjectSummary() {
     setIsDeleteDialogOpen(true);
   }
 
+  const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
+  const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
+      const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
+      const statusMatch = filterStatus === ALL_FILTER || project.status === filterStatus;
+      return projectMatch && managerMatch && statusMatch;
+    });
+  }, [projects, filterProject, filterManager, filterStatus]);
+
 
   return (
     <>
@@ -141,28 +158,31 @@ export function ProjectSummary() {
             <CardTitle>Project summary</CardTitle>
         </div>
         <div className="flex gap-2">
-            <Select>
+            <Select value={filterProject} onValueChange={setFilterProject}>
                 <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Project" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
+                    <SelectItem value={ALL_FILTER}>All Projects</SelectItem>
+                    {projects.map(p => <SelectItem key={p.id} value={p.projectName}>{p.projectName}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <Select>
+            <Select value={filterManager} onValueChange={setFilterManager}>
                 <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Project manager" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Managers</SelectItem>
+                    <SelectItem value={ALL_FILTER}>All Managers</SelectItem>
+                     {managers.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value={ALL_FILTER}>All Statuses</SelectItem>
+                    {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
             </Select>
         </div>
@@ -184,12 +204,12 @@ export function ProjectSummary() {
                 <TableRow>
                     <TableCell colSpan={6} className="text-center">Loading projects...</TableCell>
                 </TableRow>
-            ) : projects.length === 0 ? (
+            ) : filteredProjects.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={6} className="text-center">No projects found. Create one to get started!</TableCell>
+                    <TableCell colSpan={6} className="text-center">No projects match the current filters.</TableCell>
                 </TableRow>
             ) : (
-                projects.map((project) => (
+                filteredProjects.map((project) => (
                 <TableRow key={project.id}>
                     <TableCell className="font-medium">{project.projectName}</TableCell>
                     <TableCell>{project.projectManager}</TableCell>
