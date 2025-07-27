@@ -26,6 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 export type Project = {
@@ -243,7 +244,7 @@ export function ProjectSummary() {
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow h-full">
+    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
@@ -278,22 +279,24 @@ export function ProjectSummary() {
             </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        {loading ? (
-            <div className="text-center py-10">Loading projects...</div>
-        ) : filteredProjects.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4">
-                <Folders className="w-16 h-16" />
-                <p>No projects match the current filters.</p>
-                <p className="text-sm">Try adjusting your filters or create a new project.</p>
-            </div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-                {filteredProjects.map((project) => (
-                    <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
-                ))}
-            </div>
-        )}
+      <CardContent className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full pr-6 -mr-6">
+            {loading ? (
+                <div className="text-center py-10">Loading projects...</div>
+            ) : filteredProjects.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4 h-full justify-center">
+                    <Folders className="w-16 h-16" />
+                    <p>No projects match the current filters.</p>
+                    <p className="text-sm">Try adjusting your filters or create a new project.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                    {filteredProjects.map((project) => (
+                        <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
+                    ))}
+                </div>
+            )}
+        </ScrollArea>
       </CardContent>
     </Card>
 
