@@ -1,5 +1,10 @@
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query } from "firebase/firestore";
 
 // Custom Rupee Icon
 const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -25,6 +30,22 @@ const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export function Overview() {
+    const [projectCount, setProjectCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const q = query(collection(db, "projects"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            setProjectCount(querySnapshot.size);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching projects count: ", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
   const overviewData = [
     {
       title: "Total revenue",
@@ -35,7 +56,7 @@ export function Overview() {
     },
     {
       title: "Projects",
-      value: "95 / 100",
+      value: loading ? "..." : `${projectCount} / 100`,
       change: "10% decrease from last month",
       icon: <Briefcase className="h-6 w-6 text-muted-foreground" />,
       changeIcon: <TrendingDown className="h-4 w-4 text-red-500" />

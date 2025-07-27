@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,6 +37,8 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -47,20 +49,51 @@ const formSchema = z.object({
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold']),
 });
 
-// Mock data - replace with actual data fetching from Firestore
-const users = [
-    { id: 'user1', name: 'Om prakash sao', role: 'manager' },
-    { id: 'user2', name: 'Neilsan mando', role: 'manager' },
-    { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
-    { id: 'user4', name: 'Matte hannery', role: 'developer' },
-];
-const managers = users.filter(user => user.role === 'manager');
-
+type User = {
+    id: string;
+    name: string;
+    role: string;
+};
 
 export function CreateProjectForm({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [managers, setManagers] = useState<User[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+        try {
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("role", "==", "manager"));
+            const querySnapshot = await getDocs(q);
+            const fetchedManagers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            if (fetchedManagers.length === 0) {
+              // Add mock data if no managers are found
+              const mockManagers = [
+                { id: 'user1', name: 'Om prakash sao', role: 'manager' },
+                { id: 'user2', name: 'Neilsan mando', role: 'manager' },
+                { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
+              ];
+              setManagers(mockManagers);
+            } else {
+              setManagers(fetchedManagers);
+            }
+        } catch(e) {
+            console.error("Error fetching managers: ", e);
+            // Fallback to mock data on error
+            const mockManagers = [
+                { id: 'user1', name: 'Om prakash sao', role: 'manager' },
+                { id: 'user2', name: 'Neilsan mando', role: 'manager' },
+                { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
+              ];
+            setManagers(mockManagers);
+        }
+    }
+    if(open) {
+        fetchManagers();
+    }
+  }, [open]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,20 +106,29 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    console.log('New Project Form values:', values);
-    
-    // Simulate API call to save to Firestore
-    // In a real app, you would use the Firebase SDK here to add a document to the 'projects' collection
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setLoading(false);
-    setOpen(false);
-    form.reset();
-
-    toast({
-      title: "Project Created!",
-      description: "The new project has been successfully created.",
-    });
+    try {
+        await addDoc(collection(db, "projects"), {
+            ...values,
+            startDate: Timestamp.fromDate(values.startDate),
+            endDate: Timestamp.fromDate(values.endDate),
+            createdAt: Timestamp.now()
+        });
+        toast({
+            title: "Project Created!",
+            description: "The new project has been successfully created.",
+        });
+        setOpen(false);
+        form.reset();
+    } catch(e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem with your request.",
+        });
+    } finally {
+        setLoading(false);
+    }
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -156,7 +198,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                       </FormControl>
                       <SelectContent>
                       {managers.map(manager => (
-                          <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
+                          <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
                       ))}
                       </SelectContent>
                   </Select>

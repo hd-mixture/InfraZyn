@@ -3,7 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -11,58 +10,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "../ui/button";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, Timestamp } from "firebase/firestore";
+import { format } from "date-fns";
 
-const projects = [
-  {
-    name: "Nelsa web developement",
-    manager: "Om prakash sao",
-    dueDate: "May 25, 2023",
-    status: "Completed",
-    progress: 100,
-  },
-  {
-    name: "Datascale AI app",
-    manager: "Neilsan mando",
-    dueDate: "Jun 20, 2023",
-    status: "Delayed",
-    progress: 35,
-  },
-  {
-    name: "Media channel branding",
-    manager: "Tiruvelly priya",
-    dueDate: "July 13, 2023",
-    status: "At risk",
-    progress: 68,
-  },
-  {
-    name: "Corlax IOS app develpoement",
-    manager: "Matte hannery",
-    dueDate: "Dec 20, 2023",
-    status: "Completed",
-    progress: 100,
-  },
-];
+type Project = {
+    id: string;
+    projectName: string;
+    projectManager: string;
+    endDate: Timestamp;
+    status: string;
+    progress?: number;
+}
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
     "Completed": "outline",
+    "In Progress": "secondary",
+    "On Hold": "default",
     "Delayed": "destructive",
     "At risk": "default",
+    "Not Started": "secondary",
 }
 
 const statusColor: { [key: string]: string } = {
     "Completed": "text-green-500",
+    "In Progress": "text-blue-500",
+    "On Hold": "text-gray-500",
     "Delayed": "text-red-500",
     "At risk": "text-yellow-500",
+    "Not Started": "text-gray-500"
 }
 
 const progressColor: { [key: string]: string } = {
     "Completed": "bg-green-500",
+    "In Progress": "bg-blue-500",
     "Delayed": "bg-red-500",
     "At risk": "bg-yellow-500",
+    "On Hold": "bg-gray-500",
+    "Not Started": "bg-gray-200"
 }
 
+
 export function ProjectSummary() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "projects"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const projectsData: Project[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        projectsData.push({ 
+            id: doc.id,
+            projectName: data.projectName,
+            projectManager: data.projectManager,
+            endDate: data.endDate,
+            status: data.status,
+            progress: data.progress || 0 // Add a fallback for progress
+        });
+      });
+      setProjects(projectsData);
+      setLoading(false);
+    }, (error) => {
+        console.error("Error fetching projects: ", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -108,25 +126,36 @@ export function ProjectSummary() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projects.map((project) => (
-              <TableRow key={project.name}>
-                <TableCell className="font-medium">{project.name}</TableCell>
-                <TableCell>{project.manager}</TableCell>
-                <TableCell>{project.dueDate}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant[project.status]} className={`${statusColor[project.status]} bg-opacity-20`}>
-                    {project.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                    <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-muted rounded-full">
-                            <div className={`h-full rounded-full ${progressColor[project.status]}`} style={{ width: `${project.progress}%` }}></div>
+            {loading ? (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center">Loading projects...</TableCell>
+                </TableRow>
+            ) : projects.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center">No projects found. Create one to get started!</TableCell>
+                </TableRow>
+            ) : (
+                projects.map((project) => (
+                <TableRow key={project.id}>
+                    <TableCell className="font-medium">{project.projectName}</TableCell>
+                    <TableCell>{project.projectManager}</TableCell>
+                    <TableCell>{project.endDate ? format(project.endDate.toDate(), 'PP') : 'N/A'}</TableCell>
+                    <TableCell>
+                    <Badge variant={statusVariant[project.status] || 'default'} className={`${statusColor[project.status] || ''} bg-opacity-20`}>
+                        {project.status}
+                    </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-muted rounded-full">
+                                <div className={`h-full rounded-full ${progressColor[project.status]}`} style={{ width: `${project.progress || 0}%` }}></div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{project.progress || 0}%</span>
                         </div>
-                    </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </TableCell>
+                </TableRow>
+                ))
+            )}
           </TableBody>
         </Table>
       </CardContent>
