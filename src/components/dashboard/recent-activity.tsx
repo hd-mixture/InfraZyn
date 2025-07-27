@@ -52,12 +52,12 @@ export function RecentActivity() {
     }, []);
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow flex-grow">
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-                <ScrollArea className="h-[380px] pr-4 -mr-4">
+                <ScrollArea className="h-[calc(100vh-36rem)] pr-4 -mr-4">
                     <div className="space-y-6">
                         {loading ? (
                             <p>Loading activities...</p>

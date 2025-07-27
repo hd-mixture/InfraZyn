@@ -253,14 +253,14 @@ export function ProjectSummary() {
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        return 0; // The query already sorts by createdAt desc
+        return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
   }, [projects, filterProject, filterManager, filterStatus]);
 
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
+    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
@@ -295,8 +295,8 @@ export function ProjectSummary() {
             </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[740px] pr-6 -mr-6">
+      <CardContent className="flex-grow">
+        <ScrollArea className="h-[calc(100vh-22rem)] pr-6 -mr-6">
             {loading ? (
                 <div className="text-center py-10">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (

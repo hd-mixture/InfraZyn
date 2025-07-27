@@ -26,7 +26,7 @@ function DashboardContent() {
         <>
           <h2 className="text-xl font-semibold">Overview</h2>
           <Overview />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-start">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-stretch">
             <div className="lg:col-span-5">
               <ProjectSummary />
             </div>
