@@ -253,16 +253,14 @@ export function ProjectSummary() {
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        // The projects are already sorted by date from the query
-        // so no need for extra date sorting here if pinning is equal.
-        return 0;
+        return 0; // The query already sorts by createdAt desc
     });
   }, [projects, filterProject, filterManager, filterStatus]);
 
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-[calc(100vh-220px)]">
+    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-[calc(100vh-14.5rem)]">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
