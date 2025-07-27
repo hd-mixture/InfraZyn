@@ -1,5 +1,5 @@
 'use client';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
 import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
@@ -20,23 +20,24 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <CodeXml className="w-8 h-8 text-primary" />
-            <h1 className="text-xl font-semibold font-headline">DevTeXhHub</h1>
+            <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">DevTeXhHub</h1>
         </div>
+        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
             <CreateProjectForm>
-              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-full mb-4">
+              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full">
                   <PlusCircle />
-                  <span>Create new project</span>
+                  <span className="group-data-[collapsible=icon]:hidden">Create new project</span>
               </Button>
             </CreateProjectForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} >
+                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} tooltip="Dashboard">
                   <Link href="/">
                     <LayoutDashboard />
                     <span>Dashboard</span>
@@ -44,37 +45,37 @@ export function AppSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')} tooltip="Projects">
                 <Folders />
                 <span>Projects</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')} tooltip="Tasks">
                 <ListChecks />
                 <span>Tasks</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')} tooltip="Dashboard Link">
                 <Package />
                 <span>Dashboard</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')} tooltip="Time Log">
                 <Timer />
                 <span>Time log</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')}>
+                <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')} tooltip="Resource Mgmt">
                 <ClipboardList />
                 <span>Resource mgnt</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                 <SidebarMenuButton asChild isActive={isActive('users')}>
+                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users">
                   <Link href="/?view=users">
                     <Users />
                     <span>Users</span>
@@ -85,10 +86,10 @@ export function AppSidebar() {
         </div>
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild tooltip="Logout">
                     <Link href="/login">
                       <LogOut />
-                      <span>Logout</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Logout</span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>

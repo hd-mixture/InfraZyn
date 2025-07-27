@@ -10,11 +10,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { DelayPredictor } from "./delay-predictor";
+import { SidebarTrigger } from "../ui/sidebar";
 
 export function DashboardHeader() {
   return (
     <header className="flex h-20 items-center justify-between border-b bg-transparent px-4 md:px-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="flex items-center gap-4">
+            <SidebarTrigger className="md:hidden" />
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
+        </div>
       <div className="flex items-center gap-4">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
