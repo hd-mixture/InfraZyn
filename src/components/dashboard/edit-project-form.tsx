@@ -116,6 +116,15 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     })
    }, [project, form]);
 
+   const status = form.watch('status');
+   useEffect(() => {
+    if (status === 'Completed') {
+        form.setValue('progress', 100);
+    } else if (status === 'Not Started') {
+        form.setValue('progress', 0);
+    }
+   }, [status, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     try {
@@ -315,24 +324,26 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                     </FormItem>
                 )}
             />
-            <FormField
-              control={form.control}
-              name="progress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Progress: {field.value}%</FormLabel>
-                  <FormControl>
-                    <Slider 
-                        defaultValue={[field.value || 0]} 
-                        max={100} 
-                        step={1}
-                        onValueChange={(value) => field.onChange(value[0])}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {status === 'In Progress' && (
+              <FormField
+                control={form.control}
+                name="progress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Progress: {field.value}%</FormLabel>
+                    <FormControl>
+                      <Slider 
+                          defaultValue={[field.value || 0]} 
+                          max={100} 
+                          step={1}
+                          onValueChange={(value) => field.onChange(value[0])}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <DialogFooter>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

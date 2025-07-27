@@ -37,20 +37,31 @@ export function OverallProgress() {
 
     useEffect(() => {
         const projectsRef = collection(db, "projects");
-        const q = query(projectsRef);
+        const q = query(projectsRef, where("status", "==", "In Progress"));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            let completedCount = 0;
-            const totalProjects = querySnapshot.size;
+            let totalProgress = 0;
+            const inProgressCount = querySnapshot.size;
+
+            if (inProgressCount === 0) {
+                const completedQuery = query(collection(db, "projects"), where("status", "==", "Completed"));
+                const completedUnsubscribe = onSnapshot(completedQuery, (completedSnapshot) => {
+                     if (completedSnapshot.size > 0) {
+                        setProgress(100);
+                     } else {
+                        setProgress(0);
+                     }
+                     setLoading(false);
+                });
+                return () => completedUnsubscribe();
+            }
 
             querySnapshot.forEach((doc) => {
-                if(doc.data().status === 'Completed') {
-                    completedCount++;
-                }
+                totalProgress += doc.data().progress || 0;
             });
 
-            const completionPercentage = totalProjects > 0 ? (completedCount / totalProjects) * 100 : 0;
-            setProgress(Math.round(completionPercentage));
+            const averageProgress = inProgressCount > 0 ? totalProgress / inProgressCount : 0;
+            setProgress(Math.round(averageProgress));
             setLoading(false);
         }, (error) => {
             console.error("Error fetching progress: ", error);
@@ -105,7 +116,7 @@ export function OverallProgress() {
                 </ChartContainer>
                 <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-4xl font-bold">{loading ? '...' : `${progress}%`}</span>
-                    <span className="text-sm text-muted-foreground">Completed</span>
+                    <span className="text-sm text-muted-foreground">In Progress</span>
                 </div>
             </CardContent>
         </Card>
