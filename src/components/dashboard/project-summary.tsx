@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Edit, Star, Folders } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy } from "firebase/firestore";
 import { format } from "date-fns";
 import { EditProjectForm } from "./edit-project-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
@@ -42,6 +42,7 @@ export type Project = {
     progress?: number;
     logoUrl?: string;
     pinned?: boolean;
+    createdAt: Timestamp;
 }
 
 const statusColor: { [key: string]: string } = {
@@ -172,7 +173,7 @@ export function ProjectSummary() {
   const [filterStatus, setFilterStatus] = useState(ALL_FILTER);
 
   useEffect(() => {
-    const q = query(collection(db, "projects"));
+    const q = query(collection(db, "projects"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const projectsData: Project[] = [];
       querySnapshot.forEach((doc) => {
@@ -239,6 +240,7 @@ export function ProjectSummary() {
 
   const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
+  const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
 
   const filteredProjects = useMemo(() => {
     return projects
@@ -251,6 +253,8 @@ export function ProjectSummary() {
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
+        // The projects are already sorted by date from the query
+        // so no need for extra date sorting here if pinning is equal.
         return 0;
     });
   }, [projects, filterProject, filterManager, filterStatus]);
@@ -270,7 +274,7 @@ export function ProjectSummary() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value={ALL_FILTER}>All Projects</SelectItem>
-                    {projects.map(p => <SelectItem key={p.id} value={p.projectName}>{p.projectName}</SelectItem>)}
+                    {projectNames.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
                 </SelectContent>
             </Select>
             <Select value={filterManager} onValueChange={setFilterManager}>

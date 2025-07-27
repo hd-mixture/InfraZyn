@@ -60,7 +60,7 @@ type User = {
 };
 
 type EditProjectFormProps = {
-    project: Project;
+    project: Omit<Project, 'createdAt'>;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 }
