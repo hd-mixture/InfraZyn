@@ -16,7 +16,7 @@ function DashboardContent() {
   const view = searchParams.get('view')
 
   return (
-    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1 overflow-y-auto">
+    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
       {view === 'users' ? (
         <>
           <h2 className="text-xl font-semibold">User Management</h2>
@@ -47,7 +47,7 @@ export default function DashboardPage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-screen overflow-y-auto">
           <DashboardHeader />
           <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
             <DashboardContent />

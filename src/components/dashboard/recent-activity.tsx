@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, limit, Timestamp } from "firebase/firestore"
 import { formatDistanceToNow } from 'date-fns'
 import { PlusCircle, Edit } from "lucide-react"
+import { ScrollArea } from "../ui/scroll-area"
 
 type Activity = {
     id: string;
@@ -51,31 +52,33 @@ export function RecentActivity() {
     }, []);
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow h-[408px] flex flex-col">
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="space-y-6">
-                    {loading ? (
-                        <p>Loading activities...</p>
-                    ) : activities.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No recent activity.</p>
-                    ) : (
-                        activities.map((activity) => (
-                        <div key={activity.id} className="flex items-start gap-4">
-                            <div className="p-2 bg-muted rounded-full">
-                                {iconMap[activity.type]}
+            <CardContent className="flex-1 min-h-0">
+                <ScrollArea className="h-full pr-4 -mr-4">
+                    <div className="space-y-6">
+                        {loading ? (
+                            <p>Loading activities...</p>
+                        ) : activities.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No recent activity.</p>
+                        ) : (
+                            activities.map((activity) => (
+                            <div key={activity.id} className="flex items-start gap-4">
+                                <div className="p-2 bg-muted rounded-full">
+                                    {iconMap[activity.type]}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm">{activity.description}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true })}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-sm">{activity.description}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true })}
-                                </p>
-                            </div>
-                        </div>
-                    )))}
-                </div>
+                        )))}
+                    </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     )
