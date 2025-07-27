@@ -14,9 +14,14 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, getDocs, Query } from "firebase/firestore";
+
+type Manager = {
+    id: string;
+    name: string;
+}
 
 const chartConfig = {
   visitors: {
@@ -35,33 +40,44 @@ const chartConfig = {
 export function OverallProgress() {
     const [progress, setProgress] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [managers, setManagers] = useState<Manager[]>([]);
+    const [selectedManager, setSelectedManager] = useState('all');
 
     useEffect(() => {
-        const projectsRef = collection(db, "projects");
-        const q = query(projectsRef, where("status", "==", "In Progress"));
-
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            let totalProgress = 0;
-            const inProgressCount = querySnapshot.size;
-
-            if (inProgressCount === 0) {
-                const completedQuery = query(collection(db, "projects"), where("status", "==", "Completed"));
-                const completedUnsubscribe = onSnapshot(completedQuery, (completedSnapshot) => {
-                     if (completedSnapshot.size > 0) {
-                        setProgress(100);
-                     } else {
-                        setProgress(0);
-                     }
-                     setLoading(false);
-                });
-                return () => completedUnsubscribe();
+        const fetchManagers = async () => {
+            try {
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("role", "==", "manager"));
+                const querySnapshot = await getDocs(q);
+                const fetchedManagers = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }) as Manager);
+                setManagers(fetchedManagers);
+            } catch(e) {
+                console.error("Error fetching managers: ", e);
             }
+        }
+        fetchManagers();
+    }, []);
+
+    useEffect(() => {
+        setLoading(true);
+        let projectsQuery: Query;
+        if (selectedManager === 'all') {
+            projectsQuery = query(collection(db, "projects"));
+        } else {
+            projectsQuery = query(collection(db, "projects"), where("projectManager", "==", selectedManager));
+        }
+
+        const unsubscribe = onSnapshot(projectsQuery, (querySnapshot) => {
+            let totalProgress = 0;
+            let projectCount = 0;
 
             querySnapshot.forEach((doc) => {
                 totalProgress += doc.data().progress || 0;
+                projectCount++;
             });
-
-            const averageProgress = inProgressCount > 0 ? totalProgress / inProgressCount : 0;
+            
+            const averageProgress = projectCount > 0 ? totalProgress / projectCount : 0;
+            
             setProgress(Math.round(averageProgress));
             setLoading(false);
         }, (error) => {
@@ -70,23 +86,26 @@ export function OverallProgress() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [selectedManager]);
 
-    const chartData = [
+    const chartData = useMemo(() => [
         { name: "completed", visitors: progress, fill: "var(--color-completed)" },
         { name: "remaining", visitors: 100 - progress, fill: "var(--color-remaining)" },
-    ]
+    ], [progress]);
 
     return (
         <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Overall Progress</CardTitle>
-                <Select>
-                    <SelectTrigger className="w-[100px]">
+                <Select value={selectedManager} onValueChange={setSelectedManager}>
+                    <SelectTrigger className="w-[120px]">
                         <SelectValue placeholder="All" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="all">All Managers</SelectItem>
+                        {managers.map(manager => (
+                            <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </CardHeader>
@@ -117,7 +136,7 @@ export function OverallProgress() {
                 </ChartContainer>
                 <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-4xl font-bold">{loading ? '...' : `${progress}%`}</span>
-                    <span className="text-sm text-muted-foreground">In Progress</span>
+                    <span className="text-sm text-muted-foreground">Completed</span>
                 </div>
             </CardContent>
         </Card>
