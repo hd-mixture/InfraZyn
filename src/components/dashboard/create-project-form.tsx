@@ -68,32 +68,20 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             const q = query(usersRef, where("role", "==", "manager"));
             const querySnapshot = await getDocs(q);
             const fetchedManagers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-            if (fetchedManagers.length === 0) {
-              // Add mock data if no managers are found
-              const mockManagers = [
-                { id: 'user1', name: 'Om prakash sao', role: 'manager' },
-                { id: 'user2', name: 'Neilsan mando', role: 'manager' },
-                { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
-              ];
-              setManagers(mockManagers);
-            } else {
-              setManagers(fetchedManagers);
-            }
+            setManagers(fetchedManagers);
         } catch(e) {
             console.error("Error fetching managers: ", e);
-            // Fallback to mock data on error
-            const mockManagers = [
-                { id: 'user1', name: 'Om prakash sao', role: 'manager' },
-                { id: 'user2', name: 'Neilsan mando', role: 'manager' },
-                { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
-              ];
-            setManagers(mockManagers);
+             toast({
+                variant: "destructive",
+                title: "Could not fetch managers.",
+                description: "There was a problem fetching the list of project managers.",
+            });
         }
     }
     if(open) {
         fetchManagers();
     }
-  }, [open]);
+  }, [open, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -197,9 +185,13 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                       </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                      {managers.map(manager => (
+                      {managers.length === 0 ? (
+                        <SelectItem value="no-manager" disabled>No managers found</SelectItem>
+                      ) : (
+                        managers.map(manager => (
                           <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
-                      ))}
+                        ))
+                      )}
                       </SelectContent>
                   </Select>
                   <FormMessage />
@@ -310,16 +302,10 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                 />
 
             <DialogFooter>
-                <Button type="submit" disabled={loading} className="w-full">
-                {loading ? (
-                    <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Project...
-                    </>
-                ) : (
-                    'Create Project'
-                )}
-                </Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Project
+              </Button>
             </DialogFooter>
           </form>
         </Form>
