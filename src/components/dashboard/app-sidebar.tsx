@@ -1,3 +1,4 @@
+
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,7 +26,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <div className="relative h-8 w-8 flex items-center justify-center group/logo-toggle cursor-pointer" onClick={toggleSidebar}>
-                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200", state === 'expanded' ? 'group-hover/logo-toggle:opacity-0' : 'opacity-100')} />
+                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200", state === 'expanded' ? 'group-hover/logo-toggle:opacity-0' : 'group-hover/logo-toggle:opacity-0')} />
                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
                     {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
                 </div>
