@@ -47,12 +47,12 @@ const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | 
 }
 
 const statusColor: { [key: string]: string } = {
-    "Completed": "text-green-500",
-    "In Progress": "text-blue-500",
-    "On Hold": "text-gray-500",
-    "Delayed": "text-red-500",
-    "At risk": "text-yellow-500",
-    "Not Started": "text-gray-500"
+    "Completed": "text-green-500 border-green-500/50 bg-green-500/10",
+    "In Progress": "text-blue-500 border-blue-500/50 bg-blue-500/10",
+    "On Hold": "text-gray-500 border-gray-500/50 bg-gray-500/10",
+    "Delayed": "text-red-500 border-red-500/50 bg-red-500/10",
+    "At risk": "text-yellow-500 border-yellow-500/50 bg-yellow-500/10",
+    "Not Started": "text-gray-500 border-gray-500/50 bg-gray-500/10"
 }
 
 const progressColor: { [key: string]: string } = {
@@ -195,7 +195,7 @@ export function ProjectSummary() {
                     <TableCell>{project.projectManager}</TableCell>
                     <TableCell>{project.endDate ? format(project.endDate.toDate(), 'PP') : 'N/A'}</TableCell>
                     <TableCell>
-                    <Badge variant={statusVariant[project.status] || 'default'} className={`${statusColor[project.status] || ''} bg-opacity-20`}>
+                    <Badge variant={statusVariant[project.status] || 'default'} className={statusColor[project.status] || ''}>
                         {project.status}
                     </Badge>
                     </TableCell>
