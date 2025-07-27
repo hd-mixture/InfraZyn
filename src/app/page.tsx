@@ -15,7 +15,7 @@ function DashboardContent() {
   const view = searchParams.get('view')
 
   return (
-    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1 flex flex-col overflow-hidden">
+    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
       {view === 'users' ? (
         <>
           <h2 className="text-xl font-semibold">User Management</h2>
@@ -25,8 +25,8 @@ function DashboardContent() {
         <>
           <h2 className="text-xl font-semibold">Overview</h2>
           <Overview />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 flex-1 overflow-hidden">
-            <div className="lg:col-span-5 h-full overflow-hidden">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+            <div className="lg:col-span-5">
               <ProjectSummary />
             </div>
             <div className="lg:col-span-2">

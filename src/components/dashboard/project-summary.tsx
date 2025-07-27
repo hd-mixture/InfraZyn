@@ -244,7 +244,7 @@ export function ProjectSummary() {
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+    <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Project summary</CardTitle>
@@ -279,8 +279,8 @@ export function ProjectSummary() {
             </Select>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full pr-6 -mr-6">
+      <CardContent>
+        <ScrollArea className="h-[60vh] pr-6 -mr-6">
             {loading ? (
                 <div className="text-center py-10">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
