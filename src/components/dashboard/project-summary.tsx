@@ -35,6 +35,7 @@ export type Project = {
     startDate: Timestamp;
     endDate: Timestamp;
     status: string;
+    priority: 'Low' | 'Medium' | 'High';
     description?: string;
     progress?: number;
     logoUrl?: string;
@@ -47,6 +48,12 @@ const statusColor: { [key: string]: string } = {
     "Delayed": "text-red-500 border-red-500",
     "At risk": "text-yellow-500 border-yellow-500",
     "Not Started": "text-gray-500 border-gray-500"
+}
+
+const priorityColor: { [key: string]: string } = {
+    "High": "border-red-500 text-red-500",
+    "Medium": "border-yellow-500 text-yellow-500",
+    "Low": "border-green-500 text-green-500",
 }
 
 const progressColor: { [key: string]: string } = {
@@ -106,14 +113,20 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project, onEdit: 
                          <Badge variant="outline" className={statusColor[project.status] || ''}>
                             {project.status}
                          </Badge>
-                         <Badge variant="destructive" className="border-red-500 text-red-500">HIGH PRIORITY</Badge>
+                         <Badge variant="outline" className={priorityColor[project.priority] || ''}>
+                            {project.priority} PRIORITY
+                         </Badge>
                     </div>
                     <div>
                         <div className="flex justify-between text-sm text-muted-foreground mb-1">
                             <span>Progress</span>
                             <span>{project.progress || 0}%</span>
                         </div>
-                        <Progress value={project.progress || 0} className={progressColor[project.status]} />
+                        <Progress 
+                            value={project.progress || 0} 
+                            indicatorClassName={progressColor[project.status]}
+                            className={project.status === 'In Progress' ? 'animated-progress' : ''}
+                        />
                     </div>
                      <div className="flex items-center -space-x-2">
                         <Avatar className="w-8 h-8 border-2 border-card">
@@ -168,10 +181,11 @@ export function ProjectSummary() {
             startDate: data.startDate,
             endDate: data.endDate,
             status: data.status,
+            priority: data.priority || 'Medium',
             description: data.description,
             progress: data.progress || 0,
             logoUrl: data.logoUrl,
-        });
+        } as Project);
       });
       setProjects(projectsData);
       setLoading(false);
@@ -274,7 +288,7 @@ export function ProjectSummary() {
                 <p className="text-sm">Try adjusting your filters or create a new project.</p>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProjects.map((project) => (
                     <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} />
                 ))}

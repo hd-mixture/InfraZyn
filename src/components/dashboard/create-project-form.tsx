@@ -48,6 +48,7 @@ const formSchema = z.object({
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold']),
+  priority: z.enum(['Low', 'Medium', 'High']),
   logo: z.any().optional(),
 });
 
@@ -92,6 +93,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
       projectName: '',
       description: '',
       status: 'Not Started',
+      priority: 'Medium',
     },
   });
 
@@ -323,29 +325,54 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                 )}
                 />
             </div>
-             <FormField
+
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Not Started">Not Started</SelectItem>
+                                    <SelectItem value="In Progress">In Progress</SelectItem>
+                                    <SelectItem value="Completed">Completed</SelectItem>
+                                    <SelectItem value="On Hold">On Hold</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                <FormField
                     control={form.control}
-                    name="status"
+                    name="priority"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Priority</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="Not Started">Not Started</SelectItem>
-                                <SelectItem value="In Progress">In Progress</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="On Hold">On Hold</SelectItem>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
+            </div>
 
             <DialogFooter>
               <Button type="submit" disabled={loading}>

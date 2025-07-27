@@ -49,6 +49,7 @@ const formSchema = z.object({
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
+  priority: z.enum(['Low', 'Medium', 'High']),
   progress: z.number().min(0).max(100).optional(),
 });
 
@@ -100,6 +101,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         startDate: project.startDate.toDate(),
         endDate: project.endDate.toDate(),
         status: project.status as any, // Cast because zod enum is strict
+        priority: project.priority,
         progress: project.progress,
     },
   });
@@ -112,6 +114,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         startDate: project.startDate.toDate(),
         endDate: project.endDate.toDate(),
         status: project.status as any,
+        priority: project.priority,
         progress: project.progress,
     })
    }, [project, form]);
@@ -299,31 +302,55 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                 )}
                 />
             </div>
-             <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Not Started">Not Started</SelectItem>
-                            <SelectItem value="In Progress">In Progress</SelectItem>
-                            <SelectItem value="Completed">Completed</SelectItem>
-                            <SelectItem value="On Hold">On Hold</SelectItem>
-                            <SelectItem value="Delayed">Delayed</SelectItem>
-                            <SelectItem value="At risk">At risk</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                              <SelectItem value="Not Started">Not Started</SelectItem>
+                              <SelectItem value="In Progress">In Progress</SelectItem>
+                              <SelectItem value="Completed">Completed</SelectItem>
+                              <SelectItem value="On Hold">On Hold</SelectItem>
+                              <SelectItem value="Delayed">Delayed</SelectItem>
+                              <SelectItem value="At risk">At risk</SelectItem>
+                          </SelectContent>
+                      </Select>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
             {status === 'In Progress' && (
               <FormField
                 control={form.control}
