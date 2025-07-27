@@ -57,7 +57,7 @@ export function RecentActivity() {
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-                <ScrollArea className="h-[calc(100vh-36rem)] pr-4 -mr-4">
+                <ScrollArea className="h-[24.5rem] pr-4 -mr-4">
                     <div className="space-y-6">
                         {loading ? (
                             <p>Loading activities...</p>

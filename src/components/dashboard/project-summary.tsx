@@ -296,7 +296,7 @@ export function ProjectSummary() {
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <ScrollArea className="h-[calc(100vh-22rem)] pr-6 -mr-6">
+        <ScrollArea className="h-[44rem] pr-6 -mr-6">
             {loading ? (
                 <div className="text-center py-10">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
