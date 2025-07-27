@@ -4,112 +4,126 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreVertical } from "lucide-react";
-import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Button } from "../ui/button";
 
 const projects = [
   {
-    name: "DevTeXhHub Website",
-    team: ["1", "2", "3"],
-    status: "In Progress",
-    progress: 75,
-  },
-  {
-    name: "QuantumLeap AI",
-    team: ["4", "5"],
-    status: "On Hold",
-    progress: 30,
-  },
-  {
-    name: "Project Nova",
-    team: ["1", "4", "6"],
+    name: "Nelsa web developement",
+    manager: "Om prakash sao",
+    dueDate: "May 25, 2023",
     status: "Completed",
     progress: 100,
   },
   {
-    name: "E-commerce Platform",
-    team: ["2", "3", "5", "6"],
-    status: "In Progress",
-    progress: 45,
+    name: "Datascale AI app",
+    manager: "Neilsan mando",
+    dueDate: "Jun 20, 2023",
+    status: "Delayed",
+    progress: 35,
   },
   {
-    name: "Mobile Banking App",
-    team: ["1", "5"],
-    status: "Canceled",
-    progress: 10,
+    name: "Media channel branding",
+    manager: "Tiruvelly priya",
+    dueDate: "July 13, 2023",
+    status: "At risk",
+    progress: 68,
+  },
+  {
+    name: "Corlax IOS app develpoement",
+    manager: "Matte hannery",
+    dueDate: "Dec 20, 2023",
+    status: "Completed",
+    progress: 100,
   },
 ];
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-    "In Progress": "default",
-    "On Hold": "secondary",
     "Completed": "outline",
-    "Canceled": "destructive",
+    "Delayed": "destructive",
+    "At risk": "default",
+}
+
+const statusColor: { [key: string]: string } = {
+    "Completed": "text-green-500",
+    "Delayed": "text-red-500",
+    "At risk": "text-yellow-500",
+}
+
+const progressColor: { [key: string]: string } = {
+    "Completed": "bg-green-500",
+    "Delayed": "bg-red-500",
+    "At risk": "bg-yellow-500",
 }
 
 export function ProjectSummary() {
   return (
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full">
-      <CardHeader>
-        <CardTitle>Project Summary</CardTitle>
-        <CardDescription>An overview of your active and recent projects.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>Project summary</CardTitle>
+        </div>
+        <div className="flex gap-2">
+            <Select>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Project" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Projects</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Project manager" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Managers</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select>
+                <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Project</TableHead>
-              <TableHead className="hidden sm:table-cell">Team</TableHead>
-              <TableHead className="hidden md:table-cell">Status</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Project manager</TableHead>
+              <TableHead>Due date</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Progress</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {projects.map((project) => (
               <TableRow key={project.name}>
                 <TableCell className="font-medium">{project.name}</TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  <div className="flex -space-x-2">
-                    {project.team.map((memberId) => (
-                      <Image
-                        key={memberId}
-                        src={`https://placehold.co/32x32.png`}
-                        data-ai-hint="person face"
-                        alt="Team member"
-                        width={32}
-                        height={32}
-                        className="rounded-full border-2 border-card"
-                      />
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <Badge variant={statusVariant[project.status] || "default"}>
+                <TableCell>{project.manager}</TableCell>
+                <TableCell>{project.dueDate}</TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant[project.status]} className={`${statusColor[project.status]} bg-opacity-20`}>
                     {project.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Progress value={project.progress} className="w-24" />
-                    <span className="text-muted-foreground text-sm">{project.progress}%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Project</DropdownMenuItem>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-muted rounded-full">
+                            <div className={`h-full rounded-full ${progressColor[project.status]}`} style={{ width: `${project.progress}%` }}></div>
+                        </div>
+                    </div>
                 </TableCell>
               </TableRow>
             ))}

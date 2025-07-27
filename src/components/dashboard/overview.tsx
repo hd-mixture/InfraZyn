@@ -1,31 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Briefcase, Clock, Users } from "lucide-react";
+import { DollarSign, Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react";
 
 export function Overview() {
   const overviewData = [
     {
-      title: "Total Revenue",
-      value: "$45,231.89",
-      change: "+20.1% from last month",
-      icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+      title: "Total revenue",
+      value: "$53,00,989",
+      change: "+12% increase from last month",
+      icon: <DollarSign className="h-6 w-6 text-muted-foreground" />,
+      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
     },
     {
       title: "Projects",
-      value: "+12",
-      change: "+180.1% from last month",
-      icon: <Briefcase className="h-4 w-4 text-muted-foreground" />,
+      value: "95 / 100",
+      change: "10% decrease from last month",
+      icon: <Briefcase className="h-6 w-6 text-muted-foreground" />,
+      changeIcon: <TrendingDown className="h-4 w-4 text-red-500" />
     },
     {
-      title: "Time Spent",
-      value: "12,234",
-      change: "+19% from last month",
-      icon: <Clock className="h-4 w-4 text-muted-foreground" />,
+      title: "Time spent",
+      value: "1022 / 1300 Hrs",
+      change: "8% increase from last month",
+      icon: <Clock className="h-6 w-6 text-muted-foreground" />,
+      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
     },
     {
-      title: "Active Users",
-      value: "+573",
-      change: "+201 since last hour",
-      icon: <Users className="h-4 w-4 text-muted-foreground" />,
+      title: "Resources",
+      value: "101 / 120",
+      change: "2% increase from last month",
+      icon: <Users className="h-6 w-6 text-muted-foreground" />,
+      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
     },
   ];
 
@@ -33,13 +37,18 @@ export function Overview() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {overviewData.map((item, index) => (
         <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
-            {item.icon}
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <div className="p-3 rounded-md bg-muted">
+                {item.icon}
+            </div>
           </CardHeader>
           <CardContent>
+            <div className="text-sm text-muted-foreground">{item.title}</div>
             <div className="text-2xl font-bold">{item.value}</div>
-            <p className="text-xs text-muted-foreground">{item.change}</p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {item.changeIcon}
+                <span>{item.change}</span>
+            </div>
           </CardContent>
         </Card>
       ))}
