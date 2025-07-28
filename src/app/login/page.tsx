@@ -25,7 +25,7 @@ export default function LoginPage() {
     setLoading(true);
 
     // Admin Login
-    if (email === 'hdmixture' && password === 'HD@Mixture08') {
+    if (email === 'admin@devtexhhub.com' && password === 'HD@Mixture08') {
       localStorage.setItem('userRole', 'admin');
       router.push('/');
       toast({ title: "Admin login successful!" });
