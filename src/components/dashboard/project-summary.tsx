@@ -23,7 +23,6 @@ import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from "firebase/firestore";
 import { format } from "date-fns";
-import { EditProjectForm } from "./edit-project-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -84,11 +83,14 @@ const progressColor: { [key: string]: string } = {
 
 const ALL_FILTER = 'all';
 
-export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
+type ProjectSummaryProps = {
+  searchQuery: string;
+  onEditProject: (project: Project) => void;
+};
+
+export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const { toast } = useToast();
@@ -117,11 +119,6 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
 
     return () => unsubscribe();
   }, []);
-
-  const handleEdit = (project: Project) => {
-    setEditingProject(project);
-    setIsEditDialogOpen(true);
-  };
 
   const handleDelete = async () => {
     if(!deletingProject) return;
@@ -275,7 +272,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                        <DropdownMenuItem onClick={() => onEditProject(project)}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             <span>Edit</span>
                                         </DropdownMenuItem>
@@ -337,14 +334,6 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         </ScrollArea>
       </CardContent>
     </Card>
-
-    {editingProject && (
-        <EditProjectForm
-            project={editingProject}
-            isOpen={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-        />
-    )}
 
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

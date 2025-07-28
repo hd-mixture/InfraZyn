@@ -5,7 +5,7 @@ import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Overview } from "@/components/dashboard/overview";
-import { ProjectSummary } from "@/components/dashboard/project-summary";
+import { ProjectSummary, Project } from "@/components/dashboard/project-summary";
 import { OverallProgress } from "@/components/dashboard/overall-progress";
 import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
@@ -14,20 +14,29 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { TimeLogView } from "@/components/dashboard/time-log-view";
 import { ResourceManagementView } from "@/components/dashboard/resource-management-view";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { ProjectTableView } from "@/components/dashboard/project-table-view";
+import { EditProjectForm } from "@/components/dashboard/edit-project-form";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setIsEditDialogOpen(true);
+  };
+
+
   const renderContent = () => {
     switch (view) {
       case 'users':
         return <UserManagement />;
       case 'projects':
-        return <ProjectTableView searchQuery={searchQuery} />;
+        return <ProjectTableView searchQuery={searchQuery} onEditProject={handleEditProject} />;
       case 'tasks':
         return <TasksKanbanView />;
       case 'time-log':
@@ -40,7 +49,7 @@ function DashboardContent() {
             <Overview />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
               <div className="lg:col-span-2">
-                <ProjectSummary searchQuery={searchQuery} />
+                <ProjectSummary searchQuery={searchQuery} onEditProject={handleEditProject} />
               </div>
               <div className="space-y-6">
                 <OverallProgress />
@@ -56,6 +65,13 @@ function DashboardContent() {
     <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
       <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       {renderContent()}
+      {editingProject && (
+        <EditProjectForm
+            project={editingProject}
+            isOpen={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </main>
   )
 }
