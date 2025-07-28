@@ -1,4 +1,5 @@
 
+
 'use client';
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
@@ -18,13 +19,9 @@ function DashboardContent() {
   return (
     <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
       {view === 'users' ? (
-        <>
-          <h2 className="text-xl font-semibold">User Management</h2>
-          <UserManagement />
-        </>
+        <UserManagement />
       ) : (
         <>
-          <h2 className="text-xl font-semibold">Overview</h2>
           <Overview />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-stretch">
             <div className="lg:col-span-5">
@@ -57,3 +54,4 @@ export default function DashboardPage() {
     </SidebarProvider>
   );
 }
+
