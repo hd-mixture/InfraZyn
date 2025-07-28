@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +47,8 @@ export function Overview() {
             let hours = 0;
             querySnapshot.forEach((doc) => {
                 projectNum++;
-                revenue += doc.data().revenue || 5300989 / querySnapshot.size; // Placeholder logic
-                hours += doc.data().hoursLogged || 1022 / querySnapshot.size; // Placeholder logic
+                revenue += doc.data().revenue || 0;
+                hours += doc.data().hoursLogged || 0;
             });
             setProjectCount(projectNum);
             setTotalRevenue(revenue);
