@@ -234,7 +234,13 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                         <FormItem>
                         <FormLabel>Project Revenue (Optional)</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="e.g., 50000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                            <Input
+                                type="number"
+                                placeholder="e.g., 50000"
+                                {...field}
+                                value={field.value ?? ''}
+                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                            />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
