@@ -42,6 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import type { Project } from './project-summary';
+import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -185,254 +186,256 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
             Update the details for your project below.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="projectName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., New E-commerce Platform" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project Description (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add a brief description of the project..."
-                      className="resize-none"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="max-h-[70vh]">
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
                 <FormField
                 control={form.control}
-                name="projectManager"
+                name="projectName"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Project Manager</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a manager" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {managers.length === 0 ? (
-                            <SelectItem value="no-manager" disabled>No managers found</SelectItem>
-                        ) : (
-                            managers.map(manager => (
-                            <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
-                            ))
-                        )}
-                        </SelectContent>
-                    </Select>
+                    <FormLabel>Project Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g., New E-commerce Platform" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
-                 <FormField
+                <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Project Description (Optional)</FormLabel>
+                    <FormControl>
+                        <Textarea
+                        placeholder="Add a brief description of the project..."
+                        className="resize-none"
+                        rows={3}
+                        {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
                     control={form.control}
-                    name="revenue"
+                    name="projectManager"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Project Revenue (Optional)</FormLabel>
-                        <FormControl>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                                    ₹
-                                </span>
-                                <Input
-                                    type="text"
-                                    placeholder="0.00"
-                                    className="pl-8"
-                                    {...field}
-                                    value={field.value ?? ''}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
-                                          field.onChange(value);
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </FormControl>
+                        <FormLabel>Project Manager</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a manager" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {managers.length === 0 ? (
+                                <SelectItem value="no-manager" disabled>No managers found</SelectItem>
+                            ) : (
+                                managers.map(manager => (
+                                <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
+                                ))
+                            )}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                         </FormItem>
                     )}
                     />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, 'PPP')
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
+                    <FormField
+                        control={form.control}
+                        name="revenue"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Project Revenue (Optional)</FormLabel>
+                            <FormControl>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                                        ₹
+                                    </span>
+                                    <Input
+                                        type="text"
+                                        placeholder="0.00"
+                                        className="pl-8"
+                                        {...field}
+                                        value={field.value ?? ''}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
+                                            field.onChange(value);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
                         />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                 <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, 'PPP')
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                              <SelectItem value="Not Started">Not Started</SelectItem>
-                              <SelectItem value="In Progress">In Progress</SelectItem>
-                              <SelectItem value="Completed">Completed</SelectItem>
-                              <SelectItem value="On Hold">On Hold</SelectItem>
-                              <SelectItem value="Delayed">Delayed</SelectItem>
-                              <SelectItem value="At risk">At risk</SelectItem>
-                          </SelectContent>
-                      </Select>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-              />
-              <FormField
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
                     control={form.control}
-                    name="priority"
+                    name="startDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Start Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground'
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, 'PPP')
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>End Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground'
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, 'PPP')
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="status"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Priority</FormLabel>
+                        <FormLabel>Status</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select priority" />
+                                <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="Low">Low</SelectItem>
-                                <SelectItem value="Medium">Medium</SelectItem>
-                                <SelectItem value="High">High</SelectItem>
+                                <SelectItem value="Not Started">Not Started</SelectItem>
+                                <SelectItem value="In Progress">In Progress</SelectItem>
+                                <SelectItem value="Completed">Completed</SelectItem>
+                                <SelectItem value="On Hold">On Hold</SelectItem>
+                                <SelectItem value="Delayed">Delayed</SelectItem>
+                                <SelectItem value="At risk">At risk</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
-            </div>
-            {(status === 'In Progress' || status === 'Delayed' || status === 'At risk') && (
-              <FormField
-                control={form.control}
-                name="progress"
-                render={({ field: { onChange, value } }) => (
-                  <FormItem>
-                    <FormLabel>Progress: {value ?? 0}%</FormLabel>
-                    <FormControl>
-                      <Slider 
-                          defaultValue={[value || 0]} 
-                          max={100} 
-                          step={1}
-                          onValueChange={(vals) => onChange(vals[0])}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                <FormField
+                        control={form.control}
+                        name="priority"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Priority</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                {(status === 'In Progress' || status === 'Delayed' || status === 'At risk') && (
+                <FormField
+                    control={form.control}
+                    name="progress"
+                    render={({ field: { onChange, value } }) => (
+                    <FormItem>
+                        <FormLabel>Progress: {value ?? 0}%</FormLabel>
+                        <FormControl>
+                        <Slider 
+                            defaultValue={[value || 0]} 
+                            max={100} 
+                            step={1}
+                            onValueChange={(vals) => onChange(vals[0])}
+                        />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 )}
-              />
-            )}
-            <DialogFooter>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                <DialogFooter className="pt-4">
+                <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
+                </DialogFooter>
+            </form>
+            </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
