@@ -47,7 +47,7 @@ const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
   projectManager: z.string().min(1, 'Please select a project manager.'),
-  revenue: z.coerce.number().optional(),
+  revenue: z.any().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
@@ -100,12 +100,12 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
   
 
    useEffect(() => {
-    if (project && managers.length > 0) {
+    if (project && managers.length > 0 && isOpen) {
         const manager = managers.find(m => m.name === project.projectManager);
         form.reset({
             ...project,
             projectManager: manager ? manager.id : '',
-            revenue: project.revenue ?? undefined,
+            revenue: project.revenue ?? '',
             progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
             endDate: project.endDate.toDate(),
@@ -141,11 +141,12 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
         };
-
-        if (dataToUpdate.revenue === undefined || dataToUpdate.revenue === null || dataToUpdate.revenue === '') {
+        
+        const revenueValue = values.revenue;
+        if (revenueValue === undefined || revenueValue === null || revenueValue === '') {
           dataToUpdate.revenue = null;
         } else {
-          dataToUpdate.revenue = parseFloat(dataToUpdate.revenue);
+          dataToUpdate.revenue = parseFloat(revenueValue);
         }
 
         await updateDoc(projectRef, dataToUpdate);
@@ -265,7 +266,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                     onChange={e => {
                                         const value = e.target.value;
                                         if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
-                                          field.onChange(value === '' ? undefined : Number(value));
+                                          field.onChange(value);
                                         }
                                     }}
                                 />
