@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Project } from './project-summary';
@@ -34,13 +34,19 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
 
         setLoading(true);
 
-        // Fetch projects managed by the current manager
-        const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+        const projectsQuery = query(
+            collection(db, "projects"), 
+            where("projectManager", "==", managerName),
+            orderBy("createdAt", "desc")
+        );
         const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
-            const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            const fetchedProjects = snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data(),
+                createdAt: doc.data().createdAt as Timestamp 
+            } as Project));
             setProjects(fetchedProjects);
 
-            // Once we have projects, fetch tasks for those projects
             if (fetchedProjects.length > 0) {
                 const projectIds = fetchedProjects.map(p => p.id);
                 const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
@@ -48,14 +54,13 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                     const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                     setTasks(fetchedTasks);
                     setLoading(false);
-                });
+                }, () => setLoading(false));
                 return () => unsubscribeTasks();
             } else {
                 setLoading(false);
             }
-        });
+        }, () => setLoading(false));
 
-        // Fetch all users with developer or qa roles
         const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
         const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
             const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
@@ -99,11 +104,9 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             ) : (
                 projects.map((project) => (
                     <Card key={project.id}>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>{project.projectName}</CardTitle>
-                                <CardDescription>Manage the team members for this project.</CardDescription>
-                            </div>
+                        <CardHeader>
+                            <CardTitle>{project.projectName}</CardTitle>
+                            <CardDescription>Manage the team members for this project.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-6">
