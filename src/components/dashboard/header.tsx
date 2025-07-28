@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
 import { DelayPredictor } from "./delay-predictor";
 import { SidebarTrigger, useSidebar } from "../ui/sidebar";
-import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 type DashboardHeaderProps = {
@@ -19,10 +19,27 @@ type DashboardHeaderProps = {
 export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeaderProps) {
   const { isMobile } = useSidebar();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const view = searchParams.get('view');
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setRole(localStorage.getItem('userRole'));
+    }
+  }, []);
 
   const pageInfo = useMemo(() => {
+        if (pathname.includes('manager')) {
+            switch(view) {
+                case 'users':
+                    return { title: 'Team', icon: <Users className="h-7 w-7" /> };
+                case 'tasks':
+                default:
+                    return { title: 'Tasks', icon: <ListChecks className="h-7 w-7" /> };
+            }
+        }
         switch (view) {
             case 'projects':
                 return { title: 'Projects', icon: <Folders className="h-7 w-7" /> };
@@ -37,7 +54,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
             default:
                 return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
         }
-    }, [view]);
+    }, [view, pathname]);
     
   const toggleSearch = () => setShowSearchInput(prev => !prev);
 
@@ -59,7 +76,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Search projects..."
+                    placeholder="Search..."
                     className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                     value={searchQuery}
                     onChange={handleSearchChange}
@@ -78,7 +95,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
                 </Button>
             )}
             <div className={cn("flex items-center gap-2", isMobile && showSearchInput && "hidden")}>
-                <DelayPredictor />
+                {role === 'admin' && <DelayPredictor />}
                 <Button
                     variant="outline"
                     size="icon"

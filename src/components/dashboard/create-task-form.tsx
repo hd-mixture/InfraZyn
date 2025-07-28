@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,56 +38,108 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, Timestamp, query, where, or } from 'firebase/firestore';
+import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
-  projectName: z.string().min(1, 'Project name is required.'),
+  taskName: z.string().min(1, 'Task name is required.'),
   description: z.string().optional(),
-  projectManager: z.string().min(1, 'Please select a project manager.'),
-  startDate: z.date({ required_error: 'A start date is required.' }),
-  endDate: z.date({ required_error: 'An end date is required.' }),
-  status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold']),
+  project: z.string().min(1, 'Please select a project.'),
+  assignedTo: z.string().min(1, 'Please assign the task to a user.'),
+  dueDate: z.date({ required_error: 'A due date is required.' }),
+  status: z.enum(['To Do', 'In Progress', 'Done']),
+  priority: z.enum(['Low', 'Medium', 'High']),
 });
 
-// Mock data - replace with actual data fetching from Firestore
-const users = [
-    { id: 'user1', name: 'Om prakash sao', role: 'manager' },
-    { id: 'user2', name: 'Neilsan mando', role: 'manager' },
-    { id: 'user3', name: 'Tiruvelly priya', role: 'manager' },
-    { id: 'user4', name: 'Matte hannery', role: 'developer' },
-];
-const managers = users.filter(user => user.role === 'manager');
+type User = {
+    id: string;
+    name: string;
+    role: string;
+};
 
+type Project = {
+    id: string;
+    projectName: string;
+}
 
-export function CreateProjectForm({ children }: { children: ReactNode }) {
+export function CreateTaskForm({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isDueDatePickerOpen, setIsDueDatePickerOpen] = useState(false);
   const { toast } = useToast();
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      projectName: '',
+      taskName: '',
       description: '',
-      status: 'Not Started',
+      status: 'To Do',
+      priority: 'Medium',
     },
   });
 
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            // Fetch users (developer or qa)
+            const usersRef = collection(db, "users");
+            const userQuery = query(usersRef, or(where("role", "==", "developer"), where("role", "==", "qa")));
+            const userSnapshot = await getDocs(userQuery);
+            const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            setUsers(fetchedUsers);
+
+            // Fetch projects
+            const projectRef = collection(db, "projects");
+            const projectSnapshot = await getDocs(projectRef);
+            const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+            setProjects(fetchedProjects);
+
+        } catch(e) {
+            console.error("Error fetching data: ", e);
+             toast({
+                variant: "destructive",
+                title: "Could not fetch data.",
+                description: "There was a problem fetching users and projects.",
+            });
+        }
+    }
+    if(open) {
+        fetchData();
+    }
+  }, [open, toast]);
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    console.log('New Project Form values:', values);
-    
-    // Simulate API call to save to Firestore
-    // In a real app, you would use the Firebase SDK here to add a document to the 'projects' collection
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setLoading(false);
-    setOpen(false);
-    form.reset();
+    try {
+        const dataToSave = {
+            ...values,
+            dueDate: Timestamp.fromDate(values.dueDate),
+            createdAt: Timestamp.now()
+        };
 
-    toast({
-      title: "Project Created!",
-      description: "The new project has been successfully created.",
-    });
+        await addDoc(collection(db, "tasks"), dataToSave);
+        
+        // You might want to add an activity log entry here as well
+
+        toast({
+            title: "Task Created!",
+            description: "The new task has been successfully created.",
+        });
+        setOpen(false);
+        form.reset();
+    } catch(e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem with your request.",
+        });
+    } finally {
+        setLoading(false);
+    }
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -103,184 +156,191 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new project.
+            Fill in the details below to add a new task.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="projectName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., New E-commerce Platform" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project Description (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add a brief description of the project..."
-                      className="resize-none"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="projectManager"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Project Manager</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                      <SelectTrigger>
-                          <SelectValue placeholder="Select a manager" />
-                      </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                      {managers.map(manager => (
-                          <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
-                      ))}
-                      </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="max-h-[70vh] px-1 pr-4">
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                 control={form.control}
-                name="startDate"
+                name="taskName"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, 'PPP')
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                        />
-                        </PopoverContent>
-                    </Popover>
+                    <FormItem>
+                    <FormLabel>Task Name</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g., Implement user login feature" {...field} />
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
-                 <FormField
+                <FormField
                 control={form.control}
-                name="endDate"
+                name="description"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, 'PPP')
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
+                    <FormItem>
+                    <FormLabel>Task Description (Optional)</FormLabel>
+                    <FormControl>
+                        <Textarea
+                        placeholder="Add a brief description of the task..."
+                        className="resize-none"
+                        rows={3}
+                        {...field}
                         />
-                        </PopoverContent>
-                    </Popover>
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
-            </div>
-             <FormField
+
+                <div className="grid grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="project"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Project</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a project" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {projects.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    <FormField
                     control={form.control}
-                    name="status"
+                    name="assignedTo"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Assigned To</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder="Select a user" />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="Not Started">Not Started</SelectItem>
-                                <SelectItem value="In Progress">In Progress</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="On Hold">On Hold</SelectItem>
+                            {users.map(user => (
+                                <SelectItem key={user.id} value={user.id}>{user.name} ({user.role})</SelectItem>
+                            ))}
                             </SelectContent>
                         </Select>
                         <FormMessage />
                         </FormItem>
                     )}
+                    />
+                </div>
+                
+                <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover open={isDueDatePickerOpen} onOpenChange={setIsDueDatePickerOpen}>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground'
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, 'PPP')
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsDueDatePickerOpen(false);
+                                }}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
 
-            <DialogFooter>
-                <Button type="submit" disabled={loading} className="w-full">
-                {loading ? (
-                    <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Project...
-                    </>
-                ) : (
-                    'Create Project'
-                )}
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="To Do">To Do</SelectItem>
+                                        <SelectItem value="In Progress">In Progress</SelectItem>
+                                        <SelectItem value="Done">Done</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    <FormField
+                        control={form.control}
+                        name="priority"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Priority</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <DialogFooter className="pt-4">
+                <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Task
                 </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                </DialogFooter>
+            </form>
+            </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,24 +12,48 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export function UserNav() {
+  const [userName, setUserName] = useState('Admin');
+  const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
+  const [userRole, setUserRole] = useState('admin');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const role = localStorage.getItem('userRole');
+        const name = localStorage.getItem('userName');
+        if (role === 'manager' && name) {
+            setUserName(name);
+            setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
+            setUserRole('manager');
+        }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+    }
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://placehold.co/40x40.png" data-ai-hint="person face" alt="User avatar" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={`https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
+            <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Admin</p>
+            <p className="text-sm font-medium leading-none">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              admin@devtexhhub.com
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -44,7 +69,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild onClick={handleLogout}>
           <Link href="/login">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>

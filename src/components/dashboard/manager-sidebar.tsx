@@ -1,30 +1,21 @@
 
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { CreateProjectForm } from "./create-project-form";
+import { CreateTaskForm } from "./create-task-form";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
 
-export function AppSidebar() {
-  const pathname = usePathname();
+export function ManagerSidebar() {
   const searchParams = useSearchParams();
   const { toggleSidebar, state } = useSidebar();
   const currentView = searchParams.get('view');
-  const [role, setRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-        setRole(localStorage.getItem('userRole'));
-    }
-  }, []);
 
   const isActive = (view: string | null) => {
     if (view === null) {
-      return currentView === null;
+      return currentView === null || currentView === 'tasks';
     }
     return currentView === view;
   }
@@ -34,10 +25,6 @@ export function AppSidebar() {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
     }
-  }
-
-  if (role !== 'admin') {
-    return null; // Or a loading spinner, or a manager-specific sidebar
   }
 
   return (
@@ -55,58 +42,26 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
-            <CreateProjectForm>
+            <CreateTaskForm>
               <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:self-center group-data-[collapsible=icon]:hover:w-full group-data-[collapsible=icon]:hover:rounded-lg transition-all duration-300 ease-in-out">
                   <PlusCircle />
-                  <span className="group-data-[collapsible=icon]:hidden group-data-[collapsible=icon]:hover:inline">Create new project</span>
+                  <span className="group-data-[collapsible=icon]:hidden group-data-[collapsible=icon]:hover:inline">Create new task</span>
               </Button>
-            </CreateProjectForm>
+            </CreateTaskForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(null)} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/">
-                    <LayoutDashboard />
-                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
-                 <Link href="/?view=projects">
-                    <Folders />
-                    <span className="group-data-[collapsible=icon]:hidden">Projects</span>
-                 </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/?view=tasks">
+                <SidebarMenuButton asChild isActive={isActive(null)} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/manager-dashboard?view=tasks">
                     <ListChecks />
                     <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
                   </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('time-log')} tooltip="Time Log" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/?view=time-log">
-                    <Timer />
-                    <span className="group-data-[collapsible=icon]:hidden">Time log</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('resource-mgmt')} tooltip="Resource Mgmt" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/?view=resource-mgmt">
-                    <ClipboardList />
-                    <span className="group-data-[collapsible=icon]:hidden">Resource mgnt</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
                  <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/?view=users">
+                  <Link href="/manager-dashboard?view=users">
                     <Users />
-                    <span className="group-data-[collapsible=icon]:hidden">Users</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Team</span>
                   </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
