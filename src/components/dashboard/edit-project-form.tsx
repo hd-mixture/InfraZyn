@@ -244,8 +244,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={e => {
-                                    const value = e.target.value;
-                                    field.onChange(value === '' ? undefined : Number(value));
+                                    const value = e.target.valueAsNumber;
+                                    field.onChange(isNaN(value) ? undefined : value);
                                 }}
                             />
                         </FormControl>
