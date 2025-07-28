@@ -274,7 +274,8 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-            <CardTitle>Project summary</CardTitle>
+            <CardTitle>Projects</CardTitle>
+            <CardDescription>View, manage, and search your projects.</CardDescription>
         </div>
         <div className="flex gap-2">
             <Select value={filterProject} onValueChange={setFilterProject}>
@@ -307,17 +308,17 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <ScrollArea className="h-[44rem] pr-6 -mr-6">
+        <ScrollArea className="h-[calc(100vh-22rem)] pr-6 -mr-6">
             {loading ? (
                 <div className="text-center py-10">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4 h-full justify-center">
+                <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4 h-[30rem] justify-center">
                     <Folders className="w-16 h-16" />
-                    <p>No projects match the current filters.</p>
-                    <p className="text-sm">Try adjusting your filters or create a new project.</p>
+                    <p className="font-semibold text-lg">No projects found</p>
+                    <p className="text-sm">Try adjusting your filters or create a new project to get started.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                     {filteredProjects.map((project) => (
                         <ProjectCard key={project.id} project={project} onEdit={handleEdit} onDelete={openDeleteDialog} onPin={handlePinProject} />
                     ))}

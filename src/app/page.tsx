@@ -23,6 +23,7 @@ function DashboardContent() {
       case 'users':
         return <UserManagement />;
       case 'projects':
+        return <ProjectSummary searchQuery={searchQuery} />;
       case 'tasks':
       case 'time-log':
       case 'resource-mgmt':
@@ -31,11 +32,8 @@ function DashboardContent() {
         return (
           <>
             <Overview />
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-stretch">
-              <div className="lg:col-span-5">
-                <ProjectSummary searchQuery={searchQuery} />
-              </div>
-              <div className="lg:col-span-2 flex flex-col gap-6">
+            <div className="grid gap-6 lg:grid-cols-7 lg:items-stretch">
+              <div className="lg:col-span-7 flex flex-col gap-6">
                 <OverallProgress />
                 <RecentActivity />
               </div>
