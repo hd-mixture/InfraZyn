@@ -194,12 +194,12 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
     <>
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <CardTitle>Project Summary</CardTitle>
                 <CardDescription className="text-xs">An overview of your current projects.</CardDescription>
             </div>
-            <div className="flex gap-2 items-center flex-wrap">
+            <div className="flex gap-2 items-center">
                  <Select value={filterProject} onValueChange={setFilterProject}>
                     <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="All Projects" />
