@@ -42,6 +42,7 @@ import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ScrollArea } from '../ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -59,6 +60,7 @@ type User = {
     id: string;
     name: string;
     role: string;
+    avatar?: string;
 };
 
 export function CreateProjectForm({ children }: { children: ReactNode }) {
@@ -232,7 +234,15 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 <SelectItem value="no-manager" disabled>No managers found</SelectItem>
                             ) : (
                                 managers.map(manager => (
-                                <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
+                                <SelectItem key={manager.id} value={manager.id}>
+                                    <div className='flex items-center gap-2'>
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={manager.avatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
+                                            <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{manager.name}</span>
+                                    </div>
+                                </SelectItem>
                                 ))
                             )}
                             </SelectContent>
