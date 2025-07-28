@@ -11,7 +11,6 @@ import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useState } from "react";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { TimeLogView } from "@/components/dashboard/time-log-view";
 import { ResourceManagementView } from "@/components/dashboard/resource-management-view";
@@ -37,11 +36,9 @@ function DashboardContent() {
         return (
           <>
             <Overview />
-            <div className="grid gap-6 lg:grid-cols-7 lg:items-stretch">
-              <div className="lg:col-span-7 flex flex-col gap-6">
-                <OverallProgress />
-                <RecentActivity />
-              </div>
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              <OverallProgress />
+              <RecentActivity />
             </div>
           </>
         );
