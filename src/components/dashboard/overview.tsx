@@ -6,9 +6,10 @@ import { Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react"
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
+import { RevenueBreakdown } from "./revenue-breakdown";
 
 // Custom Rupee Icon
-const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -59,28 +60,17 @@ export function Overview() {
 
         const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
             setResourceCount(querySnapshot.size);
+            setLoading(false);
         }, (error) => {
             console.error("Error fetching users count: ", error);
+            setLoading(false);
         });
-
-        const checkLoading = () => {
-             if (projectCount !== 0 && resourceCount !== 0) {
-                setLoading(false);
-            }
-        }
-        // A simple timeout to prevent indefinite loading state on empty data
-        const loadingTimeout = setTimeout(() => setLoading(false), 3000);
-
-
-        checkLoading();
-
-
+        
         return () => {
             unsubscribeProjects();
             unsubscribeUsers();
-            clearTimeout(loadingTimeout);
         };
-    }, [projectCount, resourceCount]);
+    }, []);
 
   const overviewData = [
     {
@@ -88,7 +78,8 @@ export function Overview() {
       value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN').format(totalRevenue)}`,
       change: "+12% increase from last month",
       icon: <RupeeIcon className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
+      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />,
+      clickable: true,
     },
     {
       title: "Projects",
@@ -113,10 +104,8 @@ export function Overview() {
     },
   ];
 
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {overviewData.map((item, index) => (
-        <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
+  const renderCard = (item: (typeof overviewData)[0]) => (
+     <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <div className="p-3 rounded-md bg-muted">
                 {item.icon}
@@ -131,6 +120,20 @@ export function Overview() {
             </div>
           </CardContent>
         </Card>
+  )
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {overviewData.map((item, index) => (
+        item.clickable ? (
+            <RevenueBreakdown key={index}>
+                {renderCard(item)}
+            </RevenueBreakdown>
+        ) : (
+            <div key={index}>
+                {renderCard(item)}
+            </div>
+        )
       ))}
     </div>
   );
