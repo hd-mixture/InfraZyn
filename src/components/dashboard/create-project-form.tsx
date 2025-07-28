@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type ReactNode, useEffect } from 'react';
@@ -112,13 +113,19 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
 
         const { logo, ...projectData } = values;
 
-        await addDoc(collection(db, "projects"), {
+        const dataToSave: any = {
             ...projectData,
             logoUrl,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
             createdAt: Timestamp.now()
-        });
+        };
+
+        if (projectData.revenue === undefined) {
+            delete dataToSave.revenue;
+        }
+
+        await addDoc(collection(db, "projects"), dataToSave);
 
         await addDoc(collection(db, "activities"), {
             type: 'new_project',
