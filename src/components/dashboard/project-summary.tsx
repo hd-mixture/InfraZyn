@@ -261,7 +261,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Pin</p>
+                                        <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
@@ -364,3 +364,4 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     </>
   );
 }
+
