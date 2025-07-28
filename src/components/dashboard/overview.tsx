@@ -9,29 +9,6 @@ import { collection, onSnapshot, query, Timestamp } from "firebase/firestore";
 import { RevenueBreakdown } from "./revenue-breakdown";
 import { SetProjectTargetDialog } from "./set-project-target-dialog";
 
-// Custom Rupee Icon
-export const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M6 3h12" />
-    <path d="M6 8h12" />
-    <path d="m19 13-10 8" />
-    <path d="M6 13h4" />
-    <path d="M6 21h4" />
-  </svg>
-);
-
-
 export function Overview() {
     const [projectCount, setProjectCount] = useState(0);
     const [projectChange, setProjectChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
@@ -157,9 +134,9 @@ export function Overview() {
   const overviewData = [
     {
       title: "This month's revenue",
-      value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN').format(currentMonthRevenue)}`,
+      value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(currentMonthRevenue)}`,
       change: loading ? "" : getRevenueChangeText(),
-      icon: <RupeeIcon className="h-6 w-6 text-muted-foreground" />,
+      icon: <span className="text-2xl">₹</span>,
       changeIcon: revenueChange.type === 'increase' ? <TrendingUp className="h-4 w-4 text-green-500" /> : revenueChange.type === 'decrease' ? <TrendingDown className="h-4 w-4 text-red-500" /> : null,
       clickable: true,
     },
@@ -174,24 +151,24 @@ export function Overview() {
     },
     {
       title: "Time spent",
-      value: loading ? "..." : `${timeSpent} / 1300 Hrs`,
-      change: "8% increase from last month",
+      value: loading ? "..." : `${timeSpent} Hrs`,
+      change: "No data for comparison",
       icon: <Clock className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
+      changeIcon: null
     },
     {
       title: "Resources",
-      value: loading ? "..." : `${resourceCount} / 120`,
-      change: "2% increase from last month",
+      value: loading ? "..." : `${resourceCount}`,
+      change: "No data for comparison",
       icon: <Users className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
+      changeIcon: null
     },
   ];
 
   const renderCard = (item: (typeof overviewData)[0]) => (
      <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <div className="p-3 rounded-md bg-muted">
+            <div className="p-3 rounded-md bg-muted flex items-center justify-center h-12 w-12">
                 {item.icon}
             </div>
           </CardHeader>

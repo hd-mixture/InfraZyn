@@ -21,7 +21,6 @@ import {
   TableRow,
   TableFooter
 } from '@/components/ui/table';
-import { RupeeIcon } from './overview';
 import { ScrollArea } from '../ui/scroll-area';
 
 type Project = {
@@ -72,7 +71,7 @@ export function RevenueBreakdown({ children }: { children: React.ReactNode }) {
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <RupeeIcon /> Revenue Breakdown
+                        <span className='text-xl'>₹</span> Revenue Breakdown
                     </DialogTitle>
                     <DialogDescription>
                         A detailed breakdown of revenue per project.
@@ -100,7 +99,7 @@ export function RevenueBreakdown({ children }: { children: React.ReactNode }) {
                                     <TableRow key={project.id}>
                                         <TableCell className="font-medium">{project.projectName}</TableCell>
                                         <TableCell className="text-right">
-                                            ₹{new Intl.NumberFormat('en-IN').format(project.revenue || 0)}
+                                            ₹{new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(project.revenue || 0)}
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -110,7 +109,7 @@ export function RevenueBreakdown({ children }: { children: React.ReactNode }) {
                             <TableRow>
                                 <TableCell className="font-bold">Total Revenue</TableCell>
                                 <TableCell className="text-right font-bold">
-                                    ₹{new Intl.NumberFormat('en-IN').format(totalRevenue)}
+                                    ₹{new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalRevenue)}
                                 </TableCell>
                             </TableRow>
                         </TableFooter>
