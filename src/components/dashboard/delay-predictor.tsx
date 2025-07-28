@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,7 +26,6 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -38,10 +38,20 @@ const formSchema = z.object({
   deadline: z.date({ required_error: 'A deadline is required.' }),
 });
 
+const exampleTasks = [
+    "Develop and integrate a new payment gateway for credit card processing.",
+    "Refactor the entire user authentication module to use JWT instead of sessions.",
+    "Migrate the production database from MySQL to PostgreSQL with zero downtime.",
+    "Design and implement a real-time notification system using WebSockets.",
+    "Build a new data analytics dashboard with complex data visualizations.",
+    "Set up a new CI/CD pipeline for the mobile application, including automated testing.",
+];
+
 export function DelayPredictor() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState<PredictTaskDelayOutput | null>(null);
+  const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,6 +60,18 @@ export function DelayPredictor() {
       description: '',
     },
   });
+
+  const descriptionValue = form.watch('description');
+  const showSuggestion = !descriptionValue;
+  const suggestion = exampleTasks[currentExampleIndex];
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+        setCurrentExampleIndex(prevIndex => (prevIndex + 1) % exampleTasks.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -77,8 +99,16 @@ export function DelayPredictor() {
         form.reset();
         setPrediction(null);
         setLoading(false);
+        setCurrentExampleIndex(0);
     }
     setOpen(isOpen);
+  }
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab' && showSuggestion) {
+        e.preventDefault();
+        form.setValue('description', suggestion);
+    }
   }
 
   return (
@@ -105,12 +135,21 @@ export function DelayPredictor() {
                 <FormItem>
                   <FormLabel>Task Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="e.g., Implement the new authentication flow with two-factor authentication and social logins..."
-                      className="resize-none"
-                      rows={5}
-                      {...field}
-                    />
+                    <div className="relative">
+                        <Textarea
+                            placeholder="Describe the task here..."
+                            className="resize-none bg-transparent"
+                            rows={5}
+                            {...field}
+                            onKeyDown={handleKeyDown}
+                        />
+                        {showSuggestion && (
+                           <div className="absolute top-0 left-0 w-full h-full p-2 py-3 -z-10 text-muted-foreground text-sm pointer-events-none">
+                                {suggestion}
+                                <span className="ml-2 px-1.5 py-0.5 text-xs rounded-md border bg-muted">TAB</span>
+                           </div>
+                        )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,3 +221,5 @@ export function DelayPredictor() {
     </Dialog>
   );
 }
+
+    
