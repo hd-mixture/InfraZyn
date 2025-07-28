@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,11 +25,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2, Upload, User } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
+import axios from 'axios';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
@@ -74,9 +74,16 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
       let avatarUrl = user.avatar;
       if (values.avatar && values.avatar.length > 0) {
         const file = values.avatar[0];
-        const storageRef = ref(storage, `user-avatars/${user.id}/${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        avatarUrl = await getDownloadURL(snapshot.ref);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+        
+        const response = await axios.post(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          formData
+        );
+        
+        avatarUrl = response.data.secure_url;
       }
 
       const userRef = doc(db, 'users', user.id);
