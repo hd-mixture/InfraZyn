@@ -1,18 +1,19 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Moon, Sun } from 'lucide-react';
+import { Loader2, Moon, Sun, CheckCircle, XCircle } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 const mockLoginHistory = [
     { date: 'Aug 22, 2024', time: '10:30 AM', ip: '192.168.1.101', device: 'Chrome on macOS' },
@@ -31,22 +32,29 @@ export function ManagerSettingsView() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+    
+    const isPasswordValid = newPassword.length >= 6 && newPassword === confirmPassword && currentPassword.length > 0;
+
+    useEffect(() => {
+        const errors = [];
+        if (newPassword && newPassword.length < 6) {
+            errors.push("Password must be at least 6 characters long.");
+        }
+        if (confirmPassword && newPassword !== confirmPassword) {
+            errors.push("Passwords do not match.");
+        }
+        setPasswordErrors(errors);
+    }, [newPassword, confirmPassword]);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (newPassword !== confirmPassword) {
+        
+        if (!isPasswordValid) {
             toast({
                 variant: "destructive",
-                title: "Passwords do not match.",
-                description: "Please re-enter your new password and confirm it.",
-            });
-            return;
-        }
-        if (newPassword.length < 6) {
-             toast({
-                variant: "destructive",
-                title: "Password is too weak.",
-                description: "Your new password must be at least 6 characters long.",
+                title: "Invalid Input",
+                description: "Please fix the errors before submitting.",
             });
             return;
         }
@@ -83,7 +91,7 @@ export function ManagerSettingsView() {
         } catch (error: any) {
             console.error("Password change error:", error);
             let description = "An unexpected error occurred. Please try again.";
-            if (error.code === 'auth/wrong-password') {
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 description = "The current password you entered is incorrect.";
             }
             toast({
@@ -113,7 +121,6 @@ export function ManagerSettingsView() {
         }
     };
 
-
     return (
         <ScrollArea className='h-full pr-4'>
             <div className="space-y-6">
@@ -137,7 +144,19 @@ export function ManagerSettingsView() {
                                     <Label htmlFor="confirm-password">Confirm New Password</Label>
                                     <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                                 </div>
-                                <Button type="submit" disabled={loading}>
+                                {newPassword && (
+                                     <div className="space-y-2 text-xs">
+                                        <div className={cn("flex items-center gap-2", newPassword.length >= 6 ? "text-green-600" : "text-destructive")}>
+                                            {newPassword.length >= 6 ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                                            <span>At least 6 characters long</span>
+                                        </div>
+                                         <div className={cn("flex items-center gap-2", newPassword && newPassword === confirmPassword ? "text-green-600" : "text-destructive")}>
+                                             {newPassword && newPassword === confirmPassword ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                                            <span>Passwords match</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <Button type="submit" disabled={loading || !isPasswordValid}>
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Update Password
                                 </Button>
@@ -203,4 +222,3 @@ export function ManagerSettingsView() {
         </ScrollArea>
     );
 }
-
