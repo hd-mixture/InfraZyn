@@ -243,7 +243,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 placeholder="e.g., 50000"
                                 {...field}
                                 value={field.value ?? ''}
-                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                                onChange={e => {
+                                    const value = e.target.value;
+                                    field.onChange(value === '' ? undefined : Number(value));
+                                }}
                             />
                         </FormControl>
                         <FormMessage />
