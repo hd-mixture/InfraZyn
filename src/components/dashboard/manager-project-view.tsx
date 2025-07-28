@@ -124,7 +124,7 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
             </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col">
+      <CardContent className="flex-grow flex flex-col pb-6">
         <ScrollArea className="flex-grow">
             <div className="pr-4 pb-4">
             {loading ? (
