@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 export type Project = {
@@ -232,106 +233,108 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        {loading ? (
-          <div className="text-center">Loading projects...</div>
-        ) : filteredProjects.length === 0 ? (
-          <div className="text-center text-muted-foreground py-10">No projects found.</div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredProjects.map((project) => (
-              <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-12 w-12 border">
-                                <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
-                                <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-lg">{project.projectName}</CardTitle>
-                                <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+        <ScrollArea className="h-[40rem] pr-4">
+            {loading ? (
+            <div className="text-center">Loading projects...</div>
+            ) : filteredProjects.length === 0 ? (
+            <div className="text-center text-muted-foreground py-10">No projects found.</div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredProjects.map((project) => (
+                <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-12 w-12 border">
+                                    <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
+                                    <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                                    <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            <span>Edit</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <span>Delete</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                            <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                        <span className="sr-only">Open menu</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(project)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        <span>Edit</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        <span>Delete</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-4">
+                        <div className="flex justify-between items-center">
+                            <Badge variant="outline" className={statusColor[project.status] || ''}>
+                                {project.status}
+                            </Badge>
+                            <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
+                                {project.priority.toUpperCase()} PRIORITY
+                            </Badge>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
-                     <div className="flex justify-between items-center">
-                         <Badge variant="outline" className={statusColor[project.status] || ''}>
-                            {project.status}
-                         </Badge>
-                         <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
-                            {project.priority.toUpperCase()} PRIORITY
-                         </Badge>
-                    </div>
-                    <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-semibold">Progress</span>
-                            <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm font-semibold">Progress</span>
+                                <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                            </div>
+                            <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} />
                         </div>
-                        <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} />
-                    </div>
-                     <div className="flex items-center">
-                        <div className="flex -space-x-2">
-                           <Avatar className="h-8 w-8 border-2 border-card">
-                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                <AvatarFallback>U1</AvatarFallback>
-                           </Avatar>
-                           <Avatar className="h-8 w-8 border-2 border-card">
-                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                <AvatarFallback>U2</AvatarFallback>
-                           </Avatar>
-                           <Avatar className="h-8 w-8 border-2 border-card">
-                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                <AvatarFallback>U3</AvatarFallback>
-                           </Avatar>
-                           <Avatar className="h-8 w-8 border-2 border-card">
-                               <AvatarFallback>+5</AvatarFallback>
-                           </Avatar>
+                        <div className="flex items-center">
+                            <div className="flex -space-x-2">
+                            <Avatar className="h-8 w-8 border-2 border-card">
+                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                    <AvatarFallback>U1</AvatarFallback>
+                            </Avatar>
+                            <Avatar className="h-8 w-8 border-2 border-card">
+                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                    <AvatarFallback>U2</AvatarFallback>
+                            </Avatar>
+                            <Avatar className="h-8 w-8 border-2 border-card">
+                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                    <AvatarFallback>U3</AvatarFallback>
+                            </Avatar>
+                            <Avatar className="h-8 w-8 border-2 border-card">
+                                <AvatarFallback>+5</AvatarFallback>
+                            </Avatar>
+                            </div>
                         </div>
-                    </div>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
-                     <div>
-                        Due Date: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
-                     </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+                        <div>
+                            Due Date: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                        </div>
+                    </CardFooter>
+                </Card>
+                ))}
+            </div>
+            )}
+        </ScrollArea>
       </CardContent>
     </Card>
 
@@ -364,4 +367,3 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     </>
   );
 }
-
