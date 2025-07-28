@@ -62,7 +62,7 @@ type User = {
 };
 
 type EditProjectFormProps = {
-    project: Omit<Project, 'createdAt'>;
+    project: Omit<Project, 'createdAt'> | null;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 }
@@ -100,13 +100,13 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
   
 
    useEffect(() => {
-    if (managers.length > 0) {
+    if (project && managers.length > 0) {
         const manager = managers.find(m => m.name === project.projectManager);
         form.reset({
             ...project,
             projectManager: manager ? manager.id : '',
             revenue: project.revenue ?? undefined,
-            progress: project.progress ?? undefined,
+            progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
             endDate: project.endDate.toDate(),
             status: project.status as any,
@@ -124,6 +124,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
    }, [status, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!project) return;
     setLoading(true);
     try {
         const projectRef = doc(db, "projects", project.id);
@@ -143,6 +144,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
 
         if (dataToUpdate.revenue === undefined || dataToUpdate.revenue === null || dataToUpdate.revenue === '') {
           dataToUpdate.revenue = null;
+        } else {
+          dataToUpdate.revenue = parseFloat(dataToUpdate.revenue);
         }
 
         await updateDoc(projectRef, dataToUpdate);
@@ -169,6 +172,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         setLoading(false);
     }
   }
+
+  if (!project) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -260,7 +265,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                     onChange={e => {
                                         const value = e.target.value;
                                         if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
-                                          field.onChange(value === '' ? undefined : value);
+                                          field.onChange(value === '' ? undefined : Number(value));
                                         }
                                     }}
                                 />
@@ -403,15 +408,15 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
               <FormField
                 control={form.control}
                 name="progress"
-                render={({ field }) => (
+                render={({ field: { onChange, value } }) => (
                   <FormItem>
-                    <FormLabel>Progress: {field.value ?? 0}%</FormLabel>
+                    <FormLabel>Progress: {value ?? 0}%</FormLabel>
                     <FormControl>
                       <Slider 
-                          defaultValue={[field.value || 0]} 
+                          defaultValue={[value || 0]} 
                           max={100} 
                           step={1}
-                          onValueChange={(value) => field.onChange(value[0])}
+                          onValueChange={(vals) => onChange(vals[0])}
                       />
                     </FormControl>
                     <FormMessage />
@@ -431,5 +436,3 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
-
-    
