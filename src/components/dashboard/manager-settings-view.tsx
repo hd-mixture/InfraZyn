@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Moon, Sun } from 'lucide-react';
+import { Loader2, Moon, Sun } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 const mockLoginHistory = [
     { date: 'Aug 22, 2024', time: '10:30 AM', ip: '192.168.1.101', device: 'Chrome on macOS' },
@@ -21,15 +23,80 @@ const mockLoginHistory = [
 
 export function ManagerSettingsView() {
     const { toast } = useToast();
+    const router = useRouter();
     const [theme, setTheme] = useState(
         typeof window !== 'undefined' ? (localStorage.getItem('theme') || 'light') : 'light'
     );
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handlePasswordChange = () => {
-        toast({
-            title: "Feature Not Available",
-            description: "Password changes are not enabled in this demo.",
-        });
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            toast({
+                variant: "destructive",
+                title: "Passwords do not match.",
+                description: "Please re-enter your new password and confirm it.",
+            });
+            return;
+        }
+        if (newPassword.length < 6) {
+             toast({
+                variant: "destructive",
+                title: "Password is too weak.",
+                description: "Your new password must be at least 6 characters long.",
+            });
+            return;
+        }
+
+        setLoading(true);
+        const auth = getAuth(app);
+        const user = auth.currentUser;
+
+        if (!user || !user.email) {
+            toast({
+                variant: "destructive",
+                title: "Authentication Error",
+                description: "Could not find user information. Please log in again.",
+            });
+            setLoading(false);
+            return;
+        }
+
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+        try {
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPassword);
+            
+            toast({
+                title: "Password Updated Successfully",
+                description: "Please log in again with your new password.",
+            });
+            
+            auth.signOut();
+            localStorage.clear();
+            router.push('/login');
+
+        } catch (error: any) {
+            console.error("Password change error:", error);
+            let description = "An unexpected error occurred. Please try again.";
+            if (error.code === 'auth/wrong-password') {
+                description = "The current password you entered is incorrect.";
+            }
+            toast({
+                variant: "destructive",
+                title: "Password Change Failed",
+                description: description,
+            });
+        } finally {
+            setLoading(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        }
     };
     
     const handleSetTheme = (newTheme: 'light' | 'dark' | 'system') => {
@@ -50,37 +117,46 @@ export function ManagerSettingsView() {
     return (
         <ScrollArea className='h-full pr-4'>
             <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Account Settings</CardTitle>
-                        <CardDescription>Manage your account password and view login history.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <h3 className="font-medium">Change Password</h3>
-                            <div className="space-y-2">
-                                <Label htmlFor="current-password">Current Password</Label>
-                                <Input id="current-password" type="password" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type="password" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type="password" />
-                            </div>
-                            <Button onClick={handlePasswordChange}>Update Password</Button>
-                        </div>
-                        <Separator />
-                        <div className="space-y-4">
-                            <h3 className="font-medium">Login History</h3>
-                             <div className="border rounded-md">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Account Settings</CardTitle>
+                            <CardDescription>Manage your account password.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="current-password">Current Password</Label>
+                                    <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                                </div>
+                                <Button type="submit" disabled={loading}>
+                                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Update Password
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Login History</CardTitle>
+                            <CardDescription>Recent sign-in activity on your account.
+                            <br/><span className="text-xs italic text-muted-foreground/80">(This is sample data. A full implementation requires backend services.)</span>
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="border rounded-md">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Time</TableHead>
+                                            <TableHead>Date & Time</TableHead>
                                             <TableHead>IP Address</TableHead>
                                             <TableHead>Device</TableHead>
                                         </TableRow>
@@ -88,8 +164,10 @@ export function ManagerSettingsView() {
                                     <TableBody>
                                         {mockLoginHistory.map((entry, index) => (
                                             <TableRow key={index}>
-                                                <TableCell>{entry.date}</TableCell>
-                                                <TableCell>{entry.time}</TableCell>
+                                                <TableCell>
+                                                    <div>{entry.date}</div>
+                                                    <div className="text-xs text-muted-foreground">{entry.time}</div>
+                                                </TableCell>
                                                 <TableCell className="font-mono">{entry.ip}</TableCell>
                                                 <TableCell>{entry.device}</TableCell>
                                             </TableRow>
@@ -97,9 +175,9 @@ export function ManagerSettingsView() {
                                     </TableBody>
                                 </Table>
                              </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                  <Card>
                     <CardHeader>
@@ -125,3 +203,4 @@ export function ManagerSettingsView() {
         </ScrollArea>
     );
 }
+
