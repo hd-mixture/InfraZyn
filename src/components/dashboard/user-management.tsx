@@ -45,20 +45,19 @@ import { format } from 'date-fns';
 const userSchema = z.object({
   name: z.string().min(1, 'User name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['admin', 'manager', 'developer', 'qa']),
+  role: z.enum(['manager', 'developer', 'qa']),
 });
 
 type User = {
     id: string;
     name: string;
     email: string;
-    role: 'admin' | 'manager' | 'developer' | 'qa';
+    role: 'manager' | 'developer' | 'qa';
     createdAt: Timestamp;
     status: 'Active' | 'Inactive';
 };
 
 const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-    "admin": "destructive",
     "manager": "default",
     "developer": "secondary",
     "qa": "outline"
@@ -170,7 +169,6 @@ function CreateUserForm() {
                                 <SelectItem value="developer">Developer</SelectItem>
                                 <SelectItem value="manager">Manager</SelectItem>
                                 <SelectItem value="qa">QA</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
