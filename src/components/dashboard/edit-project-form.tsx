@@ -47,7 +47,7 @@ const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
   projectManager: z.string().min(1, 'Please select a project manager.'),
-  revenue: z.union([z.string(), z.number()]).optional(),
+  revenue: z.any().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
@@ -437,5 +437,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
+
+    
 
     
