@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -15,17 +15,22 @@ export function DashboardHeader() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
 
-  const pageTitle = useMemo(() => {
-        if(view === 'users') return 'User Management';
+  const pageInfo = useMemo(() => {
+        if(view === 'users') {
+            return { title: 'User Management', icon: <Users className="h-7 w-7" /> };
+        }
         // Can be extended for other views like /projects, /tasks etc.
-        return 'Dashboard'
+        return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
     }, [view]);
 
   return (
     <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
             {isMobile && <SidebarTrigger className="-ml-2" />}
-            <h1 className="text-2xl font-bold">{pageTitle}</h1>
+            <div className="flex items-center gap-3">
+              {pageInfo.icon}
+              <h1 className="text-2xl font-bold">{pageInfo.title}</h1>
+            </div>
         </div>
         <div className="flex items-center gap-4">
             <div className="relative md:w-[200px] lg:w-[336px]">
