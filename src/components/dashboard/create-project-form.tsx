@@ -179,7 +179,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
         </DialogHeader>
         <ScrollArea className="max-h-[70vh]">
             <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
                 <FormField
                 control={form.control}
                 name="projectName"
