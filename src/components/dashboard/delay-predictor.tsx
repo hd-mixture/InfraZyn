@@ -142,14 +142,14 @@ export function DelayPredictor() {
                   <FormControl>
                     <div className="relative">
                         <Textarea
-                            className="resize-none bg-transparent p-2"
+                            className="resize-none bg-transparent p-2 pl-3"
                             rows={5}
                             {...field}
                             onKeyDown={handleKeyDown}
                         />
                         {showSuggestion && (
                            <div className={cn(
-                                "absolute top-0 left-0 w-full h-full p-2 py-3 -z-10 text-muted-foreground text-sm pointer-events-none",
+                                "absolute top-0 left-0 w-full h-full p-2 py-3 pl-3 -z-10 text-muted-foreground text-sm pointer-events-none",
                                 isExiting ? 'animate-slide-out-down-fade' : 'animate-slide-in-up-fade'
                             )}>
                                 {suggestion}
