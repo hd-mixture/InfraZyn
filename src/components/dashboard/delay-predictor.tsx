@@ -137,7 +137,6 @@ export function DelayPredictor() {
                   <FormControl>
                     <div className="relative">
                         <Textarea
-                            placeholder="Describe the task here..."
                             className="resize-none bg-transparent"
                             rows={5}
                             {...field}
@@ -221,5 +220,3 @@ export function DelayPredictor() {
     </Dialog>
   );
 }
-
-    
