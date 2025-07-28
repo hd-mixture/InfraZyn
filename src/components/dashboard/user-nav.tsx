@@ -25,13 +25,14 @@ export function UserNav() {
   const updateUserData = useCallback(() => {
     const role = localStorage.getItem('userRole');
     const name = localStorage.getItem('userName');
+    const email = localStorage.getItem('userEmail');
     const userAvatar = localStorage.getItem('userAvatar');
 
     setAvatar(userAvatar);
 
     if (role === 'manager' && name) {
         setUserName(name);
-        setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
+        setUserEmail(email || `${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
         setUserRole('manager');
         setProfileLink('/manager-dashboard?view=profile');
         setSettingsLink('/manager-dashboard?view=settings');
@@ -61,6 +62,7 @@ export function UserNav() {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userAvatar');
+        localStorage.removeItem('userEmail');
         updateUserData();
     }
   }

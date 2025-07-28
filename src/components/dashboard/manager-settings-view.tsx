@@ -49,8 +49,9 @@ export function ManagerSettingsView() {
 
         setLoading(true);
         const user = auth.currentUser;
+        const userEmail = localStorage.getItem('userEmail');
 
-        if (!user || !user.email) {
+        if (!user || !userEmail) {
             toast({
                 variant: "destructive",
                 title: "Authentication Error",
@@ -60,7 +61,7 @@ export function ManagerSettingsView() {
             return;
         }
 
-        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        const credential = EmailAuthProvider.credential(userEmail, currentPassword);
 
         try {
             await reauthenticateWithCredential(user, credential);

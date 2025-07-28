@@ -46,6 +46,7 @@ export default function LoginPage() {
         localStorage.setItem('userRole', 'manager');
         const user = querySnapshot.docs[0].data();
         localStorage.setItem('userName', user.name);
+        localStorage.setItem('userEmail', user.email);
         router.push('/manager-dashboard');
         toast({ title: "Manager login successful!" });
       } else {
