@@ -109,6 +109,8 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
         return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
   }, [projects, searchQuery]);
@@ -124,82 +126,82 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
             </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col p-0">
-        <ScrollArea className="flex-grow">
-            <div className="pr-1 pb-4">
-            {loading ? (
-            <div className="text-center">Loading projects...</div>
-            ) : filteredProjects.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10">You have not been assigned to any projects yet.</div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project) => (
-                <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-12 w-12 border">
-                                    <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
-                                    <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <CardTitle className="text-lg">{project.projectName}</CardTitle>
-                                    <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+        <CardContent className="flex-grow p-4">
+            <ScrollArea className="h-[calc(100vh-22rem)]">
+                <div className="pr-4">
+                    {loading ? (
+                    <div className="text-center">Loading projects...</div>
+                    ) : filteredProjects.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-10">You have not been assigned to any projects yet.</div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredProjects.map((project) => (
+                        <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
+                            <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-12 w-12 border">
+                                            <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
+                                            <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                                            <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                        <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <Button variant="ghost" asChild size="icon" className="h-8 w-8">
+                                            <Link href={`/manager-dashboard?view=tasks&projectId=${project.id}`}>
+                                            <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                             <div className="flex items-center gap-1">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                <Button variant="ghost" asChild size="icon" className="h-8 w-8">
-                                    <Link href={`/manager-dashboard?view=tasks&projectId=${project.id}`}>
-                                    <Eye className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                             </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                         <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-                            {project.description || 'No description provided.'}
-                        </p>
-                        <Badge variant="outline" className={statusColor[project.status] || ''}>
-                            {project.status}
-                        </Badge>
-                        
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm font-semibold">Progress</span>
-                                <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
-                            </div>
-                            <Progress 
-                                value={project.progress || 0}
-                                indicatorClassName={progressColor[project.status]}
-                                className={cn(project.status === 'In Progress' && 'animated-progress')}
-                            />
-                        </div>
-                       
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
-                        <div>
-                            Due: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
-                        </div>
-                    </CardFooter>
-                </Card>
-                ))}
-            </div>
-            )}
-            </div>
-        </ScrollArea>
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+                                    {project.description || 'No description provided.'}
+                                </p>
+                                <Badge variant="outline" className={statusColor[project.status] || ''}>
+                                    {project.status}
+                                </Badge>
+                                
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm font-semibold">Progress</span>
+                                        <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                                    </div>
+                                    <Progress 
+                                        value={project.progress || 0}
+                                        indicatorClassName={progressColor[project.status]}
+                                        className={cn(project.status === 'In Progress' && 'animated-progress')}
+                                    />
+                                </div>
+                            
+                            </CardContent>
+                            <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+                                <div>
+                                    Due: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                                </div>
+                            </CardFooter>
+                        </Card>
+                        ))}
+                    </div>
+                    )}
+                </div>
+            </ScrollArea>
       </CardContent>
     </Card>
   );
