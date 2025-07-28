@@ -4,16 +4,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye } from "lucide-react";
+import { MoreHorizontal, Eye, Star } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp, where, doc, updateDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 
 export type Project = {
@@ -28,6 +30,7 @@ export type Project = {
     progress?: number;
     logoUrl?: string;
     createdAt: Timestamp;
+    pinned?: boolean;
 }
 
 const statusColor: { [key: string]: string } = {
@@ -56,6 +59,7 @@ type ManagerProjectViewProps = {
 export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectViewProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!managerName) {
@@ -82,13 +86,31 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
 
     return () => unsubscribe();
   }, [managerName]);
+  
+  const handlePinProject = async (projectId: string, pinned: boolean) => {
+    try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, { pinned });
+    } catch(e) {
+        console.error("Error pinning project: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem pinning the project.",
+        });
+    }
+  };
 
 
   const filteredProjects = useMemo(() => {
     const lowercasedQuery = searchQuery.toLowerCase();
     return projects
     .filter(project => project.projectName.toLowerCase().includes(lowercasedQuery))
-    .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    .sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return b.createdAt.toMillis() - a.createdAt.toMillis();
+    });
   }, [projects, searchQuery]);
 
 
@@ -124,11 +146,25 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
                                     <CardDescription className="text-xs">{project.projectManager}</CardDescription>
                                 </div>
                             </div>
-                             <Button variant="ghost" asChild size="icon" className="h-8 w-8">
-                                <Link href={`/manager-dashboard?view=tasks&projectId=${project.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                            </Button>
+                             <div className="flex items-center gap-1">
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <Button variant="ghost" asChild size="icon" className="h-8 w-8">
+                                    <Link href={`/manager-dashboard?view=tasks&projectId=${project.id}`}>
+                                    <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="flex-grow space-y-4">
