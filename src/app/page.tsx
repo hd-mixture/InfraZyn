@@ -14,6 +14,7 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { TimeLogView } from "@/components/dashboard/time-log-view";
+import { ResourceManagementView } from "@/components/dashboard/resource-management-view";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -31,7 +32,7 @@ function DashboardContent() {
       case 'time-log':
         return <TimeLogView />;
       case 'resource-mgmt':
-        return <ComingSoon />;
+        return <ResourceManagementView />;
       default:
         return (
           <>
