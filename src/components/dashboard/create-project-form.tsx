@@ -119,6 +119,13 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             endDate: Timestamp.fromDate(values.endDate),
             createdAt: Timestamp.now()
         });
+
+        await addDoc(collection(db, "activities"), {
+            type: 'new_project',
+            description: `New project "${projectData.projectName}" was created.`,
+            timestamp: Timestamp.now()
+        });
+
         toast({
             title: "Project Created!",
             description: "The new project has been successfully created.",
@@ -405,5 +412,3 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
-
-    

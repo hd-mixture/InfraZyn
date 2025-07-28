@@ -6,20 +6,20 @@ import { useEffect, useState } from "react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query, orderBy, limit, Timestamp } from "firebase/firestore"
 import { formatDistanceToNow } from 'date-fns'
-import { PlusCircle, Edit } from "lucide-react"
+import { PlusCircle, Edit, Trash2 } from "lucide-react"
 import { ScrollArea } from "../ui/scroll-area"
 
 type Activity = {
     id: string;
-    type: 'new_project' | 'status_update';
-    projectName: string;
+    type: 'new_project' | 'project_update' | 'delete_project';
     description: string;
     timestamp: Timestamp;
 }
 
 const iconMap = {
     'new_project': <PlusCircle className="h-5 w-5 text-green-500" />,
-    'status_update': <Edit className="h-5 w-5 text-blue-500" />
+    'project_update': <Edit className="h-5 w-5 text-blue-500" />,
+    'delete_project': <Trash2 className="h-5 w-5 text-destructive" />
 }
 
 export function RecentActivity() {
@@ -27,23 +27,21 @@ export function RecentActivity() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const projectsQuery = query(collection(db, "projects"), orderBy("createdAt", "desc"), limit(15));
+        const activitiesQuery = query(collection(db, "activities"), orderBy("timestamp", "desc"), limit(15));
 
-        const unsubscribe = onSnapshot(projectsQuery, (querySnapshot) => {
+        const unsubscribe = onSnapshot(activitiesQuery, (querySnapshot) => {
             const fetchedActivities: Activity[] = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 fetchedActivities.push({
                     id: doc.id,
-                    type: 'new_project',
-                    projectName: data.projectName,
-                    description: `New project "${data.projectName}" was created.`,
-                    timestamp: data.createdAt
-                });
+                    ...data
+                } as Activity);
             });
-            // This is a simplified version. A real app would likely have a separate 'activities' collection.
-            // For now, we'll just show the newest projects.
             setActivities(fetchedActivities);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching activities: ", error);
             setLoading(false);
         });
 

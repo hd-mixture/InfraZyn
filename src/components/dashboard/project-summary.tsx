@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, Edit, Star, Folders } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { EditProjectForm } from "./edit-project-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
@@ -72,7 +72,7 @@ const progressColor: { [key: string]: string } = {
 
 const ALL_FILTER = 'all';
 
-function ProjectCard({ project, onEdit, onDelete, onPin }: { project: Project, onEdit: (project: Project) => void, onDelete: (id: string) => void, onPin: (id: string, pinned: boolean) => void }) {
+function ProjectCard({ project, onEdit, onDelete, onPin }: { project: Project, onEdit: (project: Project) => void, onDelete: (project: Project) => void, onPin: (id: string, pinned: boolean) => void }) {
     return (
         <Card className="shadow-sm hover:shadow-md transition-shadow flex flex-col">
             <CardHeader className="flex flex-row items-start justify-between">
@@ -104,7 +104,7 @@ function ProjectCard({ project, onEdit, onDelete, onPin }: { project: Project, o
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onDelete(project.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => onDelete(project)} className="text-destructive">
                                  <Trash2 className="mr-2 h-4 w-4" />
                                 <span>Delete</span>
                             </DropdownMenuItem>
@@ -166,7 +166,7 @@ export function ProjectSummary() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const { toast } = useToast();
   
   const [filterProject, setFilterProject] = useState(ALL_FILTER);
@@ -200,9 +200,14 @@ export function ProjectSummary() {
   };
 
   const handleDelete = async () => {
-    if(!deletingProjectId) return;
+    if(!deletingProject) return;
     try {
-        await deleteDoc(doc(db, "projects", deletingProjectId));
+        await addDoc(collection(db, "activities"), {
+            type: 'delete_project',
+            description: `Project "${deletingProject.projectName}" was deleted.`,
+            timestamp: Timestamp.now()
+        });
+        await deleteDoc(doc(db, "projects", deletingProject.id));
         toast({
             title: "Project Deleted!",
             description: "The project has been successfully deleted.",
@@ -216,12 +221,12 @@ export function ProjectSummary() {
         });
     } finally {
         setIsDeleteDialogOpen(false);
-        setDeletingProjectId(null);
+        setDeletingProject(null);
     }
   }
 
-  const openDeleteDialog = (projectId: string) => {
-    setDeletingProjectId(projectId);
+  const openDeleteDialog = (project: Project) => {
+    setDeletingProject(project);
     setIsDeleteDialogOpen(true);
   }
 
@@ -335,7 +340,7 @@ export function ProjectSummary() {
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingProjectId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeletingProject(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                 Delete
             </AlertDialogAction>

@@ -39,7 +39,7 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, Timestamp, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import type { Project } from './project-summary';
 
 const formSchema = z.object({
@@ -144,6 +144,13 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         };
 
         await updateDoc(projectRef, dataToUpdate);
+
+        await addDoc(collection(db, "activities"), {
+            type: 'project_update',
+            description: `Project "${values.projectName}" was updated.`,
+            timestamp: Timestamp.now()
+        });
+        
         toast({
             title: "Project Updated!",
             description: "The project has been successfully updated.",
@@ -244,8 +251,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 {...field}
                                 value={field.value ?? ''}
                                 onChange={e => {
-                                    const value = e.target.valueAsNumber;
-                                    field.onChange(isNaN(value) ? undefined : value);
+                                    const value = e.target.value;
+                                    field.onChange(value === '' ? undefined : Number(value));
                                 }}
                             />
                         </FormControl>
