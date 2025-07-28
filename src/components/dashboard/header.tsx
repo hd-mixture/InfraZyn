@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, Bell, LayoutDashboard, Users } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -23,11 +23,20 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
   const [showSearchInput, setShowSearchInput] = useState(false);
 
   const pageInfo = useMemo(() => {
-        if(view === 'users') {
-            return { title: 'User Management', icon: <Users className="h-7 w-7" /> };
+        switch (view) {
+            case 'projects':
+                return { title: 'Projects', icon: <Folders className="h-7 w-7" /> };
+            case 'tasks':
+                return { title: 'Tasks', icon: <ListChecks className="h-7 w-7" /> };
+            case 'time-log':
+                return { title: 'Time Log', icon: <Timer className="h-7 w-7" /> };
+            case 'resource-mgmt':
+                return { title: 'Resource Management', icon: <ClipboardList className="h-7 w-7" /> };
+            case 'users':
+                return { title: 'User Management', icon: <Users className="h-7 w-7" /> };
+            default:
+                return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
         }
-        // Can be extended for other views like /projects, /tasks etc.
-        return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
     }, [view]);
     
   const toggleSearch = () => setShowSearchInput(prev => !prev);
