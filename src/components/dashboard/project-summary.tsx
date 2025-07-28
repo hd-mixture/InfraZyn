@@ -46,19 +46,38 @@ export type Project = {
 }
 
 const statusColor: { [key: string]: string } = {
+    "Completed": "border-green-500 text-green-500",
+    "In Progress": "border-blue-500 text-blue-500",
+    "On Hold": "border-gray-500 text-gray-500",
+    "Delayed": "border-red-500 text-red-500",
+    "At risk": "border-yellow-500 text-yellow-500",
+    "Not Started": "border-gray-400 text-gray-400"
+}
+
+const priorityColor: { [key: string]: { badge: string; progress: string } } = {
+    'High': {
+        badge: "border-red-200 bg-red-50 text-red-600",
+        progress: "bg-red-500"
+    },
+    'Medium': {
+        badge: "border-yellow-200 bg-yellow-50 text-yellow-600",
+        progress: "bg-yellow-500"
+    },
+    'Low': {
+        badge: "border-green-200 bg-green-50 text-green-600",
+        progress: "bg-green-500"
+    }
+}
+
+const progressColor: { [key: string]: string } = {
     "Completed": "bg-green-500",
     "In Progress": "bg-blue-500",
-    "On Hold": "bg-gray-500",
     "Delayed": "bg-red-500",
-    "At risk": "text-yellow-500 border-yellow-500",
+    "At risk": "bg-yellow-500",
+    "On Hold": "bg-gray-500",
     "Not Started": "bg-gray-200"
 }
 
-const priorityColor = {
-    'High': 'bg-red-500',
-    'Medium': 'bg-yellow-500',
-    'Low': 'bg-green-500'
-}
 
 const ALL_FILTER = 'all';
 
@@ -170,90 +189,105 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>An overview of your current projects.</CardDescription>
-        </div>
-        <div className="flex gap-2">
-            <Select value={filterManager} onValueChange={setFilterManager}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Project manager" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value={ALL_FILTER}>All Managers</SelectItem>
-                     {managers.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value={ALL_FILTER}>All Statuses</SelectItem>
-                    {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-            </Select>
+    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <CardTitle>Project Summary</CardTitle>
+                <CardDescription>An overview of your current projects.</CardDescription>
+            </div>
+            <div className="flex gap-2 mt-4 sm:mt-0">
+                <Select value={filterManager} onValueChange={setFilterManager}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="All Managers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={ALL_FILTER}>All Managers</SelectItem>
+                         {managers.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                        <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={ALL_FILTER}>All Statuses</SelectItem>
+                        {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {loading ? (
           <div className="text-center">Loading projects...</div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="text-center text-muted-foreground py-10">No projects found.</div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredProjects.map((project) => (
-              <Card key={project.id} className="flex flex-col">
+              <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={project.logoUrl || 'https://placehold.co/40x40.png'} data-ai-hint="logo company" alt={project.projectName} />
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
                                 <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-base">{project.projectName}</CardTitle>
+                                <CardTitle className="text-lg">{project.projectName}</CardTitle>
                                 <CardDescription className="text-xs">{project.projectManager}</CardDescription>
                             </div>
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(project)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Edit</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                    {project.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
-                                    <span>{project.pinned ? 'Unpin' : 'Pin'}</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive">
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    <span>Delete</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                <Pin className={`h-4 w-4 ${project.pinned ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        <span>Edit</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                        {project.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
+                                        <span>{project.pinned ? 'Unpin' : 'Pin'}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                         <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                    <p className="text-muted-foreground text-sm mb-4">{project.description}</p>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold">Progress</span>
-                        <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                <CardContent className="flex-grow space-y-4">
+                    <div className="flex gap-2">
+                         <Badge variant="outline" className={statusColor[project.status] || ''}>
+                            {project.status}
+                         </Badge>
+                         <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
+                            {project.priority} Priority
+                         </Badge>
                     </div>
-                    <Progress value={project.progress || 0} indicatorClassName={statusColor[project.status]} />
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-semibold">Progress</span>
+                            <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                        </div>
+                        <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} />
+                    </div>
                 </CardContent>
-                <CardFooter className="flex justify-between items-center text-sm">
-                     <Badge variant="outline" className={statusColor[project.status] || ''}>
-                        {project.status}
-                     </Badge>
-                     <div className="text-muted-foreground">
+                <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+                     <div>
                         Due: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
                      </div>
                 </CardFooter>
