@@ -52,6 +52,7 @@ export function DelayPredictor() {
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState<PredictTaskDelayOutput | null>(null);
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -66,12 +67,16 @@ export function DelayPredictor() {
   const suggestion = exampleTasks[currentExampleIndex];
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !showSuggestion) return;
     const interval = setInterval(() => {
-        setCurrentExampleIndex(prevIndex => (prevIndex + 1) % exampleTasks.length);
+        setIsExiting(true);
+        setTimeout(() => {
+            setCurrentExampleIndex(prevIndex => (prevIndex + 1) % exampleTasks.length);
+            setIsExiting(false);
+        }, 500); // Should match animation duration
     }, 4000);
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, showSuggestion]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -143,7 +148,10 @@ export function DelayPredictor() {
                             onKeyDown={handleKeyDown}
                         />
                         {showSuggestion && (
-                           <div className="absolute top-0 left-0 w-full h-full p-2 py-3 -z-10 text-muted-foreground text-sm pointer-events-none">
+                           <div className={cn(
+                                "absolute top-0 left-0 w-full h-full p-2 py-3 -z-10 text-muted-foreground text-sm pointer-events-none",
+                                isExiting ? 'animate-slide-out-down-fade' : 'animate-slide-in-up-fade'
+                            )}>
                                 {suggestion}
                                 <span className="ml-2 px-1.5 py-0.5 text-xs rounded-md border bg-muted">TAB</span>
                            </div>

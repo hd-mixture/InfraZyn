@@ -117,6 +117,13 @@ body {
         );
         animation: progress-animation 2s infinite linear;
     }
+
+    .animate-slide-in-up-fade {
+        animation: slideInUpFade 0.5s ease-out forwards;
+    }
+    .animate-slide-out-down-fade {
+        animation: slideOutDownFade 0.5s ease-in forwards;
+    }
 }
 
 @keyframes progress-animation {
@@ -128,4 +135,24 @@ body {
     }
 }
 
-    
+@keyframes slideInUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutDownFade {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
