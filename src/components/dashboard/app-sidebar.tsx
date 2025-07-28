@@ -44,7 +44,7 @@ export function AppSidebar() {
             </CreateProjectForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(null) && pathname === '/'} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
+                <SidebarMenuButton asChild isActive={isActive(null)} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
                   <Link href="/">
                     <LayoutDashboard />
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
@@ -52,33 +52,35 @@ export function AppSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
-                <Folders />
-                <span className="group-data-[collapsible=icon]:hidden">Projects</span>
+                <SidebarMenuButton asChild isActive={isActive('projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
+                 <Link href="/?view=projects">
+                    <Folders />
+                    <span className="group-data-[collapsible=icon]:hidden">Projects</span>
+                 </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
-                <ListChecks />
-                <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
+                <SidebarMenuButton asChild isActive={isActive('tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/?view=tasks">
+                    <ListChecks />
+                    <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
+                  </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/dashboard-link')} tooltip="Dashboard Link" className="group-data-[collapsible=icon]:justify-center">
-                <Package />
-                <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
+                <SidebarMenuButton asChild isActive={isActive('time-log')} tooltip="Time Log" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/?view=time-log">
+                    <Timer />
+                    <span className="group-data-[collapsible=icon]:hidden">Time log</span>
+                  </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/time-log')} tooltip="Time Log" className="group-data-[collapsible=icon]:justify-center">
-                <Timer />
-                <span className="group-data-[collapsible=icon]:hidden">Time log</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton href="#" isActive={pathname.startsWith('/resource-mgmt')} tooltip="Resource Mgmt" className="group-data-[collapsible=icon]:justify-center">
-                <ClipboardList />
-                <span className="group-data-[collapsible=icon]:hidden">Resource mgnt</span>
+                <SidebarMenuButton asChild isActive={isActive('resource-mgmt')} tooltip="Resource Mgmt" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/?view=resource-mgmt">
+                    <ClipboardList />
+                    <span className="group-data-[collapsible=icon]:hidden">Resource mgnt</span>
+                  </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
