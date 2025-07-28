@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, Timestamp, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,6 +41,8 @@ import { Loader2, UserPlus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { format } from 'date-fns';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 
 const userSchema = z.object({
   name: z.string().min(1, 'User name is required.'),
@@ -85,23 +87,35 @@ function CreateUserForm({ userRole }: CreateUserFormProps) {
     async function onSubmit(values: z.infer<typeof userSchema>) {
         setLoading(true);
         try {
-            await addDoc(collection(db, "users"), {
-                ...values,
+            // This is NOT secure for a production app. 
+            // User creation should be handled by a backend function with admin privileges.
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, 'DTXH2025');
+            const user = userCredential.user;
+
+            await setDoc(doc(db, "users", user.uid), {
+                name: values.name,
+                email: values.email,
+                role: values.role,
                 createdAt: Timestamp.now(),
                 status: 'Active'
             });
+
             toast({
                 title: "User Created!",
                 description: "The new user has been added successfully.",
             });
             setOpen(false);
             form.reset();
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error adding user: ", e);
+            let description = "There was a problem creating the user.";
+            if (e.code === 'auth/email-already-in-use') {
+                description = "This email address is already in use by another account."
+            }
             toast({
                 variant: "destructive",
                 title: "Uh oh! Something went wrong.",
-                description: "There was a problem creating the user.",
+                description: description,
             });
         } finally {
             setLoading(false);
@@ -310,5 +324,3 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         </Card>
     )
 }
-
-    

@@ -25,53 +25,55 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    // Admin Login
-    if (email === 'admin@devtexhhub.com' && password === 'HD@Mixture08') {
-      localStorage.setItem('userRole', 'admin');
-      router.push('/');
-      toast({ title: "Admin login successful!" });
-      setLoading(false);
-      return;
-    }
-
-    // Manager Login
     try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", email), where("role", "==", "manager"));
-      const querySnapshot = await getDocs(q);
+        if (email === 'admin@devtexhhub.com' && password === 'HD@Mixture08') {
+            // Special case for admin login
+            await signInWithEmailAndPassword(auth, email, password);
+            localStorage.setItem('userRole', 'admin');
+            router.push('/');
+            toast({ title: "Admin login successful!" });
 
-      if (!querySnapshot.empty) {
-        await signInWithEmailAndPassword(auth, email, password);
+        } else {
+            // Logic for other roles (manager)
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("email", "==", email), where("role", "==", "manager"));
+            const querySnapshot = await getDocs(q);
 
-        localStorage.setItem('userRole', 'manager');
-        const user = querySnapshot.docs[0].data();
-        localStorage.setItem('userName', user.name);
-        localStorage.setItem('userEmail', user.email);
-        router.push('/manager-dashboard');
-        toast({ title: "Manager login successful!" });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Invalid Credentials",
-          description: "Please check your email and password.",
-        });
-      }
+            if (!querySnapshot.empty) {
+                const user = querySnapshot.docs[0].data();
+                
+                await signInWithEmailAndPassword(auth, email, password);
+
+                localStorage.setItem('userRole', 'manager');
+                localStorage.setItem('userName', user.name);
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userAvatar', user.avatar || '');
+                router.push('/manager-dashboard');
+                toast({ title: "Manager login successful!" });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Login Failed",
+                    description: "No manager account found with this email.",
+                });
+            }
+        }
     } catch (error: any) {
-      console.error("Login Error: ", error);
-      let description = "An unexpected error occurred. Please try again.";
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          description = "The password you entered is incorrect. Please try again.";
-      }
-       if (error.code === 'auth/user-not-found') {
-          description = "No user found with this email.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: description,
-      });
+        console.error("Login Error: ", error);
+        let description = "An unexpected error occurred. Please try again.";
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            description = "The password you entered is incorrect. Please try again.";
+        }
+        if (error.code === 'auth/user-not-found') {
+            description = "No user found with this email.";
+        }
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: description,
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
