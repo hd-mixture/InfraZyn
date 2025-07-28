@@ -31,25 +31,60 @@ const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function Overview() {
     const [projectCount, setProjectCount] = useState(0);
+    const [totalRevenue, setTotalRevenue] = useState(0);
+    const [timeSpent, setTimeSpent] = useState(0);
+    const [resourceCount, setResourceCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const q = query(collection(db, "projects"));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            setProjectCount(querySnapshot.size);
-            setLoading(false);
+        const projectsQuery = query(collection(db, "projects"));
+        const usersQuery = query(collection(db, "users"));
+
+        const unsubscribeProjects = onSnapshot(projectsQuery, (querySnapshot) => {
+            let projectNum = 0;
+            let revenue = 0;
+            let hours = 0;
+            querySnapshot.forEach((doc) => {
+                projectNum++;
+                revenue += doc.data().revenue || 5300989 / querySnapshot.size; // Placeholder logic
+                hours += doc.data().hoursLogged || 1022 / querySnapshot.size; // Placeholder logic
+            });
+            setProjectCount(projectNum);
+            setTotalRevenue(revenue);
+            setTimeSpent(Math.round(hours));
         }, (error) => {
-            console.error("Error fetching projects count: ", error);
-            setLoading(false);
+            console.error("Error fetching projects data: ", error);
         });
 
-        return () => unsubscribe();
-    }, []);
+        const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+            setResourceCount(querySnapshot.size);
+        }, (error) => {
+            console.error("Error fetching users count: ", error);
+        });
+
+        const checkLoading = () => {
+             if (projectCount !== 0 && resourceCount !== 0) {
+                setLoading(false);
+            }
+        }
+        // A simple timeout to prevent indefinite loading state on empty data
+        const loadingTimeout = setTimeout(() => setLoading(false), 3000);
+
+
+        checkLoading();
+
+
+        return () => {
+            unsubscribeProjects();
+            unsubscribeUsers();
+            clearTimeout(loadingTimeout);
+        };
+    }, [projectCount, resourceCount]);
 
   const overviewData = [
     {
       title: "Total revenue",
-      value: "₹53,00,989",
+      value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN').format(totalRevenue)}`,
       change: "+12% increase from last month",
       icon: <RupeeIcon className="h-6 w-6 text-muted-foreground" />,
       changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
@@ -63,14 +98,14 @@ export function Overview() {
     },
     {
       title: "Time spent",
-      value: "1022 / 1300 Hrs",
+      value: loading ? "..." : `${timeSpent} / 1300 Hrs`,
       change: "8% increase from last month",
       icon: <Clock className="h-6 w-6 text-muted-foreground" />,
       changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
     },
     {
       title: "Resources",
-      value: "101 / 120",
+      value: loading ? "..." : `${resourceCount} / 120`,
       change: "2% increase from last month",
       icon: <Users className="h-6 w-6 text-muted-foreground" />,
       changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />
