@@ -217,12 +217,18 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         return () => unsubscribe();
     }, []);
     
+    const filteredUsers = userRole === 'manager' 
+        ? users.filter(user => user.role === 'developer' || user.role === 'qa')
+        : users;
+
     return (
         <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                     <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Management'}</CardTitle>
-                    <CardDescription>Add, edit, and manage users.</CardDescription>
+                    <CardDescription>
+                        {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs.'}
+                    </CardDescription>
                 </div>
                 <CreateUserForm userRole={userRole} />
             </CardHeader>
@@ -242,12 +248,12 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">Loading users...</TableCell>
                             </TableRow>
-                        ) : users.length === 0 ? (
+                        ) : filteredUsers.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">No users found. Add one to get started!</TableCell>
                             </TableRow>
                         ) : (
-                            users.map((user) => (
+                            filteredUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
@@ -303,3 +309,5 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         </Card>
     )
 }
+
+    
