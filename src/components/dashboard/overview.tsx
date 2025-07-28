@@ -39,7 +39,13 @@ export function Overview() {
     const [revenueChange, setRevenueChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
     const [timeSpent, setTimeSpent] = useState(0);
     const [resourceCount, setResourceCount] = useState(0);
-    const [projectTarget, setProjectTarget] = useState(100);
+    const [projectTarget, setProjectTarget] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedTarget = localStorage.getItem('projectTarget');
+            return savedTarget ? JSON.parse(savedTarget) : 100;
+        }
+        return 100;
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -122,6 +128,12 @@ export function Overview() {
         };
     }, []);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('projectTarget', JSON.stringify(projectTarget));
+        }
+    }, [projectTarget]);
+
     const getRevenueChangeText = () => {
         if (revenueChange.type === 'first_month') {
             return "First month data";
@@ -198,7 +210,7 @@ export function Overview() {
     if (item.title === "This month's revenue") {
         return <RevenueBreakdown>{children}</RevenueBreakdown>
     }
-    if (item.dialog) {
+    if (item.title === "Projects") {
         return <SetProjectTargetDialog currentTarget={projectTarget} onSetTarget={setProjectTarget}>{children}</SetProjectTargetDialog>
     }
     return <>{children}</>
