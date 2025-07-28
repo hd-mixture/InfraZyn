@@ -43,7 +43,9 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             const fetchedProjects = snapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data(),
-                createdAt: doc.data().createdAt as Timestamp 
+                createdAt: doc.data().createdAt as Timestamp,
+                endDate: doc.data().endDate as Timestamp,
+                startDate: doc.data().startDate as Timestamp,
             } as Project));
             setProjects(fetchedProjects);
 
@@ -102,14 +104,15 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                     </CardContent>
                 </Card>
             ) : (
-                projects.map((project) => (
-                    <Card key={project.id}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map((project) => (
+                    <Card key={project.id} className="flex flex-col">
                         <CardHeader>
                             <CardTitle>{project.projectName}</CardTitle>
                             <CardDescription>Manage the team members for this project.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-wrap gap-6">
+                        <CardContent className="flex-grow">
+                            <div className="flex flex-wrap gap-4">
                                 {projectTeams[project.id]?.map(user => (
                                     <div key={user.id} className="flex flex-col items-center gap-2 text-center w-20">
                                         <Avatar className="w-12 h-12">
@@ -126,7 +129,8 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                             </div>
                         </CardContent>
                     </Card>
-                ))
+                ))}
+                </div>
             )}
         </div>
     );
