@@ -33,6 +33,7 @@ export const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function Overview() {
     const [projectCount, setProjectCount] = useState(0);
+    const [projectChange, setProjectChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
     const [currentMonthRevenue, setCurrentMonthRevenue] = useState(0);
     const [revenueChange, setRevenueChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
     const [timeSpent, setTimeSpent] = useState(0);
@@ -44,7 +45,6 @@ export function Overview() {
         const usersQuery = query(collection(db, "users"));
 
         const unsubscribeProjects = onSnapshot(projectsQuery, (querySnapshot) => {
-            let projectNum = 0;
             let hours = 0;
 
             const now = new Date();
@@ -52,37 +52,54 @@ export function Overview() {
             const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-            let currentMonthTotal = 0;
-            let lastMonthTotal = 0;
+            let currentMonthRevenueTotal = 0;
+            let lastMonthRevenueTotal = 0;
+            let currentMonthProjectCount = 0;
+            let lastMonthProjectCount = 0;
 
             querySnapshot.forEach((doc) => {
-                projectNum++;
                 hours += doc.data().hoursLogged || 0;
                 
                 const projectData = doc.data();
                 const createdAt = (projectData.createdAt as Timestamp).toDate();
                 
                 if(createdAt >= startOfCurrentMonth) {
-                    currentMonthTotal += projectData.revenue || 0;
+                    currentMonthRevenueTotal += projectData.revenue || 0;
+                    currentMonthProjectCount++;
                 } else if (createdAt >= startOfLastMonth && createdAt <= endOfLastMonth) {
-                    lastMonthTotal += projectData.revenue || 0;
+                    lastMonthRevenueTotal += projectData.revenue || 0;
+                    lastMonthProjectCount++;
                 }
             });
 
-            setProjectCount(projectNum);
+            setProjectCount(currentMonthProjectCount);
             setTimeSpent(Math.round(hours));
-            setCurrentMonthRevenue(currentMonthTotal);
+            setCurrentMonthRevenue(currentMonthRevenueTotal);
 
-            if (lastMonthTotal === 0 && currentMonthTotal > 0) {
+            // Revenue Change Calculation
+            if (lastMonthRevenueTotal === 0 && currentMonthRevenueTotal > 0) {
                  setRevenueChange({ percentage: null, type: 'first_month' });
-            } else if (lastMonthTotal > 0) {
-                const percentageChange = ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+            } else if (lastMonthRevenueTotal > 0) {
+                const percentageChange = ((currentMonthRevenueTotal - lastMonthRevenueTotal) / lastMonthRevenueTotal) * 100;
                 setRevenueChange({
                     percentage: Math.abs(percentageChange),
                     type: percentageChange >= 0 ? 'increase' : 'decrease'
                 });
             } else {
-                 setRevenueChange({ percentage: 0, type: 'increase' }); // No change or no data
+                 setRevenueChange({ percentage: 0, type: 'increase' });
+            }
+
+            // Project Change Calculation
+            if (lastMonthProjectCount === 0 && currentMonthProjectCount > 0) {
+                setProjectChange({ percentage: null, type: 'first_month' });
+            } else if (lastMonthProjectCount > 0) {
+                const percentageChange = ((currentMonthProjectCount - lastMonthProjectCount) / lastMonthProjectCount) * 100;
+                setProjectChange({
+                    percentage: Math.abs(percentageChange),
+                    type: percentageChange >= 0 ? 'increase' : 'decrease'
+                });
+            } else {
+                setProjectChange({ percentage: 0, type: 'increase' });
             }
 
         }, (error) => {
@@ -113,6 +130,16 @@ export function Overview() {
         return `${revenueChange.percentage.toFixed(1)}% ${revenueChange.type} from last month`;
     }
 
+    const getProjectChangeText = () => {
+        if (projectChange.type === 'first_month') {
+            return "First month data";
+        }
+        if (projectChange.percentage === null) {
+            return "No data for comparison";
+        }
+        return `${projectChange.percentage.toFixed(1)}% ${projectChange.type} from last month`;
+    }
+
   const overviewData = [
     {
       title: "This month's revenue",
@@ -125,9 +152,9 @@ export function Overview() {
     {
       title: "Projects",
       value: loading ? "..." : `${projectCount} / 100`,
-      change: "10% decrease from last month",
+      change: loading ? "" : getProjectChangeText(),
       icon: <Briefcase className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: <TrendingDown className="h-4 w-4 text-red-500" />
+      changeIcon: projectChange.type === 'increase' ? <TrendingUp className="h-4 w-4 text-green-500" /> : projectChange.type === 'decrease' ? <TrendingDown className="h-4 w-4 text-red-500" /> : null
     },
     {
       title: "Time spent",
