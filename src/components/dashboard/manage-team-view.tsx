@@ -42,50 +42,48 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             setLoading(false);
             return;
         }
-
+    
         setLoading(true);
-
+    
         const projectsQuery = query(
-            collection(db, "projects"), 
-            where("projectManager", "==", managerName),
-            orderBy("createdAt", "desc")
+            collection(db, "projects"),
+            where("projectManager", "==", managerName)
         );
-        const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
-            const fetchedProjects = snapshot.docs.map(doc => ({ 
-                id: doc.id, 
+    
+        const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
+            const fetchedProjects = projectSnapshot.docs.map(doc => ({
+                id: doc.id,
                 ...doc.data(),
                 createdAt: doc.data().createdAt as Timestamp,
                 endDate: doc.data().endDate as Timestamp,
                 startDate: doc.data().startDate as Timestamp,
             } as Project));
-            
-            const sortedProjects = fetchedProjects.sort((a, b) => {
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                return b.createdAt.toMillis() - a.createdAt.toMillis();
-            });
-            setProjects(sortedProjects);
-
+    
+            setProjects(fetchedProjects);
+    
             if (fetchedProjects.length > 0) {
                 const projectIds = fetchedProjects.map(p => p.id);
                 const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
+                
                 const unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
                     const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                     setTasks(fetchedTasks);
-                    setLoading(false);
-                }, () => setLoading(false));
+                    // Defer loading state change until tasks are also loaded
+                });
+
                 return () => unsubscribeTasks();
             } else {
-                setLoading(false);
+                 setTasks([]);
             }
-        }, () => setLoading(false));
-
-        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
-        const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-            const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-            setUsers(fetchedUsers);
         });
-
+    
+        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
+        const unsubscribeUsers = onSnapshot(usersQuery, (userSnapshot) => {
+            const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            setUsers(fetchedUsers);
+            setLoading(false); // Set loading to false after all data is fetched
+        });
+    
         return () => {
             unsubscribeProjects();
             unsubscribeUsers();
@@ -96,15 +94,6 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
         try {
             const projectRef = doc(db, "projects", projectId);
             await updateDoc(projectRef, { pinned });
-            setProjects(prevProjects => 
-                prevProjects
-                    .map(p => p.id === projectId ? { ...p, pinned } : p)
-                    .sort((a, b) => {
-                        if (a.pinned && !b.pinned) return -1;
-                        if (!a.pinned && b.pinned) return 1;
-                        return b.createdAt.toMillis() - a.createdAt.toMillis();
-                    })
-            );
         } catch(e) {
             console.error("Error pinning project: ", e);
             toast({
@@ -114,6 +103,17 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             });
         }
     };
+
+
+    const sortedProjects = useMemo(() => {
+         return [...projects].sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            if (!a.createdAt) return 1;
+            if (!b.createdAt) return -1;
+            return b.createdAt.toMillis() - a.createdAt.toMillis();
+        });
+    }, [projects]);
 
 
     const projectTeams = useMemo(() => {
@@ -135,7 +135,7 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
 
     return (
         <div className="space-y-6">
-            {projects.length === 0 ? (
+            {sortedProjects.length === 0 ? (
                 <Card>
                     <CardHeader>
                         <CardTitle>No Projects Found</CardTitle>
@@ -146,7 +146,7 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
+                {sortedProjects.map((project) => (
                     <Card key={project.id} className="flex flex-col">
                         <CardHeader>
                             <div className="flex justify-between items-start">
