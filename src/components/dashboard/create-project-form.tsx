@@ -177,9 +177,9 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             Fill in the details below to add a new project.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] pr-6">
+        <ScrollArea className="max-h-[70vh]">
             <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-4">
                 <FormField
                 control={form.control}
                 name="projectName"
