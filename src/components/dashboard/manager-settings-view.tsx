@@ -72,7 +72,7 @@ export function ManagerSettingsView() {
                 description: "Please log in again with your new password.",
             });
             
-            auth.signOut();
+            await auth.signOut();
             localStorage.clear();
             router.push('/login');
 
