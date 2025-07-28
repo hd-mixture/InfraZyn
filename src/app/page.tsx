@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useState } from "react";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -25,6 +26,7 @@ function DashboardContent() {
       case 'projects':
         return <ProjectSummary searchQuery={searchQuery} />;
       case 'tasks':
+        return <TasksKanbanView />;
       case 'time-log':
       case 'resource-mgmt':
         return <ComingSoon />;
