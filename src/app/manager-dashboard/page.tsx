@@ -37,10 +37,12 @@ function ManagerDashboardContent() {
   }
 
   return (
-    <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
+    <div className="flex flex-col h-full">
       <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-       {renderContent()}
-    </main>
+       <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1 overflow-y-auto">
+        {renderContent()}
+      </main>
+    </div>
   )
 }
 

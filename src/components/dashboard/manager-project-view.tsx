@@ -115,7 +115,7 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
 
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col border-none">
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -124,9 +124,9 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
             </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col pb-6">
+      <CardContent className="flex-grow flex flex-col p-0">
         <ScrollArea className="flex-grow">
-            <div className="pr-4 pb-4">
+            <div className="pr-1 pb-4">
             {loading ? (
             <div className="text-center">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
