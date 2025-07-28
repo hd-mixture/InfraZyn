@@ -10,6 +10,7 @@ import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
 import { ManagerProjectView } from "@/components/dashboard/manager-project-view";
 import { ManageTeamView } from "@/components/dashboard/manage-team-view";
+import { ManagerProfileView } from "@/components/dashboard/manager-profile-view";
 
 
 function ManagerDashboardContent() {
@@ -30,6 +31,8 @@ function ManagerDashboardContent() {
         return <TasksKanbanView searchQuery={searchQuery} userRole="manager" managerName={managerName} />;
       case 'manage-team':
         return <ManageTeamView managerName={managerName} />;
+      case 'profile':
+        return <ManagerProfileView managerName={managerName} />;
       case 'projects':
       default:
         return <ManagerProjectView searchQuery={searchQuery} managerName={managerName} />;
@@ -39,7 +42,7 @@ function ManagerDashboardContent() {
   return (
     <div className="flex flex-col h-full p-4 sm:p-6 lg:p-8 gap-6">
       <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-       <main className="space-y-6 bg-background flex-1 overflow-y-auto">
+       <main className="flex-1 overflow-y-auto">
         {renderContent()}
       </main>
     </div>

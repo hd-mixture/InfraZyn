@@ -18,6 +18,7 @@ export function UserNav() {
   const [userName, setUserName] = useState('Admin');
   const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
   const [userRole, setUserRole] = useState('admin');
+  const [profileLink, setProfileLink] = useState('/');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -27,6 +28,9 @@ export function UserNav() {
             setUserName(name);
             setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
             setUserRole('manager');
+            setProfileLink('/manager-dashboard?view=profile');
+        } else {
+            setProfileLink('/'); // Admin profile can be the main dashboard
         }
     }
   }, []);
@@ -59,9 +63,11 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+          <DropdownMenuItem asChild>
+            <Link href={profileLink}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
