@@ -35,11 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Upload, Paperclip, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where, or } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
@@ -50,6 +51,7 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: 'A due date is required.' }),
   status: z.enum(['To Do', 'In Progress', 'Done']),
   priority: z.enum(['Low', 'Medium', 'High']),
+  attachments: z.any().optional(),
 });
 
 type User = {
@@ -70,6 +72,7 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isDueDatePickerOpen, setIsDueDatePickerOpen] = useState(false);
   const { toast } = useToast();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -77,8 +80,12 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
       description: '',
       status: 'To Do',
       priority: 'Medium',
+      attachments: null,
     },
   });
+
+  const attachmentsRef = form.register('attachments');
+  const watchedFiles = form.watch('attachments');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,16 +121,27 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     try {
+        let attachmentUrls: { name: string, url: string }[] = [];
+        if (values.attachments && values.attachments.length > 0) {
+            for (const file of Array.from(values.attachments as FileList)) {
+                const storageRef = ref(storage, `task-attachments/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+                attachmentUrls.push({ name: file.name, url });
+            }
+        }
+
+        const { attachments, ...taskData } = values;
+
         const dataToSave = {
-            ...values,
+            ...taskData,
             dueDate: Timestamp.fromDate(values.dueDate),
-            createdAt: Timestamp.now()
+            createdAt: Timestamp.now(),
+            attachmentUrls,
         };
 
         await addDoc(collection(db, "tasks"), dataToSave);
         
-        // You might want to add an activity log entry here as well
-
         toast({
             title: "Task Created!",
             description: "The new task has been successfully created.",
@@ -161,15 +179,37 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
             Fill in the details below to add a new task.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] px-1 pr-4">
+        <ScrollArea className="max-h-[70vh]">
             <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
+                 <FormField
+                    control={form.control}
+                    name="project"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Project</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a project" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {projects.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <FormField
                 control={form.control}
                 name="taskName"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Task Name</FormLabel>
+                    <FormLabel>Task Title</FormLabel>
                     <FormControl>
                         <Input placeholder="e.g., Implement user login feature" {...field} />
                     </FormControl>
@@ -182,7 +222,7 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                 name="description"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Task Description (Optional)</FormLabel>
+                    <FormLabel>Task Description</FormLabel>
                     <FormControl>
                         <Textarea
                         placeholder="Add a brief description of the task..."
@@ -195,30 +235,48 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                     </FormItem>
                 )}
                 />
+                <FormField
+                    control={form.control}
+                    name="attachments"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Attachments (Optional)</FormLabel>
+                             <FormControl>
+                                <div className="flex items-center gap-2">
+                                    <label
+                                        htmlFor="attachments-upload"
+                                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80 text-sm"
+                                    >
+                                        <Upload className="h-4 w-4" />
+                                        <span>Upload Files</span>
+                                    </label>
+                                    <Input
+                                        id="attachments-upload"
+                                        type="file"
+                                        multiple
+                                        className="hidden"
+                                        {...attachmentsRef}
+                                    />
+                                </div>
+                            </FormControl>
+                             {watchedFiles && Array.from(watchedFiles).length > 0 && (
+                                <div className="space-y-2 mt-2">
+                                    {Array.from(watchedFiles as FileList).map((file, index) => (
+                                         <div key={index} className="text-xs text-muted-foreground flex items-center justify-between p-1.5 bg-muted rounded-md">
+                                             <div className="flex items-center gap-2">
+                                                <Paperclip className="h-3 w-3" />
+                                                <span>{file.name}</span>
+                                             </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <div className="grid grid-cols-2 gap-4">
-                     <FormField
-                        control={form.control}
-                        name="project"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Project</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a project" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                {projects.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
                     <FormField
                     control={form.control}
                     name="assignedTo"
@@ -241,73 +299,6 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                         </FormItem>
                     )}
                     />
-                </div>
-                
-                <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <Popover open={isDueDatePickerOpen} onOpenChange={setIsDueDatePickerOpen}>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={'outline'}
-                                className={cn(
-                                    'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground'
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value, 'PPP')
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={(date) => {
-                                    field.onChange(date);
-                                    setIsDueDatePickerOpen(false);
-                                }}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Status</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="To Do">To Do</SelectItem>
-                                        <SelectItem value="In Progress">In Progress</SelectItem>
-                                        <SelectItem value="Done">Done</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
                     <FormField
                         control={form.control}
                         name="priority"
@@ -331,6 +322,65 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                         )}
                     />
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Due Date</FormLabel>
+                            <Popover open={isDueDatePickerOpen} onOpenChange={setIsDueDatePickerOpen}>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                        'w-full pl-3 text-left font-normal',
+                                        !field.value && 'text-muted-foreground'
+                                    )}
+                                    >
+                                    {field.value ? (
+                                        format(field.value, 'PPP')
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={(date) => {
+                                        field.onChange(date);
+                                        setIsDueDatePickerOpen(false);
+                                    }}
+                                    disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                                    initialFocus
+                                />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <FormControl>
+                                <Input {...field} disabled className="bg-muted/70" />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                
 
                 <DialogFooter className="pt-4">
                 <Button type="submit" disabled={loading}>
@@ -345,3 +395,4 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
+
