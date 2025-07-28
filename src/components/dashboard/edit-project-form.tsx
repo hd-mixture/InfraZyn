@@ -47,7 +47,7 @@ const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
   projectManager: z.string().min(1, 'Please select a project manager.'),
-  revenue: z.any().optional(),
+  revenue: z.union([z.string(), z.number()]).optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
@@ -146,7 +146,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         if (revenueValue === undefined || revenueValue === null || revenueValue === '') {
           dataToUpdate.revenue = null;
         } else {
-          dataToUpdate.revenue = parseFloat(revenueValue);
+          dataToUpdate.revenue = parseFloat(revenueValue as string);
         }
 
         await updateDoc(projectRef, dataToUpdate);
@@ -437,3 +437,5 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
+
+    
