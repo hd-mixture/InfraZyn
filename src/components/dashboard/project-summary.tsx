@@ -160,7 +160,7 @@ function ProjectCard({ project, onEdit, onDelete, onPin }: { project: Project, o
     );
 }
 
-export function ProjectSummary() {
+export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -249,19 +249,24 @@ export function ProjectSummary() {
   const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
 
   const filteredProjects = useMemo(() => {
+    const lowercasedQuery = searchQuery.toLowerCase();
     return projects
     .filter(project => {
+      const searchMatch = searchQuery ? 
+            project.projectName.toLowerCase().includes(lowercasedQuery) || 
+            project.projectManager.toLowerCase().includes(lowercasedQuery) 
+            : true;
       const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
       const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
       const statusMatch = filterStatus === ALL_FILTER || project.status === filterStatus;
-      return projectMatch && managerMatch && statusMatch;
+      return searchMatch && projectMatch && managerMatch && statusMatch;
     })
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
-  }, [projects, filterProject, filterManager, filterStatus]);
+  }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
 
 
   return (

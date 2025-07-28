@@ -9,16 +9,17 @@ import { ProjectSummary } from "@/components/dashboard/project-summary";
 import { OverallProgress } from "@/components/dashboard/overall-progress";
 import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
-      <DashboardHeader />
+      <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       {view === 'users' ? (
         <UserManagement />
       ) : (
@@ -26,7 +27,7 @@ function DashboardContent() {
           <Overview />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-stretch">
             <div className="lg:col-span-5">
-              <ProjectSummary />
+              <ProjectSummary searchQuery={searchQuery} />
             </div>
             <div className="lg:col-span-2 flex flex-col gap-6">
               <OverallProgress />

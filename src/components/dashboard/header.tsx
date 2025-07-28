@@ -11,7 +11,12 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function DashboardHeader() {
+type DashboardHeaderProps = {
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+};
+
+export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeaderProps) {
   const { isMobile } = useSidebar();
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
@@ -27,6 +32,10 @@ export function DashboardHeader() {
     
   const toggleSearch = () => setShowSearchInput(prev => !prev);
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }
+
   return (
     <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -41,8 +50,10 @@ export function DashboardHeader() {
                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Search..."
+                    placeholder="Search projects..."
                     className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
                     onBlur={isMobile ? toggleSearch : undefined}
                 />
             </div>
