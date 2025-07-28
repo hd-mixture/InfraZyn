@@ -46,6 +46,12 @@ export type Project = {
     createdAt: Timestamp;
 }
 
+type User = {
+    id: string;
+    name: string;
+    avatar?: string;
+};
+
 const statusColor: { [key: string]: string } = {
     "Completed": "text-green-500 border-green-500",
     "In Progress": "text-blue-500 border-blue-500",
@@ -73,6 +79,7 @@ type ProjectTableViewProps = {
 
 export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableViewProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
@@ -100,7 +107,19 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    const usersQuery = query(collection(db, "users"));
+    const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+        const usersData: User[] = [];
+        querySnapshot.forEach((doc) => {
+            usersData.push({ id: doc.id, ...doc.data() as Omit<User, 'id'> });
+        });
+        setUsers(usersData);
+    });
+
+    return () => {
+        unsubscribe();
+        unsubscribeUsers();
+    };
   }, []);
 
   const handleDelete = async () => {
@@ -171,7 +190,11 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
         return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
   }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
-
+  
+  const getManagerAvatar = (managerName: string) => {
+    const manager = users.find(u => u.name === managerName);
+    return manager?.avatar;
+  }
 
   return (
     <>
@@ -242,7 +265,13 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                                        </Avatar>
                                        <div>
                                            <div className="font-medium">{project.projectName}</div>
-                                           <div className="text-sm text-muted-foreground">{project.projectManager}</div>
+                                           <div className="flex items-center gap-2">
+                                                <Avatar className="h-5 w-5">
+                                                    <AvatarImage src={getManagerAvatar(project.projectManager)} data-ai-hint="person face" />
+                                                    <AvatarFallback>{project.projectManager.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="text-sm text-muted-foreground">{project.projectManager}</div>
+                                            </div>
                                        </div>
                                    </div>
                                </TableCell>

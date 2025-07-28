@@ -55,6 +55,7 @@ type User = {
     role: 'manager' | 'developer' | 'qa';
     createdAt: Timestamp;
     status: 'Active' | 'Inactive';
+    avatar?: string;
 };
 
 const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -258,7 +259,7 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar>
-                                            <AvatarImage src={`https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
                                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div>
