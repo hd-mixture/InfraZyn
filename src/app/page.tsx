@@ -36,6 +36,7 @@ function DashboardContent() {
         return (
           <>
             <Overview />
+            <ProjectSummary searchQuery={searchQuery} />
             <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
               <OverallProgress />
               <RecentActivity />
