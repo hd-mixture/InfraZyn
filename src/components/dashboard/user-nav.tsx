@@ -19,6 +19,7 @@ export function UserNav() {
   const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
   const [userRole, setUserRole] = useState('admin');
   const [profileLink, setProfileLink] = useState('/');
+  const [settingsLink, setSettingsLink] = useState('/');
   const [avatar, setAvatar] = useState<string | null>(null);
 
   const updateUserData = useCallback(() => {
@@ -33,11 +34,13 @@ export function UserNav() {
         setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
         setUserRole('manager');
         setProfileLink('/manager-dashboard?view=profile');
+        setSettingsLink('/manager-dashboard?view=settings');
     } else {
         setUserName('Admin');
         setUserEmail('admin@devtexhhub.com');
         setUserRole('admin');
         setProfileLink('/');
+        setSettingsLink('/'); // Admin settings page if needed
     }
   }, []);
 
@@ -89,9 +92,11 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <DropdownMenuItem asChild>
+            <Link href={settingsLink}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

@@ -11,6 +11,7 @@ import { useSearchParams } from 'next/navigation'
 import { ManagerProjectView } from "@/components/dashboard/manager-project-view";
 import { ManageTeamView } from "@/components/dashboard/manage-team-view";
 import { ManagerProfileView } from "@/components/dashboard/manager-profile-view";
+import { ManagerSettingsView } from "@/components/dashboard/manager-settings-view";
 
 
 function ManagerDashboardContent() {
@@ -33,6 +34,8 @@ function ManagerDashboardContent() {
         return <ManageTeamView managerName={managerName} />;
       case 'profile':
         return <ManagerProfileView managerName={managerName} />;
+      case 'settings':
+        return <ManagerSettingsView />;
       case 'projects':
       default:
         return <ManagerProjectView searchQuery={searchQuery} managerName={managerName} />;
