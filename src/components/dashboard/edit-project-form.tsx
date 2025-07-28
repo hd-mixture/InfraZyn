@@ -71,6 +71,8 @@ type EditProjectFormProps = {
 export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFormProps) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<User[]>([]);
+  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -268,7 +270,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                         onChange={e => {
                                             const value = e.target.value;
                                             if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
-                                            field.onChange(value);
+                                                field.onChange(value);
                                             }
                                         }}
                                     />
@@ -287,7 +289,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>Start Date</FormLabel>
-                        <Popover>
+                        <Popover open={isStartDatePickerOpen} onOpenChange={setIsStartDatePickerOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -310,7 +312,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                             <Calendar
                                 mode="single"
                                 selected={field.value}
-                                onSelect={field.onChange}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsStartDatePickerOpen(false);
+                                }}
                                 initialFocus
                             />
                             </PopoverContent>
@@ -325,7 +330,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>End Date</FormLabel>
-                        <Popover>
+                        <Popover open={isEndDatePickerOpen} onOpenChange={setIsEndDatePickerOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -348,7 +353,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                             <Calendar
                                 mode="single"
                                 selected={field.value}
-                                onSelect={field.onChange}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsEndDatePickerOpen(false);
+                                }}
                                 initialFocus
                             />
                             </PopoverContent>
@@ -440,7 +448,3 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
-
-    
-
-    

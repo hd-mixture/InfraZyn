@@ -65,6 +65,8 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<User[]>([]);
+  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -312,7 +314,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>Start Date</FormLabel>
-                        <Popover>
+                        <Popover open={isStartDatePickerOpen} onOpenChange={setIsStartDatePickerOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -335,7 +337,10 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                             <Calendar
                                 mode="single"
                                 selected={field.value}
-                                onSelect={field.onChange}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsStartDatePickerOpen(false);
+                                }}
                                 initialFocus
                             />
                             </PopoverContent>
@@ -350,7 +355,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>End Date</FormLabel>
-                        <Popover>
+                        <Popover open={isEndDatePickerOpen} onOpenChange={setIsEndDatePickerOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -373,7 +378,10 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                             <Calendar
                                 mode="single"
                                 selected={field.value}
-                                onSelect={field.onChange}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsEndDatePickerOpen(false);
+                                }}
                                 initialFocus
                             />
                             </PopoverContent>
@@ -445,6 +453,3 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
-
-    
-    
