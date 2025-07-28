@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { RupeeIcon } from './overview';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -238,7 +239,12 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                         <FormItem>
                         <FormLabel>Project Revenue (Optional)</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="e.g., 50000" {...field} />
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <RupeeIcon className="h-4 w-4 text-muted-foreground" />
+                                </span>
+                                <Input type="number" placeholder="50000" className="pl-8" {...field} />
+                            </div>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -419,3 +425,5 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
+
+    

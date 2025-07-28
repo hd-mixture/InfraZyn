@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type ReactNode, useEffect } from 'react';
@@ -41,6 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import type { Project } from './project-summary';
+import { RupeeIcon } from './overview';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -245,16 +247,22 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                         <FormItem>
                         <FormLabel>Project Revenue (Optional)</FormLabel>
                         <FormControl>
-                            <Input
-                                type="number"
-                                placeholder="e.g., 50000"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={e => {
-                                    const value = e.target.value;
-                                    field.onChange(value === '' ? undefined : Number(value));
-                                }}
-                            />
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <RupeeIcon className="h-4 w-4 text-muted-foreground" />
+                                </span>
+                                <Input
+                                    type="number"
+                                    placeholder="50000"
+                                    className="pl-8"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        field.onChange(value === '' ? undefined : Number(value));
+                                    }}
+                                />
+                            </div>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -421,3 +429,5 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
+
+    
