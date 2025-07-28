@@ -8,8 +8,8 @@ import { Overview } from "@/components/dashboard/overview";
 import { ProjectSummary, Project } from "@/components/dashboard/project-summary";
 import { OverallProgress } from "@/components/dashboard/overall-progress";
 import { UserManagement } from "@/components/dashboard/user-management";
-import { useSearchParams } from 'next/navigation'
-import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect } from "react";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { TimeLogView } from "@/components/dashboard/time-log-view";
@@ -78,6 +78,21 @@ function DashboardContent() {
 
 
 export default function DashboardPage() {
+    const router = useRouter();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+        const role = localStorage.getItem('userRole');
+        if (role !== 'admin') {
+            router.push('/login');
+        }
+    }, [router]);
+
+    if (!isClient) {
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    }
+
   return (
     <SidebarProvider>
       <AppSidebar />
