@@ -142,7 +142,7 @@ export function DelayPredictor() {
                   <FormControl>
                     <div className="relative">
                         <Textarea
-                            className="resize-none bg-transparent"
+                            className="resize-none bg-transparent p-2"
                             rows={5}
                             {...field}
                             onKeyDown={handleKeyDown}
