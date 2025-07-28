@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, DocumentData } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,23 +13,33 @@ import type { Task } from './tasks-kanban-view';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import { format } from 'date-fns';
+import { EditProfileForm } from './edit-profile-form';
+
+type UserProfile = {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    bio?: string;
+    avatar?: string;
+    createdAt: {
+        seconds: number;
+        nanoseconds: number;
+    };
+}
 
 type ManagerProfileViewProps = {
     managerName: string | null;
 };
 
 export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
-    const [managerEmail, setManagerEmail] = useState('');
+    const [manager, setManager] = useState<UserProfile | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [team, setTeam] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (managerName) {
-            setManagerEmail(`${managerName.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
-        }
-    }, [managerName]);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     useEffect(() => {
         if (!managerName) {
@@ -38,6 +48,17 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
         }
 
         setLoading(true);
+
+        // Fetch manager details
+        const userQuery = query(collection(db, "users"), where("name", "==", managerName), where("role", "==", "manager"));
+        const unsubscribeUser = onSnapshot(userQuery, (snapshot) => {
+            if (!snapshot.empty) {
+                const managerData = snapshot.docs[0].data() as UserProfile;
+                managerData.id = snapshot.docs[0].id;
+                setManager(managerData);
+            }
+        });
+
         const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
         const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
             const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
@@ -63,7 +84,10 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
             }
         });
 
-        return () => unsubscribeProjects();
+        return () => {
+            unsubscribeUser();
+            unsubscribeProjects();
+        };
     }, [managerName]);
 
 
@@ -80,42 +104,52 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
         return <div>Loading profile...</div>;
     }
 
+    if (!manager) {
+        return <div>Manager not found.</div>
+    }
+
+    const joiningDate = manager.createdAt ? new Date(manager.createdAt.seconds * 1000) : null;
+
+
     return (
+        <>
         <ScrollArea className="h-full">
             <div className="space-y-6 pb-6 pr-4">
                 <Card>
                     <CardHeader className="flex flex-col md:flex-row gap-6 items-start">
                         <div className="relative group">
                             <Avatar className="w-24 h-24 border-4 border-background">
-                                <AvatarImage src={`https://placehold.co/96x96.png?text=${managerName?.charAt(0)}`} data-ai-hint="person face" />
-                                <AvatarFallback>{managerName?.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={manager.avatar || `https://placehold.co/96x96.png?text=${manager.name.charAt(0)}`} data-ai-hint="person face" />
+                                <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <Button size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setIsEditDialogOpen(true)}>
                                 <Camera className="h-4 w-4" />
                             </Button>
                         </div>
                         <div className="flex-1">
-                            <CardTitle className="text-3xl">{managerName}</CardTitle>
+                            <CardTitle className="text-3xl">{manager.name}</CardTitle>
                             <CardDescription className="text-lg">Project Manager</CardDescription>
                             <p className="text-muted-foreground mt-2">
-                                Dedicated and experienced Project Manager with a passion for building great products and leading effective teams.
+                                {manager.bio || 'Dedicated and experienced Project Manager with a passion for building great products and leading effective teams.'}
                             </p>
                         </div>
-                        <Button variant="outline">Edit Profile</Button>
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>Edit Profile</Button>
                     </CardHeader>
                     <CardContent className="border-t pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                             <div className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-muted-foreground" />
-                                <span>{managerEmail}</span>
+                                <span>{manager.email}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <Phone className="w-5 h-5 text-muted-foreground" />
-                                <span>+91 98765 43210</span>
+                                <span>{manager.phone || 'Not provided'}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <Calendar className="w-5 h-5 text-muted-foreground" />
-                                <span>Joined on: Jan 15, 2020</span>
+                                <span>
+                                    Joined on: {joiningDate ? format(joiningDate, 'dd MMM yyyy') : 'N/A'}
+                                </span>
                             </div>
                         </div>
                     </CardContent>
@@ -187,5 +221,14 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
                 </Card>
             </div>
         </ScrollArea>
+        {isEditDialogOpen && (
+            <EditProfileForm 
+                user={manager}
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+            />
+        )}
+        </>
     );
 }
+
