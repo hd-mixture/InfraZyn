@@ -28,6 +28,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+
 
 export type Project = {
     id: string;
@@ -90,6 +92,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const { toast } = useToast();
   
+  const [filterProject, setFilterProject] = useState(ALL_FILTER);
   const [filterManager, setFilterManager] = useState(ALL_FILTER);
   const [filterStatus, setFilterStatus] = useState(ALL_FILTER);
 
@@ -163,7 +166,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         });
     }
   };
-
+  const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
   const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
 
@@ -175,16 +178,17 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
             project.projectName.toLowerCase().includes(lowercasedQuery) || 
             project.projectManager.toLowerCase().includes(lowercasedQuery) 
             : true;
+      const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
       const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
       const statusMatch = filterStatus === ALL_FILTER || project.status === filterStatus;
-      return searchMatch && managerMatch && statusMatch;
+      return searchMatch && projectMatch && managerMatch && statusMatch;
     })
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
-  }, [projects, filterManager, filterStatus, searchQuery]);
+  }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
 
 
   return (
@@ -197,6 +201,15 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                 <CardDescription>An overview of your current projects.</CardDescription>
             </div>
             <div className="flex gap-2 mt-4 sm:mt-0">
+                 <Select value={filterProject} onValueChange={setFilterProject}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                        <SelectValue placeholder="All Projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={ALL_FILTER}>All Projects</SelectItem>
+                        {projectNames.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
                 <Select value={filterManager} onValueChange={setFilterManager}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="All Managers" />
@@ -240,9 +253,18 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                             </div>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                            </Button>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                            <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Pin</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -255,10 +277,6 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                                         <Edit className="mr-2 h-4 w-4" />
                                         <span>Edit</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                        <Star className="mr-2 h-4 w-4" />
-                                        <span>{project.pinned ? 'Un-star' : 'Star'}</span>
-                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                          <Trash2 className="mr-2 h-4 w-4" />
@@ -270,7 +288,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
-                    <div className="flex gap-2">
+                     <div className="flex justify-between items-center">
                          <Badge variant="outline" className={statusColor[project.status] || ''}>
                             {project.status}
                          </Badge>
@@ -284,6 +302,25 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                             <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
                         </div>
                         <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} />
+                    </div>
+                     <div className="flex items-center">
+                        <div className="flex -space-x-2">
+                           <Avatar className="h-8 w-8 border-2 border-card">
+                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                <AvatarFallback>U1</AvatarFallback>
+                           </Avatar>
+                           <Avatar className="h-8 w-8 border-2 border-card">
+                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                <AvatarFallback>U2</AvatarFallback>
+                           </Avatar>
+                           <Avatar className="h-8 w-8 border-2 border-card">
+                                <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
+                                <AvatarFallback>U3</AvatarFallback>
+                           </Avatar>
+                           <Avatar className="h-8 w-8 border-2 border-card">
+                               <AvatarFallback>+5</AvatarFallback>
+                           </Avatar>
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
@@ -327,4 +364,3 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     </>
   );
 }
-
