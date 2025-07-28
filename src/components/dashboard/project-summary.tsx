@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 
 export type Project = {
@@ -200,7 +201,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
             </div>
             <div className="flex gap-2 items-center flex-wrap">
                  <Select value={filterProject} onValueChange={setFilterProject}>
-                    <SelectTrigger className="w-full sm:w-auto">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="All Projects" />
                     </SelectTrigger>
                     <SelectContent>
@@ -209,7 +210,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
                     </SelectContent>
                 </Select>
                 <Select value={filterManager} onValueChange={setFilterManager}>
-                    <SelectTrigger className="w-full sm:w-auto">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="All Managers" />
                     </SelectTrigger>
                     <SelectContent>
@@ -218,7 +219,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
                     </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full sm:w-auto">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
@@ -300,7 +301,11 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
                                 <span className="text-sm font-semibold">Progress</span>
                                 <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
                             </div>
-                            <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} />
+                            <Progress 
+                                value={project.progress || 0}
+                                indicatorClassName={progressColor[project.status]}
+                                className={cn(project.status === 'In Progress' && 'animated-progress')}
+                            />
                         </div>
                         <div className="flex items-center">
                             <div className="flex -space-x-2">

@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { cn } from "@/lib/utils";
 
 
 export type Project = {
@@ -252,7 +253,11 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                                </TableCell>
                                <TableCell>
                                    <div className="flex items-center gap-2">
-                                       <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} className="w-24" />
+                                       <Progress
+                                            value={project.progress || 0}
+                                            indicatorClassName={progressColor[project.status]}
+                                            className={cn("w-24", project.status === 'In Progress' && 'animated-progress')}
+                                        />
                                        <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
                                    </div>
                                </TableCell>
