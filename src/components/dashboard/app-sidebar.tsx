@@ -26,7 +26,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <div className="relative h-8 w-8 flex items-center justify-center group/logo-toggle cursor-pointer" onClick={toggleSidebar}>
-                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200", state === 'expanded' ? 'group-hover/logo-toggle:opacity-0' : 'group-hover/logo-toggle:opacity-0')} />
+                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200 opacity-100 group-hover/logo-toggle:opacity-0")} />
                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
                     {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
                 </div>
@@ -37,9 +37,9 @@ export function AppSidebar() {
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
             <CreateProjectForm>
-              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center">
+              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:self-center group-data-[collapsible=icon]:hover:w-full group-data-[collapsible=icon]:hover:rounded-lg transition-all duration-300 ease-in-out">
                   <PlusCircle />
-                  <span className="group-data-[collapsible=icon]:hidden">Create new project</span>
+                  <span className="group-data-[collapsible=icon]:hidden group-data-[collapsible=icon]:hover:inline">Create new project</span>
               </Button>
             </CreateProjectForm>
             <SidebarMenu>
