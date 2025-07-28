@@ -1,7 +1,7 @@
 
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight, Folders } from "lucide-react";
+import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight, Folders, UsersRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
@@ -70,6 +70,14 @@ export function ManagerSidebar() {
                   <Link href="/manager-dashboard?view=users">
                     <Users />
                     <span className="group-data-[collapsible=icon]:hidden">Team</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                 <SidebarMenuButton asChild isActive={isActive('manage-team')} tooltip="Manage Team" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/manager-dashboard?view=manage-team">
+                    <UsersRound />
+                    <span className="group-data-[collapsible=icon]:hidden">Manage Team</span>
                   </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>

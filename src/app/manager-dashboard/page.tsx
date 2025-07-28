@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
 import { ManagerProjectView } from "@/components/dashboard/manager-project-view";
+import { ManageTeamView } from "@/components/dashboard/manage-team-view";
 
 
 function ManagerDashboardContent() {
@@ -27,6 +28,8 @@ function ManagerDashboardContent() {
         return <UserManagement userRole="manager" />;
       case 'tasks':
         return <TasksKanbanView searchQuery={searchQuery} userRole="manager" managerName={managerName} />;
+      case 'manage-team':
+        return <ManageTeamView managerName={managerName} />;
       case 'projects':
       default:
         return <ManagerProjectView searchQuery={searchQuery} managerName={managerName} />;
