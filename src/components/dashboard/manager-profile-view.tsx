@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, DocumentData } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, DocumentData, doc, updateDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Mail, Phone, Calendar, Briefcase, ListChecks, Users, Link as LinkIcon } from 'lucide-react';
+import { Camera, Mail, Phone, Calendar, Briefcase, ListChecks, Users, Link as LinkIcon, Loader2 } from 'lucide-react';
 import type { Project } from './project-summary';
 import type { Task } from './tasks-kanban-view';
 import Link from 'next/link';
@@ -15,6 +15,9 @@ import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { format } from 'date-fns';
 import { EditProfileForm } from './edit-profile-form';
+import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
+
 
 type UserProfile = {
     id: string;
@@ -39,7 +42,10 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [team, setTeam] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!managerName) {
@@ -49,15 +55,22 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
 
         setLoading(true);
 
-        // Fetch manager details
-        const userQuery = query(collection(db, "users"), where("name", "==", managerName), where("role", "==", "manager"));
-        const unsubscribeUser = onSnapshot(userQuery, (snapshot) => {
-            if (!snapshot.empty) {
-                const managerData = snapshot.docs[0].data() as UserProfile;
-                managerData.id = snapshot.docs[0].id;
-                setManager(managerData);
-            }
-        });
+        const handleStorageChange = () => {
+            const userQuery = query(collection(db, "users"), where("name", "==", managerName), where("role", "==", "manager"));
+             onSnapshot(userQuery, (snapshot) => {
+                if (!snapshot.empty) {
+                    const managerData = snapshot.docs[0].data() as UserProfile;
+                    managerData.id = snapshot.docs[0].id;
+                    setManager(managerData);
+                }
+            });
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        // Initial fetch
+        handleStorageChange();
+
 
         const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
         const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
@@ -85,7 +98,7 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
         });
 
         return () => {
-            unsubscribeUser();
+            window.removeEventListener('storage', handleStorageChange);
             unsubscribeProjects();
         };
     }, [managerName]);
@@ -99,6 +112,51 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
         "At risk": "border-yellow-500 text-yellow-500",
         "Not Started": "border-gray-400 text-gray-400"
     }
+    
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !manager) return;
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+            
+            const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            formData
+            );
+            
+            const avatarUrl = response.data.secure_url;
+            
+            const userRef = doc(db, 'users', manager.id);
+            await updateDoc(userRef, { avatar: avatarUrl });
+
+            localStorage.setItem('userAvatar', avatarUrl);
+            window.dispatchEvent(new Event('storage'));
+
+            toast({
+                title: 'Profile Picture Updated!',
+                description: 'Your new avatar has been saved.',
+            });
+
+        } catch (e) {
+            console.error('Error uploading image: ', e);
+            toast({
+                variant: 'destructive',
+                title: 'Upload Failed',
+                description: 'There was a problem uploading your image.',
+            });
+        } finally {
+            setUploading(false);
+        }
+    };
+
 
     if (loading) {
         return <div>Loading profile...</div>;
@@ -113,18 +171,29 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
 
     return (
         <>
+        <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/*"
+        />
         <ScrollArea className="h-full">
             <div className="space-y-6 pb-6 pr-4">
                 <Card>
                     <CardHeader className="flex flex-col md:flex-row gap-6 items-start">
-                        <div className="relative group">
+                        <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                             <Avatar className="w-24 h-24 border-4 border-background">
                                 <AvatarImage src={manager.avatar || `https://placehold.co/96x96.png?text=${manager.name.charAt(0)}`} data-ai-hint="person face" />
                                 <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <Button size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setIsEditDialogOpen(true)}>
-                                <Camera className="h-4 w-4" />
-                            </Button>
+                            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                               {uploading ? (
+                                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                               ) : (
+                                    <Camera className="h-8 w-8 text-white" />
+                               )}
+                            </div>
                         </div>
                         <div className="flex-1">
                             <CardTitle className="text-3xl">{manager.name}</CardTitle>
@@ -231,4 +300,3 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
         </>
     );
 }
-
