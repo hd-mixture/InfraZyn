@@ -141,7 +141,7 @@ function CreateUserForm({ userRole }: CreateUserFormProps) {
             <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
-                Fill in the details to add a new user to the system. The default password is "DTXH2025".
+                Fill in the details to add a new user to the system. The user will be created in Authentication with the default password "DTXH2025".
             </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -240,9 +240,9 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Management'}</CardTitle>
+                    <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Members'}</CardTitle>
                     <CardDescription>
-                        {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs.'}
+                        {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs for your projects.'}
                     </CardDescription>
                 </div>
                 <CreateUserForm userRole={userRole} />
@@ -324,3 +324,5 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         </Card>
     )
 }
+
+    
