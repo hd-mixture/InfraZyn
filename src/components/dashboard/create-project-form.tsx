@@ -45,6 +45,7 @@ const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
   projectManager: z.string().min(1, 'Please select a project manager.'),
+  revenue: z.coerce.number().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold']),
@@ -189,32 +190,47 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="projectManager"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Project Manager</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                      <SelectTrigger>
-                          <SelectValue placeholder="Select a manager" />
-                      </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                      {managers.length === 0 ? (
-                        <SelectItem value="no-manager" disabled>No managers found</SelectItem>
-                      ) : (
-                        managers.map(manager => (
-                          <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
-                        ))
-                      )}
-                      </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="projectManager"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Project Manager</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a manager" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {managers.length === 0 ? (
+                            <SelectItem value="no-manager" disabled>No managers found</SelectItem>
+                        ) : (
+                            managers.map(manager => (
+                            <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                            ))
+                        )}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="revenue"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Project Revenue (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g., 50000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+            </div>
             
              <FormField
                 control={form.control}

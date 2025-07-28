@@ -40,6 +40,7 @@ export type Project = {
     priority: 'Low' | 'Medium' | 'High';
     description?: string;
     progress?: number;
+    revenue?: number;
     logoUrl?: string;
     pinned?: boolean;
     createdAt: Timestamp;

@@ -46,6 +46,7 @@ const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
   projectManager: z.string().min(1, 'Please select a project manager.'),
+  revenue: z.coerce.number().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
@@ -98,6 +99,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         projectName: project.projectName,
         description: project.description,
         projectManager: project.projectManager,
+        revenue: project.revenue,
         startDate: project.startDate.toDate(),
         endDate: project.endDate.toDate(),
         status: project.status as any, // Cast because zod enum is strict
@@ -111,6 +113,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         projectName: project.projectName,
         description: project.description,
         projectManager: project.projectManager,
+        revenue: project.revenue,
         startDate: project.startDate.toDate(),
         endDate: project.endDate.toDate(),
         status: project.status as any,
@@ -197,32 +200,47 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="projectManager"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Project Manager</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                      <SelectTrigger>
-                          <SelectValue placeholder="Select a manager" />
-                      </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                      {managers.length === 0 ? (
-                        <SelectItem value="no-manager" disabled>No managers found</SelectItem>
-                      ) : (
-                        managers.map(manager => (
-                          <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
-                        ))
-                      )}
-                      </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="projectManager"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Project Manager</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a manager" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {managers.length === 0 ? (
+                            <SelectItem value="no-manager" disabled>No managers found</SelectItem>
+                        ) : (
+                            managers.map(manager => (
+                            <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                            ))
+                        )}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="revenue"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Project Revenue (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g., 50000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+            </div>
             
             <div className="grid grid-cols-2 gap-4">
                 <FormField
