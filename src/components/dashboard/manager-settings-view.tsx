@@ -32,20 +32,8 @@ export function ManagerSettingsView() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
     
     const isPasswordValid = newPassword.length >= 6 && newPassword === confirmPassword && currentPassword.length > 0;
-
-    useEffect(() => {
-        const errors = [];
-        if (newPassword && newPassword.length < 6) {
-            errors.push("Password must be at least 6 characters long.");
-        }
-        if (confirmPassword && newPassword !== confirmPassword) {
-            errors.push("Passwords do not match.");
-        }
-        setPasswordErrors(errors);
-    }, [newPassword, confirmPassword]);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();

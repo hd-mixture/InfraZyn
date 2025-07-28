@@ -41,10 +41,7 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // NOTE: We are using a default password for initial login.
-        // The manager is expected to change it in the settings.
-        const defaultPassword = "DTXH2025";
-        await signInWithEmailAndPassword(auth, email, password || defaultPassword);
+        await signInWithEmailAndPassword(auth, email, password);
 
         localStorage.setItem('userRole', 'manager');
         const user = querySnapshot.docs[0].data();
