@@ -22,27 +22,31 @@ export function DashboardHeader() {
     }, [view]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        {isMobile && <SidebarTrigger className="-ml-2" />}
-        <h1 className="text-xl font-semibold hidden md:block">{pageTitle}</h1>
-        <div className="relative ml-auto flex-1 md:grow-0">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-          />
+    <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+            {isMobile && <SidebarTrigger className="-ml-2" />}
+            <h1 className="text-2xl font-bold">{pageTitle}</h1>
         </div>
-        <DelayPredictor />
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Toggle notifications</span>
-        </Button>
-        <UserNav />
+        <div className="flex items-center gap-4">
+            <div className="relative md:w-[200px] lg:w-[336px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search..."
+                    className="w-full rounded-lg bg-background pl-8"
+                />
+            </div>
+            <DelayPredictor />
+            <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+            >
+                <Bell className="h-4 w-4" />
+                <span className="sr-only">Toggle notifications</span>
+            </Button>
+            <UserNav />
+        </div>
     </header>
   );
 }

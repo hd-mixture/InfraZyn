@@ -18,6 +18,7 @@ function DashboardContent() {
 
   return (
     <main className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background flex-1">
+      <DashboardHeader />
       {view === 'users' ? (
         <UserManagement />
       ) : (
@@ -45,7 +46,6 @@ export default function DashboardPage() {
       <AppSidebar />
       <SidebarInset>
         <div className="flex flex-col h-screen overflow-y-auto">
-          <DashboardHeader />
           <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
             <DashboardContent />
           </Suspense>
