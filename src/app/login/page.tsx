@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { CodeXml, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -29,6 +30,7 @@ export default function LoginPage() {
       localStorage.setItem('userRole', 'admin');
       router.push('/');
       toast({ title: "Admin login successful!" });
+      setLoading(false);
       return;
     }
 
@@ -39,8 +41,11 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // For now, we're not checking the password for managers.
-        // In a real app, you would use Firebase Auth for secure password handling.
+        // NOTE: We are using a default password for initial login.
+        // The manager is expected to change it in the settings.
+        const defaultPassword = "DTXH2025";
+        await signInWithEmailAndPassword(auth, email, password || defaultPassword);
+
         localStorage.setItem('userRole', 'manager');
         const user = querySnapshot.docs[0].data();
         localStorage.setItem('userName', user.name);
@@ -53,12 +58,19 @@ export default function LoginPage() {
           description: "Please check your email and password.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error: ", error);
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          description = "The password you entered is incorrect. Please try again.";
+      }
+       if (error.code === 'auth/user-not-found') {
+          description = "No user found with this email.";
+      }
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: description,
       });
     } finally {
       setLoading(false);
