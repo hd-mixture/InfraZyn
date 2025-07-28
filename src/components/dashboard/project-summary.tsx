@@ -196,14 +196,14 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     <>
     <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <CardTitle>Project Summary</CardTitle>
                 <CardDescription>An overview of your current projects.</CardDescription>
             </div>
-            <div className="flex gap-2 mt-4 sm:mt-0">
+            <div className="flex gap-2 items-center flex-wrap">
                  <Select value={filterProject} onValueChange={setFilterProject}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
+                    <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder="All Projects" />
                     </SelectTrigger>
                     <SelectContent>
@@ -212,7 +212,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                     </SelectContent>
                 </Select>
                 <Select value={filterManager} onValueChange={setFilterManager}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder="All Managers" />
                     </SelectTrigger>
                     <SelectContent>
@@ -221,7 +221,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                     </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
+                    <SelectTrigger className="w-full sm:w-auto">
                         <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
