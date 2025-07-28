@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Clock, Users, TrendingUp, TrendingDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot, query, Timestamp } from "firebase/firestore";
 import { RevenueBreakdown } from "./revenue-breakdown";
 
 // Custom Rupee Icon
@@ -33,7 +33,8 @@ export const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function Overview() {
     const [projectCount, setProjectCount] = useState(0);
-    const [totalRevenue, setTotalRevenue] = useState(0);
+    const [currentMonthRevenue, setCurrentMonthRevenue] = useState(0);
+    const [revenueChange, setRevenueChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
     const [timeSpent, setTimeSpent] = useState(0);
     const [resourceCount, setResourceCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -44,16 +45,46 @@ export function Overview() {
 
         const unsubscribeProjects = onSnapshot(projectsQuery, (querySnapshot) => {
             let projectNum = 0;
-            let revenue = 0;
             let hours = 0;
+
+            const now = new Date();
+            const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+            let currentMonthTotal = 0;
+            let lastMonthTotal = 0;
+
             querySnapshot.forEach((doc) => {
                 projectNum++;
-                revenue += doc.data().revenue || 0;
                 hours += doc.data().hoursLogged || 0;
+                
+                const projectData = doc.data();
+                const createdAt = (projectData.createdAt as Timestamp).toDate();
+                
+                if(createdAt >= startOfCurrentMonth) {
+                    currentMonthTotal += projectData.revenue || 0;
+                } else if (createdAt >= startOfLastMonth && createdAt <= endOfLastMonth) {
+                    lastMonthTotal += projectData.revenue || 0;
+                }
             });
+
             setProjectCount(projectNum);
-            setTotalRevenue(revenue);
             setTimeSpent(Math.round(hours));
+            setCurrentMonthRevenue(currentMonthTotal);
+
+            if (lastMonthTotal === 0 && currentMonthTotal > 0) {
+                 setRevenueChange({ percentage: null, type: 'first_month' });
+            } else if (lastMonthTotal > 0) {
+                const percentageChange = ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+                setRevenueChange({
+                    percentage: Math.abs(percentageChange),
+                    type: percentageChange >= 0 ? 'increase' : 'decrease'
+                });
+            } else {
+                 setRevenueChange({ percentage: 0, type: 'increase' }); // No change or no data
+            }
+
         }, (error) => {
             console.error("Error fetching projects data: ", error);
         });
@@ -72,13 +103,23 @@ export function Overview() {
         };
     }, []);
 
+    const getRevenueChangeText = () => {
+        if (revenueChange.type === 'first_month') {
+            return "First month data";
+        }
+        if (revenueChange.percentage === null) {
+            return "No data for comparison";
+        }
+        return `${revenueChange.percentage.toFixed(1)}% ${revenueChange.type} from last month`;
+    }
+
   const overviewData = [
     {
-      title: "Total revenue",
-      value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN').format(totalRevenue)}`,
-      change: "+12% increase from last month",
+      title: "This month's revenue",
+      value: loading ? "..." : `₹${new Intl.NumberFormat('en-IN').format(currentMonthRevenue)}`,
+      change: loading ? "" : getRevenueChangeText(),
       icon: <RupeeIcon className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: <TrendingUp className="h-4 w-4 text-green-500" />,
+      changeIcon: revenueChange.type === 'increase' ? <TrendingUp className="h-4 w-4 text-green-500" /> : revenueChange.type === 'decrease' ? <TrendingDown className="h-4 w-4 text-red-500" /> : null,
       clickable: true,
     },
     {
