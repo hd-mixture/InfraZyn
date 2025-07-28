@@ -63,7 +63,11 @@ const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "o
     "qa": "outline"
 }
 
-function CreateUserForm() {
+type CreateUserFormProps = {
+    userRole: 'admin' | 'manager';
+}
+
+function CreateUserForm({ userRole }: CreateUserFormProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -166,8 +170,8 @@ function CreateUserForm() {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                                {userRole === 'admin' && <SelectItem value="manager">Manager</SelectItem>}
                                 <SelectItem value="developer">Developer</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
                                 <SelectItem value="qa">QA</SelectItem>
                             </SelectContent>
                         </Select>
@@ -188,8 +192,11 @@ function CreateUserForm() {
     );
 }
 
+type UserManagementProps = {
+    userRole?: 'admin' | 'manager';
+}
 
-export function UserManagement() {
+export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -214,10 +221,10 @@ export function UserManagement() {
         <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Users</CardTitle>
-                    <CardDescription>Add, edit, and manage users in your organization.</CardDescription>
+                    <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Management'}</CardTitle>
+                    <CardDescription>Add, edit, and manage users.</CardDescription>
                 </div>
-                <CreateUserForm />
+                <CreateUserForm userRole={userRole} />
             </CardHeader>
             <CardContent>
                  <Table>

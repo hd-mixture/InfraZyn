@@ -8,20 +8,28 @@ import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { useRouter } from "next/navigation";
 import { UserManagement } from "@/components/dashboard/user-management";
 import { useSearchParams } from 'next/navigation'
+import { ManagerProjectView } from "@/components/dashboard/manager-project-view";
 
 
 function ManagerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
+  const [managerName, setManagerName] = useState<string | null>(null);
+
+  useEffect(() => {
+    setManagerName(localStorage.getItem('userName'));
+  }, []);
 
   const renderContent = () => {
     switch (view) {
       case 'users':
-        return <UserManagement />;
+        return <UserManagement userRole="manager" />;
       case 'tasks':
+        return <TasksKanbanView searchQuery={searchQuery} userRole="manager" managerName={managerName} />;
+      case 'projects':
       default:
-        return <TasksKanbanView />;
+        return <ManagerProjectView searchQuery={searchQuery} managerName={managerName} />;
     }
   }
 

@@ -1,7 +1,7 @@
 
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight, Folders } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
@@ -14,8 +14,8 @@ export function ManagerSidebar() {
   const currentView = searchParams.get('view');
 
   const isActive = (view: string | null) => {
-    if (view === null) {
-      return currentView === null || currentView === 'tasks';
+    if (!currentView && (view === 'projects' || view === null)) {
+      return true;
     }
     return currentView === view;
   }
@@ -50,7 +50,15 @@ export function ManagerSidebar() {
             </CreateTaskForm>
             <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(null)} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
+                <SidebarMenuButton asChild isActive={isActive('projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/manager-dashboard?view=projects">
+                    <Folders />
+                    <span className="group-data-[collapsible=icon]:hidden">Projects</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
                   <Link href="/manager-dashboard?view=tasks">
                     <ListChecks />
                     <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
@@ -58,7 +66,7 @@ export function ManagerSidebar() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Users" className="group-data-[collapsible=icon]:justify-center">
+                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Team" className="group-data-[collapsible=icon]:justify-center">
                   <Link href="/manager-dashboard?view=users">
                     <Users />
                     <span className="group-data-[collapsible=icon]:hidden">Team</span>

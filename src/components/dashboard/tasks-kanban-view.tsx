@@ -7,24 +7,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { useEffect, useState, useMemo } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { CreateTaskForm } from './create-task-form';
+import { format } from 'date-fns';
 
-// Mock data, this would come from your database
-const mockTasks = [
-    { id: 'task-1', title: 'Design the new login page', project: 'E-commerce Platform', status: 'To Do', priority: 'High', dueDate: '2024-08-15', assignedTo: { name: 'Priya Patel', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-2', title: 'Develop user authentication API', project: 'E-commerce Platform', status: 'In Progress', priority: 'High', dueDate: '2024-08-20', assignedTo: { name: 'Rajesh Kumar', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-3', title: 'Fix bug in payment gateway integration', project: 'Mobile App', status: 'In Progress', priority: 'Medium', dueDate: '2024-08-12', assignedTo: { name: 'Anita Desai', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-4', title: 'Write documentation for the API', project: 'E-commerce Platform', status: 'Done', priority: 'Low', dueDate: '2024-08-10', assignedTo: { name: 'Sanjay Verma', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-5', title: 'Set up staging server', project: 'Internal Dashboard', status: 'To Do', priority: 'Medium', dueDate: '2024-08-18', assignedTo: { name: 'Priya Patel', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-6', title: 'Deploy frontend to Vercel', project: 'Mobile App', status: 'To Do', priority: 'High', dueDate: '2024-08-22', assignedTo: { name: 'Rajesh Kumar', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-7', title: 'Client meeting for feature feedback', project: 'Mobile App', status: 'Done', priority: 'Medium', dueDate: '2024-08-05', assignedTo: { name: 'Anita Desai', avatar: 'https://placehold.co/40x40.png' } },
-    { id: 'task-8', title: 'Refactor user profile component', project: 'E-commerce Platform', status: 'In Progress', priority: 'Low', dueDate: '2024-08-25', assignedTo: { name: 'Sanjay Verma', avatar: 'https://placehold.co/40x40.png' } },
-];
+type Task = {
+    id: string;
+    taskName: string;
+    project: string;
+    status: 'To Do' | 'In Progress' | 'Done';
+    priority: 'High' | 'Medium' | 'Low';
+    dueDate: Timestamp;
+    assignedTo: string;
+};
 
-const columns = [
-    { id: 'todo', title: 'To Do', tasks: mockTasks.filter(t => t.status === 'To Do') },
-    { id: 'inprogress', title: 'In Progress', tasks: mockTasks.filter(t => t.status === 'In Progress') },
-    { id: 'done', title: 'Done', tasks: mockTasks.filter(t => t.status === 'Done') }
-];
+type User = {
+    id: string;
+    name: string;
+    avatar?: string;
+}
+
+type Project = {
+    id: string;
+    projectName: string;
+    projectManager: string;
+}
 
 const priorityIcons = {
     'High': <ArrowUp className="h-4 w-4 text-red-500" />,
@@ -32,28 +41,30 @@ const priorityIcons = {
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />
 };
 
-function TaskCard({ task }: { task: typeof mockTasks[0] }) {
+function TaskCard({ task, assignedUser, projectName }: { task: Task, assignedUser?: User, projectName?: string }) {
     return (
         <Card className="mb-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
-                    <p className="font-semibold text-sm mb-2">{task.title}</p>
+                    <p className="font-semibold text-sm mb-2">{task.taskName}</p>
                     <Button variant="ghost" size="icon" className="h-6 w-6">
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </div>
-                <Badge variant="secondary" className="mb-3">{task.project}</Badge>
+                {projectName && <Badge variant="secondary" className="mb-3">{projectName}</Badge>}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        {priorityIcons[task.priority as keyof typeof priorityIcons]}
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={task.assignedTo.avatar} data-ai-hint="person face" />
-                            <AvatarFallback>{task.assignedTo.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        {priorityIcons[task.priority]}
+                        {assignedUser && (
+                            <Avatar className="h-6 w-6">
+                                <AvatarImage src={assignedUser.avatar || `https://placehold.co/40x40.png?text=${assignedUser.name.charAt(0)}`} data-ai-hint="person face" />
+                                <AvatarFallback>{assignedUser.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        )}
                     </div>
                 </div>
             </CardContent>
@@ -61,14 +72,109 @@ function TaskCard({ task }: { task: typeof mockTasks[0] }) {
     );
 }
 
-export function TasksKanbanView() {
+type TasksKanbanViewProps = {
+    searchQuery?: string;
+    userRole: 'admin' | 'manager';
+    managerName?: string | null;
+}
+
+export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKanbanViewProps) {
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const usersQuery = query(collection(db, "users"));
+        const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
+            const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+            setUsers(fetchedUsers);
+        });
+
+        const projectsQuery = query(collection(db, "projects"));
+        const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
+            const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            setProjects(fetchedProjects);
+        });
+        
+        return () => {
+            unsubscribeUsers();
+            unsubscribeProjects();
+        };
+    }, []);
+    
+    useEffect(() => {
+        if (userRole === 'manager' && !managerName) {
+            setLoading(false);
+            return;
+        };
+
+        const managerProjects = projects.filter(p => p.projectManager === managerName).map(p => p.id);
+        
+        if (userRole === 'manager' && managerProjects.length === 0) {
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
+
+        let tasksQuery;
+        if (userRole === 'manager') {
+            tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjects));
+        } else {
+            tasksQuery = query(collection(db, "tasks"));
+        }
+        
+        setLoading(true);
+        const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            setTasks(fetchedTasks);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching tasks: ", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribeTasks();
+    }, [userRole, managerName, projects]);
+
+    const filteredTasks = useMemo(() => {
+        if (!searchQuery) return tasks;
+        const lowercasedQuery = searchQuery.toLowerCase();
+        return tasks.filter(task => task.taskName.toLowerCase().includes(lowercasedQuery));
+    }, [tasks, searchQuery]);
+
+    const columns = useMemo(() => {
+        const findUser = (userId: string) => users.find(u => u.id === userId);
+        const findProject = (projectId: string) => projects.find(p => p.id === projectId);
+
+        return [
+            { id: 'todo', title: 'To Do', tasks: filteredTasks.filter(t => t.status === 'To Do') },
+            { id: 'inprogress', title: 'In Progress', tasks: filteredTasks.filter(t => t.status === 'In Progress') },
+            { id: 'done', title: 'Done', tasks: filteredTasks.filter(t => t.status === 'Done') }
+        ].map(column => ({
+            ...column,
+            tasks: column.tasks.map(task => ({
+                ...task,
+                assignedUser: findUser(task.assignedTo),
+                projectName: findProject(task.project)?.projectName
+            }))
+        }));
+    }, [filteredTasks, users, projects]);
+
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-full">Loading tasks...</div>
+    }
+
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-end mb-4">
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Task
-                </Button>
+                <CreateTaskForm>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Task
+                    </Button>
+                </CreateTaskForm>
             </div>
             <ScrollArea className="flex-grow">
                 <div className="flex gap-6 pb-4">
@@ -81,9 +187,9 @@ export function TasksKanbanView() {
                                         <Badge variant="secondary">{column.tasks.length}</Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-4 pt-0">
+                                <CardContent className="p-4 pt-0 min-h-[100px]">
                                     {column.tasks.map(task => (
-                                        <TaskCard key={task.id} task={task} />
+                                        <TaskCard key={task.id} task={task} assignedUser={task.assignedUser} projectName={task.projectName} />
                                     ))}
                                 </CardContent>
                             </Card>
