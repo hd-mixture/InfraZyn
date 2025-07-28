@@ -111,17 +111,14 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
 
    useEffect(() => {
     form.reset({
-        projectName: project.projectName,
-        description: project.description,
-        projectManager: project.projectManager,
-        revenue: project.revenue,
+        ...project,
+        revenue: project.revenue ?? undefined,
+        progress: project.progress ?? undefined,
         startDate: project.startDate.toDate(),
         endDate: project.endDate.toDate(),
         status: project.status as any,
-        priority: project.priority,
-        progress: project.progress,
     })
-   }, [project, form]);
+   }, [project, form, isOpen]);
 
    const status = form.watch('status');
    useEffect(() => {
@@ -137,15 +134,15 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     try {
         const projectRef = doc(db, "projects", project.id);
         
-        const dataToUpdate = {
+        const dataToUpdate: any = {
             ...values,
             progress: values.progress === undefined ? null : values.progress,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
         };
 
-        if (dataToUpdate.revenue === undefined) {
-          (dataToUpdate as any).revenue = null;
+        if (dataToUpdate.revenue === undefined || dataToUpdate.revenue === null || dataToUpdate.revenue === '') {
+          dataToUpdate.revenue = null;
         }
 
         await updateDoc(projectRef, dataToUpdate);
@@ -262,11 +259,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                     value={field.value ?? ''}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        const parsed = parseFloat(value);
-                                        if (value === "") {
-                                            field.onChange(undefined);
-                                        } else if (!isNaN(parsed) && /^\d*(\.\d{0,2})?$/.test(value)) {
-                                            field.onChange(parsed);
+                                        if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
+                                          field.onChange(value === '' ? undefined : value);
                                         }
                                     }}
                                 />

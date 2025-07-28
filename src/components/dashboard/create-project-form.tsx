@@ -121,7 +121,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             createdAt: Timestamp.now()
         };
 
-        if (projectData.revenue === undefined) {
+        if (projectData.revenue === undefined || projectData.revenue === null) {
             delete dataToSave.revenue;
         }
 
@@ -250,11 +250,8 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                     value={field.value ?? ''}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        const parsed = parseFloat(value);
-                                        if (value === "") {
-                                            field.onChange(undefined);
-                                        } else if (!isNaN(parsed) && /^\d*(\.\d{0,2})?$/.test(value)) {
-                                            field.onChange(parsed);
+                                        if (value === '' || /^\d*(\.\d{0,2})?$/.test(value)) {
+                                          field.onChange(value === '' ? undefined : value);
                                         }
                                     }}
                                 />
