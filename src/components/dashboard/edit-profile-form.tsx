@@ -101,13 +101,14 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
           localStorage.setItem('userAvatar', avatarUrl);
       }
 
+      // Dispatch a storage event to notify other components of the change
+      window.dispatchEvent(new Event('storage'));
+
       toast({
         title: 'Profile Updated!',
         description: 'Your profile has been successfully updated.',
       });
       onOpenChange(false);
-      //force a reload to show changes in userNav immediately
-      window.location.reload();
 
     } catch (e) {
       console.error('Error updating profile: ', e);

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export function UserNav() {
   const [userName, setUserName] = useState('Admin');
@@ -21,30 +21,44 @@ export function UserNav() {
   const [profileLink, setProfileLink] = useState('/');
   const [avatar, setAvatar] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-        const role = localStorage.getItem('userRole');
-        const name = localStorage.getItem('userName');
-        const userAvatar = localStorage.getItem('userAvatar');
+  const updateUserData = useCallback(() => {
+    const role = localStorage.getItem('userRole');
+    const name = localStorage.getItem('userName');
+    const userAvatar = localStorage.getItem('userAvatar');
 
-        setAvatar(userAvatar);
+    setAvatar(userAvatar);
 
-        if (role === 'manager' && name) {
-            setUserName(name);
-            setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
-            setUserRole('manager');
-            setProfileLink('/manager-dashboard?view=profile');
-        } else {
-            setProfileLink('/'); // Admin profile can be the main dashboard
-        }
+    if (role === 'manager' && name) {
+        setUserName(name);
+        setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
+        setUserRole('manager');
+        setProfileLink('/manager-dashboard?view=profile');
+    } else {
+        setUserName('Admin');
+        setUserEmail('admin@devtexhhub.com');
+        setUserRole('admin');
+        setProfileLink('/');
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        updateUserData();
+
+        window.addEventListener('storage', updateUserData);
+
+        return () => {
+            window.removeEventListener('storage', updateUserData);
+        }
+    }
+  }, [updateUserData]);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
         localStorage.removeItem('userAvatar');
+        updateUserData();
     }
   }
 
