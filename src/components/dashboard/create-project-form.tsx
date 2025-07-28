@@ -113,8 +113,14 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
 
         const { logo, ...projectData } = values;
 
+        const manager = managers.find(m => m.id === projectData.projectManager);
+        if(!manager) {
+            throw new Error('Selected manager not found');
+        }
+
         const dataToSave: any = {
             ...projectData,
+            projectManager: manager.name,
             logoUrl,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
@@ -222,7 +228,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                             <SelectItem value="no-manager" disabled>No managers found</SelectItem>
                         ) : (
                             managers.map(manager => (
-                            <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                            <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
                             ))
                         )}
                         </SelectContent>
@@ -436,3 +442,5 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
+
+    

@@ -72,6 +72,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
   const [managers, setManagers] = useState<User[]>([]);
   const { toast } = useToast();
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+  });
+
   useEffect(() => {
     const fetchManagers = async () => {
         try {
@@ -94,31 +98,21 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     }
   }, [isOpen, toast]);
   
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-        projectName: project.projectName,
-        description: project.description,
-        projectManager: project.projectManager,
-        revenue: project.revenue,
-        startDate: project.startDate.toDate(),
-        endDate: project.endDate.toDate(),
-        status: project.status as any, // Cast because zod enum is strict
-        priority: project.priority,
-        progress: project.progress,
-    },
-  });
 
    useEffect(() => {
-    form.reset({
-        ...project,
-        revenue: project.revenue ?? undefined,
-        progress: project.progress ?? undefined,
-        startDate: project.startDate.toDate(),
-        endDate: project.endDate.toDate(),
-        status: project.status as any,
-    })
-   }, [project, form, isOpen]);
+    if (managers.length > 0) {
+        const manager = managers.find(m => m.name === project.projectManager);
+        form.reset({
+            ...project,
+            projectManager: manager ? manager.id : '',
+            revenue: project.revenue ?? undefined,
+            progress: project.progress ?? undefined,
+            startDate: project.startDate.toDate(),
+            endDate: project.endDate.toDate(),
+            status: project.status as any,
+        });
+    }
+   }, [project, form, isOpen, managers]);
 
    const status = form.watch('status');
    useEffect(() => {
@@ -134,8 +128,14 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     try {
         const projectRef = doc(db, "projects", project.id);
         
+        const manager = managers.find(m => m.id === values.projectManager);
+        if(!manager) {
+            throw new Error('Selected manager not found');
+        }
+
         const dataToUpdate: any = {
             ...values,
+            projectManager: manager.name,
             progress: values.progress === undefined ? null : values.progress,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
@@ -220,7 +220,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Project Manager</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a manager" />
@@ -231,7 +231,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                             <SelectItem value="no-manager" disabled>No managers found</SelectItem>
                         ) : (
                             managers.map(manager => (
-                            <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                            <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
                             ))
                         )}
                         </SelectContent>
@@ -431,3 +431,5 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
+
+    
