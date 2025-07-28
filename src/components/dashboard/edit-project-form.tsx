@@ -126,7 +126,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
    useEffect(() => {
     if (status === 'Completed') {
         form.setValue('progress', 100);
-    } else if (status === 'Not Started') {
+    } else if (status === 'Not Started' || status === 'On Hold') {
         form.setValue('progress', 0);
     }
    }, [status, form]);
@@ -135,11 +135,15 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     setLoading(true);
     try {
         const projectRef = doc(db, "projects", project.id);
-        await updateDoc(projectRef, {
+        
+        const dataToUpdate = {
             ...values,
+            progress: values.progress === undefined ? null : values.progress,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
-        });
+        };
+
+        await updateDoc(projectRef, dataToUpdate);
         toast({
             title: "Project Updated!",
             description: "The project has been successfully updated.",
@@ -375,13 +379,13 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                     )}
                 />
             </div>
-            {status === 'In Progress' && (
+            {(status === 'In Progress' || status === 'Delayed' || status === 'At risk') && (
               <FormField
                 control={form.control}
                 name="progress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Progress: {field.value}%</FormLabel>
+                    <FormLabel>Progress: {field.value ?? 0}%</FormLabel>
                     <FormControl>
                       <Slider 
                           defaultValue={[field.value || 0]} 
