@@ -19,11 +19,16 @@ export function UserNav() {
   const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
   const [userRole, setUserRole] = useState('admin');
   const [profileLink, setProfileLink] = useState('/');
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const role = localStorage.getItem('userRole');
         const name = localStorage.getItem('userName');
+        const userAvatar = localStorage.getItem('userAvatar');
+
+        setAvatar(userAvatar);
+
         if (role === 'manager' && name) {
             setUserName(name);
             setUserEmail(`${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
@@ -39,6 +44,7 @@ export function UserNav() {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userName');
+        localStorage.removeItem('userAvatar');
     }
   }
 
@@ -47,7 +53,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={`https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
+            <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
             <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>

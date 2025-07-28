@@ -97,12 +97,18 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
       if (values.name !== user.name) {
           localStorage.setItem('userName', values.name);
       }
+      if (avatarUrl) {
+          localStorage.setItem('userAvatar', avatarUrl);
+      }
 
       toast({
         title: 'Profile Updated!',
         description: 'Your profile has been successfully updated.',
       });
       onOpenChange(false);
+      //force a reload to show changes in userNav immediately
+      window.location.reload();
+
     } catch (e) {
       console.error('Error updating profile: ', e);
       toast({
