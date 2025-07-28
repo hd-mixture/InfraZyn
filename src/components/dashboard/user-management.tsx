@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +42,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { format } from 'date-fns';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { EditUserForm } from './edit-user-form';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
 
 const userSchema = z.object({
@@ -50,7 +52,7 @@ const userSchema = z.object({
   role: z.enum(['manager', 'developer', 'qa']),
 });
 
-type User = {
+export type User = {
     id: string;
     name: string;
     email: string;
@@ -214,6 +216,11 @@ type UserManagementProps = {
 export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [deletingUser, setDeletingUser] = useState<User | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
@@ -231,98 +238,155 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
 
         return () => unsubscribe();
     }, []);
+
+    const handleEditUser = (user: User) => {
+        setEditingUser(user);
+        setIsEditDialogOpen(true);
+    };
+
+    const openDeleteDialog = (user: User) => {
+        setDeletingUser(user);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteUser = async () => {
+        if (!deletingUser) return;
+        try {
+            await deleteDoc(doc(db, "users", deletingUser.id));
+            toast({
+                title: "User Deleted!",
+                description: `User ${deletingUser.name} has been removed from the database.`,
+            });
+        } catch (e) {
+            console.error("Error deleting user: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem deleting the user.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setDeletingUser(null);
+        }
+    };
     
     const filteredUsers = userRole === 'manager' 
         ? users.filter(user => user.role === 'developer' || user.role === 'qa')
         : users;
 
     return (
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Members'}</CardTitle>
-                    <CardDescription>
-                        {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs for your projects.'}
-                    </CardDescription>
-                </div>
-                <CreateUserForm userRole={userRole} />
-            </CardHeader>
-            <CardContent>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date Added</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
+        <>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Members'}</CardTitle>
+                        <CardDescription>
+                            {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs for your projects.'}
+                        </CardDescription>
+                    </div>
+                    <CreateUserForm userRole={userRole} />
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24">Loading users...</TableCell>
+                            <TableHead>User</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Date Added</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                        ) : filteredUsers.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24">No users found. Add one to get started!</TableCell>
-                            </TableRow>
-                        ) : (
-                            filteredUsers.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar>
-                                            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
-                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <div className="font-medium">{user.name}</div>
-                                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">Loading users...</TableCell>
+                                </TableRow>
+                            ) : filteredUsers.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">No users found. Add one to get started!</TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredUsers.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <div className="font-medium">{user.name}</div>
+                                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={roleVariant[user.role]}>
-                                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'} className={user.status === 'Active' ? "text-green-600" : ""}>
-                                        {user.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy') : 'N/A'}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                <span>Edit</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-destructive">
-                                                 <Trash2 className="mr-2 h-4 w-4" />
-                                                <span>Delete</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={roleVariant[user.role]}>
+                                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'} className={user.status === 'Active' ? "text-green-600" : ""}>
+                                            {user.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy') : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    <span>Edit</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    <span>Delete</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {editingUser && (
+                <EditUserForm 
+                    user={editingUser}
+                    isOpen={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
+                    userRole={userRole}
+                />
+            )}
+            
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the user from the database. Deleting from Authentication requires backend implementation.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletingUser(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                        Delete from Database
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }
-
-    
