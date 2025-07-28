@@ -234,7 +234,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 <SelectItem value="no-manager" disabled>No managers found</SelectItem>
                             ) : (
                                 managers.map(manager => (
-                                <SelectItem key={manager.id} value={manager.id}>
+                                <SelectItem key={manager.id} value={manager.id} className="pl-2">
                                     <div className='flex items-center gap-2'>
                                         <Avatar className="h-6 w-6">
                                             <AvatarImage src={manager.avatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
