@@ -199,7 +199,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <CardTitle>Project Summary</CardTitle>
-                <CardDescription>An overview of your current projects.</CardDescription>
+                <CardDescription className="text-xs">An overview of your current projects.</CardDescription>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
                  <Select value={filterProject} onValueChange={setFilterProject}>
