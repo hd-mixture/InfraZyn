@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp } from "firebase/firestore";
 import { RevenueBreakdown } from "./revenue-breakdown";
+import { SetProjectTargetDialog } from "./set-project-target-dialog";
 
 // Custom Rupee Icon
 export const RupeeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -38,6 +39,7 @@ export function Overview() {
     const [revenueChange, setRevenueChange] = useState<{percentage: number | null, type: 'increase' | 'decrease' | 'first_month'}>({percentage: null, type: 'first_month'});
     const [timeSpent, setTimeSpent] = useState(0);
     const [resourceCount, setResourceCount] = useState(0);
+    const [projectTarget, setProjectTarget] = useState(100);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -151,10 +153,12 @@ export function Overview() {
     },
     {
       title: "Projects",
-      value: loading ? "..." : `${projectCount} / 100`,
+      value: loading ? "..." : `${projectCount} / ${projectTarget}`,
       change: loading ? "" : getProjectChangeText(),
       icon: <Briefcase className="h-6 w-6 text-muted-foreground" />,
-      changeIcon: projectChange.type === 'increase' ? <TrendingUp className="h-4 w-4 text-green-500" /> : projectChange.type === 'decrease' ? <TrendingDown className="h-4 w-4 text-red-500" /> : null
+      changeIcon: projectChange.type === 'increase' ? <TrendingUp className="h-4 w-4 text-green-500" /> : projectChange.type === 'decrease' ? <TrendingDown className="h-4 w-4 text-red-500" /> : null,
+      clickable: true,
+      dialog: <SetProjectTargetDialog currentTarget={projectTarget} onSetTarget={setProjectTarget} />
     },
     {
       title: "Time spent",
@@ -190,18 +194,23 @@ export function Overview() {
         </Card>
   )
 
+  const ClickableWrapper = ({ item, children }: { item: any, children: React.ReactNode }) => {
+    if (item.title === "This month's revenue") {
+        return <RevenueBreakdown>{children}</RevenueBreakdown>
+    }
+    if (item.dialog) {
+        return <SetProjectTargetDialog currentTarget={projectTarget} onSetTarget={setProjectTarget}>{children}</SetProjectTargetDialog>
+    }
+    return <>{children}</>
+  }
+
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {overviewData.map((item, index) => (
-        item.clickable ? (
-            <RevenueBreakdown key={index}>
-                {renderCard(item)}
-            </RevenueBreakdown>
-        ) : (
-            <div key={index}>
-                {renderCard(item)}
-            </div>
-        )
+         <ClickableWrapper key={index} item={item}>
+            {renderCard(item)}
+        </ClickableWrapper>
       ))}
     </div>
   );
