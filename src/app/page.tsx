@@ -14,6 +14,8 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TasksKanbanView } from "@/components/dashboard/tasks-kanban-view";
 import { TimeLogView } from "@/components/dashboard/time-log-view";
 import { ResourceManagementView } from "@/components/dashboard/resource-management-view";
+import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { ProjectTableView } from "@/components/dashboard/project-table-view";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -25,7 +27,7 @@ function DashboardContent() {
       case 'users':
         return <UserManagement />;
       case 'projects':
-        return <ProjectSummary searchQuery={searchQuery} />;
+        return <ProjectTableView searchQuery={searchQuery} />;
       case 'tasks':
         return <TasksKanbanView />;
       case 'time-log':

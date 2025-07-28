@@ -1,7 +1,7 @@
 
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -15,10 +15,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Edit, Pin, PinOff } from "lucide-react";
+import { MoreHorizontal, Trash2, Edit, Folders } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from "firebase/firestore";
@@ -28,6 +27,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Progress } from "../ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+
 
 export type Project = {
     id: string;
@@ -46,23 +47,26 @@ export type Project = {
 }
 
 const statusColor: { [key: string]: string } = {
-    "Completed": "bg-green-500",
-    "In Progress": "bg-blue-500",
-    "On Hold": "bg-gray-500",
-    "Delayed": "bg-red-500",
+    "Completed": "text-green-500 border-green-500",
+    "In Progress": "text-blue-500 border-blue-500",
+    "On Hold": "text-gray-500 border-gray-500",
+    "Delayed": "text-red-500 border-red-500",
     "At risk": "text-yellow-500 border-yellow-500",
-    "Not Started": "bg-gray-200"
+    "Not Started": "text-gray-500 border-gray-500"
 }
 
-const priorityColor = {
-    'High': 'bg-red-500',
-    'Medium': 'bg-yellow-500',
-    'Low': 'bg-green-500'
+const progressColor: { [key: string]: string } = {
+    "Completed": "bg-green-500",
+    "In Progress": "bg-blue-500",
+    "Delayed": "bg-red-500",
+    "At risk": "bg-yellow-500",
+    "On Hold": "bg-gray-500",
+    "Not Started": "bg-gray-200"
 }
 
 const ALL_FILTER = 'all';
 
-export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
+export function ProjectTableView({ searchQuery }: { searchQuery: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -71,6 +75,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const { toast } = useToast();
   
+  const [filterProject, setFilterProject] = useState(ALL_FILTER);
   const [filterManager, setFilterManager] = useState(ALL_FILTER);
   const [filterStatus, setFilterStatus] = useState(ALL_FILTER);
 
@@ -147,6 +152,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
 
   const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
+  const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
 
   const filteredProjects = useMemo(() => {
     const lowercasedQuery = searchQuery.toLowerCase();
@@ -156,29 +162,39 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
             project.projectName.toLowerCase().includes(lowercasedQuery) || 
             project.projectManager.toLowerCase().includes(lowercasedQuery) 
             : true;
+      const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
       const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
       const statusMatch = filterStatus === ALL_FILTER || project.status === filterStatus;
-      return searchMatch && managerMatch && statusMatch;
+      return searchMatch && projectMatch && managerMatch && statusMatch;
     })
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         return b.createdAt.toMillis() - a.createdAt.toMillis();
     });
-  }, [projects, filterManager, filterStatus, searchQuery]);
+  }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
 
 
   return (
     <>
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
+    <Card className="shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
             <CardTitle>Projects</CardTitle>
-            <CardDescription>An overview of your current projects.</CardDescription>
+            <CardDescription>View, manage, and search your projects.</CardDescription>
         </div>
         <div className="flex gap-2">
+            <Select value={filterProject} onValueChange={setFilterProject}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Project" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value={ALL_FILTER}>All Projects</SelectItem>
+                    {projectNames.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
             <Select value={filterManager} onValueChange={setFilterManager}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Project manager" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,7 +203,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                 </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,69 +214,79 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="text-center">Loading projects...</div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <Card key={project.id} className="flex flex-col">
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={project.logoUrl || 'https://placehold.co/40x40.png'} data-ai-hint="logo company" alt={project.projectName} />
-                                <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-base">{project.projectName}</CardTitle>
-                                <CardDescription className="text-xs">{project.projectManager}</CardDescription>
-                            </div>
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(project)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    <span>Edit</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                    {project.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
-                                    <span>{project.pinned ? 'Unpin' : 'Pin'}</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive">
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    <span>Delete</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                    <p className="text-muted-foreground text-sm mb-4">{project.description}</p>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold">Progress</span>
-                        <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
-                    </div>
-                    <Progress value={project.progress || 0} indicatorClassName={statusColor[project.status]} />
-                </CardContent>
-                <CardFooter className="flex justify-between items-center text-sm">
-                     <Badge variant="outline" className={statusColor[project.status] || ''}>
-                        {project.status}
-                     </Badge>
-                     <div className="text-muted-foreground">
-                        Due: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
-                     </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+            {loading ? (
+                <div className="text-center py-10">Loading projects...</div>
+            ) : filteredProjects.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-4 h-[30rem] justify-center">
+                    <Folders className="w-16 h-16" />
+                    <p className="font-semibold text-lg">No projects found</p>
+                    <p className="text-sm">Try adjusting your filters or create a new project to get started.</p>
+                </div>
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[300px]">Project</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Progress</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                       {filteredProjects.map((project) => (
+                           <TableRow key={project.id} className="hover:bg-muted/50">
+                               <TableCell>
+                                   <div className="flex items-center gap-3">
+                                       <Avatar>
+                                            <AvatarImage src={project.logoUrl || 'https://placehold.co/40x40.png'} data-ai-hint="logo company" alt={project.projectName} />
+                                            <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
+                                       </Avatar>
+                                       <div>
+                                           <div className="font-medium">{project.projectName}</div>
+                                           <div className="text-sm text-muted-foreground">{project.projectManager}</div>
+                                       </div>
+                                   </div>
+                               </TableCell>
+                               <TableCell>
+                                 <Badge variant="outline" className={statusColor[project.status] || ''}>
+                                    {project.status}
+                                 </Badge>
+                               </TableCell>
+                               <TableCell>
+                                   <div className="flex items-center gap-2">
+                                       <Progress value={project.progress || 0} indicatorClassName={progressColor[project.status]} className="w-24" />
+                                       <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                                   </div>
+                               </TableCell>
+                               <TableCell>
+                                   {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                               </TableCell>
+                               <TableCell className="text-right">
+                                   <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <span className="sr-only">Open menu</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                <span>Edit</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive">
+                                                 <Trash2 className="mr-2 h-4 w-4" />
+                                                <span>Delete</span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                               </TableCell>
+                           </TableRow>
+                       ))}
+                    </TableBody>
+                </Table>
+            )}
       </CardContent>
     </Card>
 
