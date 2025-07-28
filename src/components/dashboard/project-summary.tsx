@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Edit, Pin, PinOff } from "lucide-react";
+import { MoreHorizontal, Trash2, Edit, Star } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from "firebase/firestore";
@@ -241,7 +241,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                         </div>
                         <div className="flex items-center gap-1">
                             <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                <Pin className={`h-4 w-4 ${project.pinned ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                             </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -256,8 +256,8 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                                         <span>Edit</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                        {project.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
-                                        <span>{project.pinned ? 'Unpin' : 'Pin'}</span>
+                                        <Star className="mr-2 h-4 w-4" />
+                                        <span>{project.pinned ? 'Un-star' : 'Star'}</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -275,7 +275,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                             {project.status}
                          </Badge>
                          <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
-                            {project.priority} Priority
+                            {project.priority.toUpperCase()} PRIORITY
                          </Badge>
                     </div>
                     <div>
@@ -288,7 +288,7 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
                 </CardContent>
                 <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
                      <div>
-                        Due: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                        Due Date: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
                      </div>
                 </CardFooter>
               </Card>
@@ -327,3 +327,4 @@ export function ProjectSummary({ searchQuery }: { searchQuery: string }) {
     </>
   );
 }
+
