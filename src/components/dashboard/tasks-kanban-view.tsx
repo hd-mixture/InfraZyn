@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,11 +9,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { CreateTaskForm } from './create-task-form';
 import { format } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { EditTaskForm } from './edit-task-form';
 
-type Task = {
+
+export type Task = {
     id: string;
     taskName: string;
     project: string;
@@ -21,6 +32,9 @@ type Task = {
     priority: 'High' | 'Medium' | 'Low';
     dueDate: Timestamp;
     assignedTo: string;
+    description?: string;
+    attachmentUrls?: { name: string; url: string }[];
+    createdAt: Timestamp;
 };
 
 type User = {
@@ -41,15 +55,30 @@ const priorityIcons = {
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />
 };
 
-function TaskCard({ task, assignedUser, projectName }: { task: Task, assignedUser?: User, projectName?: string }) {
+function TaskCard({ task, assignedUser, projectName, onEdit, onDelete }: { task: Task, assignedUser?: User, projectName?: string, onEdit: (task: Task) => void, onDelete: (task: Task) => void }) {
     return (
         <Card className="mb-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                     <p className="font-semibold text-sm mb-2">{task.taskName}</p>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEdit(task)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                 {projectName && <Badge variant="secondary" className="mb-3">{projectName}</Badge>}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -83,6 +112,12 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [users, setUsers] = useState<User[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const { toast } = useToast();
+
 
     useEffect(() => {
         const usersQuery = query(collection(db, "users"));
@@ -111,7 +146,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
         const managerProjects = projects.filter(p => p.projectManager === managerName).map(p => p.id);
         
-        if (userRole === 'manager' && managerProjects.length === 0) {
+        if (userRole === 'manager' && managerName && projects.length > 0 && managerProjects.length === 0) {
             setTasks([]);
             setLoading(false);
             return;
@@ -119,6 +154,14 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
         let tasksQuery;
         if (userRole === 'manager') {
+            if (managerProjects.length === 0) {
+                // If there are no projects for the manager yet, don't query for tasks.
+                 if(managerName && projects.length > 0) {
+                    setTasks([]);
+                    setLoading(false);
+                }
+                return;
+            }
             tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjects));
         } else {
             tasksQuery = query(collection(db, "tasks"));
@@ -142,6 +185,38 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         const lowercasedQuery = searchQuery.toLowerCase();
         return tasks.filter(task => task.taskName.toLowerCase().includes(lowercasedQuery));
     }, [tasks, searchQuery]);
+    
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setIsEditDialogOpen(true);
+    };
+
+    const openDeleteDialog = (task: Task) => {
+        setDeletingTask(task);
+        setIsDeleteDialogOpen(true);
+    }
+    
+    const handleDelete = async () => {
+        if(!deletingTask) return;
+        try {
+            await deleteDoc(doc(db, "tasks", deletingTask.id));
+            toast({
+                title: "Task Deleted!",
+                description: "The task has been successfully deleted.",
+            });
+        } catch(e) {
+            console.error("Error deleting document: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem deleting the task.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setDeletingTask(null);
+        }
+    }
+
 
     const columns = useMemo(() => {
         const findUser = (userId: string) => users.find(u => u.id === userId);
@@ -189,7 +264,14 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px]">
                                     {column.tasks.map(task => (
-                                        <TaskCard key={task.id} task={task} assignedUser={task.assignedUser} projectName={task.projectName} />
+                                        <TaskCard 
+                                            key={task.id} 
+                                            task={task} 
+                                            assignedUser={task.assignedUser} 
+                                            projectName={task.projectName} 
+                                            onEdit={handleEditTask}
+                                            onDelete={openDeleteDialog}
+                                        />
                                     ))}
                                 </CardContent>
                             </Card>
@@ -198,6 +280,32 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 </div>
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
+             {editingTask && (
+                <EditTaskForm
+                    task={editingTask}
+                    isOpen={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
+                />
+            )}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this task
+                        and remove its data from our servers.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletingTask(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
+
+
