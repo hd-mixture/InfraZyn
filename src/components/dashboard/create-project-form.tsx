@@ -242,7 +242,22 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
                                     ₹
                                 </span>
-                                <Input type="number" step="0.01" placeholder="50000.00" className="pl-8" {...field} />
+                                <Input
+                                    type="text"
+                                    placeholder="0.00"
+                                    className="pl-8"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        const parsed = parseFloat(value);
+                                        if (value === "") {
+                                            field.onChange(undefined);
+                                        } else if (!isNaN(parsed) && /^\d*(\.\d{0,2})?$/.test(value)) {
+                                            field.onChange(parsed);
+                                        }
+                                    }}
+                                />
                             </div>
                         </FormControl>
                         <FormMessage />

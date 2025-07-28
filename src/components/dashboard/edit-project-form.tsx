@@ -144,6 +144,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
             endDate: Timestamp.fromDate(values.endDate),
         };
 
+        if (dataToUpdate.revenue === undefined) {
+          (dataToUpdate as any).revenue = null;
+        }
+
         await updateDoc(projectRef, dataToUpdate);
 
         await addDoc(collection(db, "activities"), {
@@ -251,15 +255,19 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                     ₹
                                 </span>
                                 <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="50000.00"
+                                    type="text"
+                                    placeholder="0.00"
                                     className="pl-8"
                                     {...field}
                                     value={field.value ?? ''}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        field.onChange(value === '' ? undefined : Number(value));
+                                        const parsed = parseFloat(value);
+                                        if (value === "") {
+                                            field.onChange(undefined);
+                                        } else if (!isNaN(parsed) && /^\d*(\.\d{0,2})?$/.test(value)) {
+                                            field.onChange(parsed);
+                                        }
                                     }}
                                 />
                             </div>
