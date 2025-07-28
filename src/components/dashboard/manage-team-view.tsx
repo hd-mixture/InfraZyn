@@ -3,11 +3,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Project } from './project-summary';
 import type { Task } from './tasks-kanban-view';
+import { Button } from '@/components/ui/button';
+import { Star } from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
+
 
 type User = {
     id: string;
@@ -25,6 +35,7 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!managerName) {
@@ -47,7 +58,13 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 endDate: doc.data().endDate as Timestamp,
                 startDate: doc.data().startDate as Timestamp,
             } as Project));
-            setProjects(fetchedProjects);
+            
+            const sortedProjects = fetchedProjects.sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return b.createdAt.toMillis() - a.createdAt.toMillis();
+            });
+            setProjects(sortedProjects);
 
             if (fetchedProjects.length > 0) {
                 const projectIds = fetchedProjects.map(p => p.id);
@@ -74,6 +91,30 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             unsubscribeUsers();
         };
     }, [managerName]);
+    
+    const handlePinProject = async (projectId: string, pinned: boolean) => {
+        try {
+            const projectRef = doc(db, "projects", projectId);
+            await updateDoc(projectRef, { pinned });
+            setProjects(prevProjects => 
+                prevProjects
+                    .map(p => p.id === projectId ? { ...p, pinned } : p)
+                    .sort((a, b) => {
+                        if (a.pinned && !b.pinned) return -1;
+                        if (!a.pinned && b.pinned) return 1;
+                        return b.createdAt.toMillis() - a.createdAt.toMillis();
+                    })
+            );
+        } catch(e) {
+            console.error("Error pinning project: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem pinning the project.",
+            });
+        }
+    };
+
 
     const projectTeams = useMemo(() => {
         const teams: { [projectId: string]: User[] } = {};
@@ -108,8 +149,24 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 {projects.map((project) => (
                     <Card key={project.id} className="flex flex-col">
                         <CardHeader>
-                            <CardTitle>{project.projectName}</CardTitle>
-                            <CardDescription>Manage the team members for this project.</CardDescription>
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <CardTitle>{project.projectName}</CardTitle>
+                                    <CardDescription>Manage the team members for this project.</CardDescription>
+                                </div>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{project.pinned ? 'Unpin project' : 'Pin project'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                         </CardHeader>
                         <CardContent className="flex-grow">
                             <div className="flex flex-wrap gap-4">
