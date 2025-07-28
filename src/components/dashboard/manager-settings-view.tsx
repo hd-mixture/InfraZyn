@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Moon, Sun, CheckCircle, XCircle } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -60,7 +60,6 @@ export function ManagerSettingsView() {
         }
 
         setLoading(true);
-        const auth = getAuth(app);
         const user = auth.currentUser;
 
         if (!user || !user.email) {
