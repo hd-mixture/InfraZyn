@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import * as React from 'react';
+import { useState }from 'react';
 import {
   Dialog,
   DialogContent,
@@ -50,12 +51,6 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-    useState(() => {
-        if (userTasks && userTasks.tasks.length > 0) {
-            setSelectedTask(userTasks.tasks[0]);
-        }
-    });
     
     // Effect to reset selected task when dialog re-opens with new user tasks
     React.useEffect(() => {
@@ -165,9 +160,9 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                     
                                     <div>
                                         <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
+                                        <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
                                             {description || (taskRole === 'qa' && selectedTask.testDescription) || 'No description provided.'}
-                                        </p>
+                                        </div>
                                     </div>
                                     
                                     {attachmentUrls && attachmentUrls.length > 0 && (
