@@ -146,12 +146,7 @@ export function ViewTaskDetailsDialog({ task, isOpen, onOpenChange }: ViewTaskDe
 
                          {/* Sidebar with metadata */}
                         <div className="md:col-span-1 space-y-4 md:border-l md:pl-6">
-                            <div className="flex items-center gap-4">
-                                <div className="text-muted-foreground w-6 h-6 flex-shrink-0"><Badge variant="outline" className={statusColor[status]}>{status}</Badge></div>
-                                <div className="flex-1">
-                                    <div className="text-sm text-muted-foreground">Status</div>
-                                </div>
-                            </div>
+                           <DetailRow icon={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} label="Status" value={status} />
                             <Separator />
                             <DetailRow icon={<Flag />} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
                             <DetailRow icon={<User />} label="Assigned To" value={assignedTo} />

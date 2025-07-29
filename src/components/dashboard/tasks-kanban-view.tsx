@@ -148,6 +148,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { toast } = useToast();
+    const [managerProjectIds, setManagerProjectIds] = useState<string[]>([]);
 
 
     useEffect(() => {
@@ -169,22 +170,25 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         };
     }, []);
     
-    const managerProjectIds = useMemo(() => {
-        if (userRole === 'manager' && managerName) {
-            return projects.filter(p => p.projectManager === managerName).map(p => p.id);
-        }
-        return [];
+    useEffect(() => {
+      if (userRole === 'manager' && managerName && projects.length > 0) {
+        const projectIds = projects
+          .filter(p => p.projectManager === managerName)
+          .map(p => p.id);
+        setManagerProjectIds(projectIds);
+      }
     }, [projects, userRole, managerName]);
 
 
     useEffect(() => {
+        setLoading(true);
         if (userRole === 'admin') {
             const tasksQuery = query(collection(db, "tasks"));
             const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
                 const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                 setTasks(fetchedTasks);
                 setLoading(false);
-            });
+            }, () => setLoading(false));
             return () => unsubscribe();
         } else if (userRole === 'manager') {
             if (managerProjectIds.length > 0) {

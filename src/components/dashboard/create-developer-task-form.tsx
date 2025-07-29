@@ -138,7 +138,7 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
         };
 
         // Remove optional fields if they are empty to avoid storing 'undefined' in Firestore
-        if (dataToSave.estimatedHours === undefined || dataToSave.estimatedHours === null || isNaN(dataToSave.estimatedHours)) {
+        if (dataToSave.estimatedHours === undefined || dataToSave.estimatedHours === null || isNaN(dataToSave.estimatedHours) || dataToSave.estimatedHours === '') {
             delete dataToSave.estimatedHours;
         }
         if (!dataToSave.techStack) {
@@ -329,7 +329,7 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
                     <FormItem>
                     <FormLabel>Estimated Hours (Optional)</FormLabel>
                     <FormControl>
-                        <Input type="number" placeholder="e.g., 8" {...field} />
+                        <Input type="number" placeholder="e.g., 8" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
