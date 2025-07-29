@@ -34,7 +34,7 @@ export type Task = {
     dueDate: Timestamp;
     assignedTo: string;
     description?: string;
-    attachmentUrls?: { name: string; url: string }[];
+    attachmentUrls?: { name: string, url: string }[];
     createdAt: Timestamp;
     // Developer specific
     taskRole: 'developer' | 'qa';
@@ -77,54 +77,58 @@ const roleIcons = {
     'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
 }
 
-function TaskCard({ task, assignedUser, projectName, onEdit, onDelete, onView }: { task: Task, assignedUser?: User, projectName?: string, onEdit: (task: Task) => void, onDelete: (task: Task) => void, onView: (task: Task) => void }) {
+function UserTasksCard({ userName, user, tasks, onEdit, onDelete, onView }: { userName: string, user?: User, tasks: Task[], onEdit: (task: Task) => void, onDelete: (task: Task) => void, onView: (task: Task) => void }) {
     return (
         <Card className="mb-4 bg-card hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                        {roleIcons[task.taskRole]}
-                        <p className="font-semibold text-sm">{task.taskName}</p>
+            <CardHeader className="p-3 flex-row items-center gap-2 border-b">
+                 <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" />
+                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <CardTitle className="text-base font-medium">{userName}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 space-y-2">
+                {tasks.map(task => (
+                     <div key={task.id} className="p-2 rounded-md hover:bg-muted/50">
+                        <div className="flex justify-between items-start mb-2">
+                           <div className="flex items-center gap-2">
+                                {roleIcons[task.taskRole]}
+                                <p className="font-semibold text-sm">{task.taskName}</p>
+                           </div>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                     <DropdownMenuItem onClick={() => onView(task)}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        <span>View Details</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onEdit(task)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        <span>Edit</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                           <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
+                           </div>
+                           <div className="flex items-center gap-2">
+                                {priorityIcons[task.priority]}
+                           </div>
+                        </div>
                     </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => onView(task)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                <span>View Details</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onEdit(task)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Delete</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                {projectName && <Badge variant="secondary" className="mb-3">{projectName}</Badge>}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {priorityIcons[task.priority]}
-                        {assignedUser && (
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={assignedUser.avatar || `https://placehold.co/40x40.png?text=${assignedUser.name.charAt(0)}`} data-ai-hint="person face" />
-                                <AvatarFallback>{assignedUser.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                        )}
-                    </div>
-                </div>
+                ))}
             </CardContent>
         </Card>
     );
@@ -149,34 +153,23 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { toast } = useToast();
 
-
     useEffect(() => {
         const usersQuery = query(collection(db, "users"));
         const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
             const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
             setUsers(fetchedUsers);
         });
-
-        const projectsQuery = query(collection(db, "projects"));
-        const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
-            const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
-            setProjects(fetchedProjects);
-        });
         
-        return () => {
-            unsubscribeUsers();
-            unsubscribeProjects();
-        };
+        return () => unsubscribeUsers();
     }, []);
     
     useEffect(() => {
         setLoading(true);
-    
-        let unsubscribeTasks = () => {};
+        let unsubscribe = () => {};
     
         if (userRole === 'admin') {
             const tasksQuery = query(collection(db, "tasks"));
-            unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+            unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
                 const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                 setTasks(fetchedTasks);
                 setLoading(false);
@@ -185,14 +178,15 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
             const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
                 const managerProjectIds = projectSnapshot.docs.map(doc => doc.id);
+                setProjects(projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
                 
                 if (managerProjectIds.length > 0) {
                     const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
-                    unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
+                    unsubscribe = onSnapshot(tasksQuery, (taskSnapshot) => {
                         const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                         setTasks(fetchedTasks);
                         setLoading(false);
-                    }, () => setLoading(false));
+                    });
                 } else {
                     setTasks([]);
                     setLoading(false);
@@ -201,20 +195,20 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     
             return () => {
                 unsubscribeProjects();
-                unsubscribeTasks();
+                unsubscribe();
             };
         } else {
             setLoading(false);
         }
     
-        return () => unsubscribeTasks();
+        return () => unsubscribe();
     }, [userRole, managerName]);
     
 
     const filteredTasks = useMemo(() => {
         if (!searchQuery) return tasks;
         const lowercasedQuery = searchQuery.toLowerCase();
-        return tasks.filter(task => task.taskName.toLowerCase().includes(lowercasedQuery));
+        return tasks.filter(task => task.taskName.toLowerCase().includes(lowercasedQuery) || task.assignedTo.toLowerCase().includes(lowercasedQuery));
     }, [tasks, searchQuery]);
     
     const handleEditTask = (task: Task) => {
@@ -255,22 +249,28 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
 
     const columns = useMemo(() => {
-        const findUserByName = (userName: string) => users.find(u => u.name === userName);
-        const findProject = (projectId: string) => projects.find(p => p.id === projectId);
+        const groupedByStatus: { [key: string]: { [key: string]: Task[] } } = {
+            'To Do': {},
+            'In Progress': {},
+            'Done': {},
+        };
+
+        filteredTasks.forEach(task => {
+            if (!groupedByStatus[task.status]) {
+                groupedByStatus[task.status] = {};
+            }
+            if (!groupedByStatus[task.status][task.assignedTo]) {
+                groupedByStatus[task.status][task.assignedTo] = [];
+            }
+            groupedByStatus[task.status][task.assignedTo].push(task);
+        });
 
         return [
-            { id: 'todo', title: 'To Do', tasks: filteredTasks.filter(t => t.status === 'To Do') },
-            { id: 'inprogress', title: 'In Progress', tasks: filteredTasks.filter(t => t.status === 'In Progress') },
-            { id: 'done', title: 'Done', tasks: filteredTasks.filter(t => t.status === 'Done') }
-        ].map(column => ({
-            ...column,
-            tasks: column.tasks.map(task => ({
-                    ...task,
-                    assignedUser: findUserByName(task.assignedTo),
-                    projectName: findProject(task.project)?.projectName
-            }))
-        }));
-    }, [filteredTasks, users, projects]);
+            { id: 'todo', title: 'To Do', userTasks: groupedByStatus['To Do'] },
+            { id: 'inprogress', title: 'In Progress', userTasks: groupedByStatus['In Progress'] },
+            { id: 'done', title: 'Done', userTasks: groupedByStatus['Done'] }
+        ];
+    }, [filteredTasks]);
 
 
     if (loading) {
@@ -295,16 +295,16 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 <CardHeader className="p-4">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-base font-medium">{column.title}</CardTitle>
-                                        <Badge variant="secondary">{column.tasks.length}</Badge>
+                                        <Badge variant="secondary">{Object.keys(column.userTasks).reduce((acc, key) => acc + column.userTasks[key].length, 0)}</Badge>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px]">
-                                    {column.tasks.map(task => (
-                                        <TaskCard 
-                                            key={task.id} 
-                                            task={task} 
-                                            assignedUser={task.assignedUser} 
-                                            projectName={task.projectName} 
+                                    {Object.entries(column.userTasks).map(([userName, userTasks]) => (
+                                        <UserTasksCard 
+                                            key={userName}
+                                            userName={userName}
+                                            user={users.find(u => u.name === userName)}
+                                            tasks={userTasks}
                                             onEdit={handleEditTask}
                                             onDelete={openDeleteDialog}
                                             onView={handleViewTask}
