@@ -95,74 +95,77 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
     const primaryProject = userTask.projects[0];
     
     return (
-        <div className="relative">
-             <div className="absolute top-2 right-2 z-10">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 relative group/pin" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
-                                <Star className={`h-4 w-4 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                           {primaryProject.pinned ? <p>Unpin</p> : (
-                                <div className="flex items-center gap-2">
-                                    <span>Pin</span>
-                                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
-                                    <span>{userTask.user.name}</span>
-                                </div>
-                           )}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
+            <CardHeader className="p-3">
+                <div className="flex items-center gap-2 pr-8">
+                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                    <span className="text-sm font-medium truncate">{userTask.user.name}</span>
+                </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+                <div className="flex flex-wrap gap-1 mb-2">
+                    {userTask.projects.map(p => <Badge key={p.id} variant="secondary">{p.projectName}</Badge>)}
+                </div>
+            </CardContent>
+            <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
             </div>
-            <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
-                <CardHeader className="p-3">
-                    <div className="flex items-center gap-2 pr-8">
-                        {roleIcons[userTask.user.role as 'developer' | 'qa']}
-                        <span className="text-sm font-medium truncate">{userTask.user.name}</span>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                    <div className="flex flex-wrap gap-1 mb-2">
-                        {userTask.projects.map(p => <Badge key={p.id} variant="secondary">{p.projectName}</Badge>)}
-                    </div>
-                </CardContent>
-                <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
+            <div className="flex items-center gap-2">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="relative group/avatar">
                                     <Avatar className="h-6 w-6">
-                                        <AvatarImage src={userTask.user.avatar} />
-                                        <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={userTask.managerAvatar} />
+                                        <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{userTask.user.name}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
-                                    <Eye className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="absolute inset-0 h-full w-full opacity-0 group-hover/avatar:opacity-100 bg-black/30" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
+                                         <Star className={`h-3 w-3 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-white'}`} />
                                     </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>View Details</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                </div>
-                </CardFooter>
-            </Card>
-        </div>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                               {primaryProject.pinned ? <p>Unpin</p> : (
+                                    <div className="flex items-center gap-2">
+                                        <span>Pin</span>
+                                        <span>{userTask.projectManager}</span>
+                                    </div>
+                               )}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={userTask.user.avatar} />
+                                    <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{userTask.user.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
+                                <Eye className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View Details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+            </div>
+            </CardFooter>
+        </Card>
     );
 };
 
@@ -236,13 +239,13 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     useEffect(() => {
         if (userRole !== 'manager') return;
 
-        const projectIds = managerProjects.map(p => p.id);
-
-        if (projectIds.length === 0) {
+        if (managerProjects.length === 0) {
             setTasks([]);
             setLoading(false);
             return;
         }
+        
+        const projectIds = managerProjects.map(p => p.id);
 
         const tasksQuery = query(collection(db, "tasks"), where('project', 'in', projectIds));
         const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
