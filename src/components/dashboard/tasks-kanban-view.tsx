@@ -143,28 +143,25 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             setLoading(false);
             return;
         };
-
-        const managerProjects = projects.filter(p => p.projectManager === managerName).map(p => p.id);
         
-        if (userRole === 'manager' && managerName && projects.length > 0 && managerProjects.length === 0) {
+        const baseTasksQuery = collection(db, "tasks");
+        let tasksQuery;
+
+        if (userRole === 'admin') {
+            tasksQuery = query(baseTasksQuery);
+        } else if (userRole === 'manager' && managerName) {
+            const managerProjects = projects.filter(p => p.projectManager === managerName).map(p => p.id);
+            if (managerProjects.length > 0) {
+                tasksQuery = query(baseTasksQuery, where('project', 'in', managerProjects));
+            } else {
+                setTasks([]);
+                setLoading(false);
+                return;
+            }
+        } else {
             setTasks([]);
             setLoading(false);
             return;
-        }
-
-        let tasksQuery;
-        if (userRole === 'manager') {
-            if (managerProjects.length === 0) {
-                // If there are no projects for the manager yet, don't query for tasks.
-                 if(managerName && projects.length > 0) {
-                    setTasks([]);
-                    setLoading(false);
-                }
-                return;
-            }
-            tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjects));
-        } else {
-            tasksQuery = query(collection(db, "tasks"));
         }
         
         setLoading(true);
@@ -228,11 +225,18 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             { id: 'done', title: 'Done', tasks: filteredTasks.filter(t => t.status === 'Done') }
         ].map(column => ({
             ...column,
-            tasks: column.tasks.map(task => ({
-                ...task,
-                assignedUser: findUser(task.assignedTo),
-                projectName: findProject(task.project)?.projectName
-            }))
+            tasks: column.tasks.map(task => {
+                const assignedUser = findUser(task.assignedTo);
+                // In create forms we save user ID, but older tasks might have name.
+                // This logic handles both cases for display.
+                const userToShow = assignedUser || users.find(u => u.name === task.assignedTo);
+
+                return {
+                    ...task,
+                    assignedUser: userToShow,
+                    projectName: findProject(task.project)?.projectName
+                }
+            })
         }));
     }, [filteredTasks, users, projects]);
 
@@ -307,5 +311,3 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         </div>
     );
 }
-
-

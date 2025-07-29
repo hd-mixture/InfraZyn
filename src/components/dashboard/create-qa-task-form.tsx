@@ -68,8 +68,15 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      testCaseTitle: '',
+      relatedModule: '',
+      testDescription: '',
+      assignedTo: '',
       priority: 'Medium',
       testType: 'Manual',
+      expectedResult: '',
+      testData: '',
+      attachments: undefined,
     },
   });
 
@@ -115,13 +122,16 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
         }
 
         const { attachments, ...taskData } = values;
-        const assigneeName = users.find(u => u.id === taskData.assignedTo)?.name || 'Unknown';
+        const assignee = users.find(u => u.id === taskData.assignedTo);
+        if(!assignee) {
+            throw new Error('Selected QA not found');
+        }
         
         const dataToSave = {
             ...taskData,
             taskName: values.testCaseTitle,
             project: values.relatedModule,
-            assignedTo: assigneeName, // Saving name
+            assignedTo: assignee.id,
             taskRole: 'qa',
             status: 'To Do',
             dueDate: Timestamp.fromDate(values.deadline),
@@ -171,7 +181,7 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Related Module / Project</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a project" />
@@ -235,7 +245,7 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select priority" />
@@ -285,8 +295,10 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
                             mode="single"
                             selected={field.value}
                             onSelect={(date) => {
-                                field.onChange(date);
-                                setIsDueDatePickerOpen(false);
+                                if(date) {
+                                    field.onChange(date);
+                                    setIsDueDatePickerOpen(false);
+                                }
                             }}
                             disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                             initialFocus
@@ -303,7 +315,7 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Test Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select test type" />
@@ -365,4 +377,3 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
     </Form>
   );
 }
-

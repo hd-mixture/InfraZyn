@@ -69,7 +69,13 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
     defaultValues: {
       taskName: '',
       priority: 'Medium',
-      taskType: 'Feature'
+      taskType: 'Feature',
+      project: '',
+      assignedTo: '',
+      estimatedHours: undefined,
+      techStack: '',
+      subtasks: '',
+      attachments: undefined
     },
   });
   
@@ -116,11 +122,14 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
 
         const { attachments, ...taskData } = values;
         
-        const assigneeName = users.find(u => u.id === taskData.assignedTo)?.name || 'Unknown';
+        const assignee = users.find(u => u.id === taskData.assignedTo);
+        if (!assignee) {
+            throw new Error('Selected developer not found');
+        }
         
         const dataToSave = {
             ...taskData,
-            assignedTo: assigneeName, // Saving name instead of ID for easier display
+            assignedTo: assignee.id,
             taskRole: 'developer',
             status: 'To Do',
             dueDate: Timestamp.fromDate(values.dueDate),
@@ -157,7 +166,7 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Project</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a project" />
@@ -192,7 +201,7 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Task Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a task type" />
@@ -238,7 +247,7 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select priority" />
@@ -288,8 +297,10 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
                             mode="single"
                             selected={field.value}
                             onSelect={(date) => {
-                                field.onChange(date);
-                                setIsDueDatePickerOpen(false);
+                                if (date) {
+                                    field.onChange(date);
+                                    setIsDueDatePickerOpen(false);
+                                }
                             }}
                             disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                             initialFocus
@@ -392,4 +403,3 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
     </Form>
   );
 }
-
