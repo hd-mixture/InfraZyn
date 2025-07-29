@@ -57,6 +57,7 @@ type User = {
     id: string;
     name: string;
     avatar?: string;
+    role: 'developer' | 'qa' | 'manager';
 }
 
 type Project = {
@@ -75,63 +76,6 @@ const priorityIcons = {
 const roleIcons = {
     'developer': <Code className="h-4 w-4 text-blue-500" />,
     'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
-}
-
-function UserTasksCard({ userName, user, tasks, onEdit, onDelete, onView }: { userName: string, user?: User, tasks: Task[], onEdit: (task: Task) => void, onDelete: (task: Task) => void, onView: (task: Task) => void }) {
-    return (
-        <Card className="mb-4 bg-card hover:shadow-md transition-shadow">
-            <CardHeader className="p-3 flex-row items-center gap-2 border-b">
-                 <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" />
-                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <CardTitle className="text-base font-medium">{userName}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 space-y-2">
-                {tasks.map(task => (
-                     <div key={task.id} className="p-2 rounded-md hover:bg-muted/50">
-                        <div className="flex justify-between items-start mb-2">
-                           <div className="flex items-center gap-2">
-                                {roleIcons[task.taskRole]}
-                                <p className="font-semibold text-sm">{task.taskName}</p>
-                           </div>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                     <DropdownMenuItem onClick={() => onView(task)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        <span>View Details</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onEdit(task)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        <span>Edit</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => onDelete(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        <span>Delete</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                           <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
-                                <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
-                           </div>
-                           <div className="flex items-center gap-2">
-                                {priorityIcons[task.priority]}
-                           </div>
-                        </div>
-                    </div>
-                ))}
-            </CardContent>
-        </Card>
-    );
 }
 
 type TasksKanbanViewProps = {
@@ -167,13 +111,17 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         setLoading(true);
         let unsubscribe = () => {};
     
-        if (userRole === 'admin') {
-            const tasksQuery = query(collection(db, "tasks"));
-            unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+        const setupTaskListener = (taskQuery: any) => {
+            return onSnapshot(taskQuery, (snapshot) => {
                 const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                 setTasks(fetchedTasks);
                 setLoading(false);
             }, () => setLoading(false));
+        };
+
+        if (userRole === 'admin') {
+            const tasksQuery = query(collection(db, "tasks"));
+            unsubscribe = setupTaskListener(tasksQuery);
         } else if (userRole === 'manager' && managerName) {
             const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
             const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
@@ -182,11 +130,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 
                 if (managerProjectIds.length > 0) {
                     const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
-                    unsubscribe = onSnapshot(tasksQuery, (taskSnapshot) => {
-                        const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-                        setTasks(fetchedTasks);
-                        setLoading(false);
-                    });
+                    unsubscribe = setupTaskListener(tasksQuery);
                 } else {
                     setTasks([]);
                     setLoading(false);
@@ -247,31 +191,23 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         }
     }
 
-
     const columns = useMemo(() => {
-        const groupedByStatus: { [key: string]: { [key: string]: Task[] } } = {
-            'To Do': {},
-            'In Progress': {},
-            'Done': {},
+        const columns: { [key: string]: Task[] } = {
+            'To Do': [],
+            'In Progress': [],
+            'Done': [],
         };
-
         filteredTasks.forEach(task => {
-            if (!groupedByStatus[task.status]) {
-                groupedByStatus[task.status] = {};
+            if (columns[task.status]) {
+                columns[task.status].push(task);
             }
-            if (!groupedByStatus[task.status][task.assignedTo]) {
-                groupedByStatus[task.status][task.assignedTo] = [];
-            }
-            groupedByStatus[task.status][task.assignedTo].push(task);
         });
-
         return [
-            { id: 'todo', title: 'To Do', userTasks: groupedByStatus['To Do'] },
-            { id: 'inprogress', title: 'In Progress', userTasks: groupedByStatus['In Progress'] },
-            { id: 'done', title: 'Done', userTasks: groupedByStatus['Done'] }
+            { id: 'todo', title: 'To Do', tasks: columns['To Do'] },
+            { id: 'inprogress', title: 'In Progress', tasks: columns['In Progress'] },
+            { id: 'done', title: 'Done', tasks: columns['Done'] }
         ];
     }, [filteredTasks]);
-
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading tasks...</div>
@@ -291,25 +227,65 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 <div className="flex gap-6 pb-4">
                     {columns.map(column => (
                         <div key={column.id} className="w-[320px] flex-shrink-0">
-                            <Card className="bg-muted/50">
+                            <Card className="bg-muted/50 border-none">
                                 <CardHeader className="p-4">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-base font-medium">{column.title}</CardTitle>
-                                        <Badge variant="secondary">{Object.keys(column.userTasks).reduce((acc, key) => acc + column.userTasks[key].length, 0)}</Badge>
+                                        <Badge variant="secondary">{column.tasks.length}</Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-4 pt-0 min-h-[100px]">
-                                    {Object.entries(column.userTasks).map(([userName, userTasks]) => (
-                                        <UserTasksCard 
-                                            key={userName}
-                                            userName={userName}
-                                            user={users.find(u => u.name === userName)}
-                                            tasks={userTasks}
-                                            onEdit={handleEditTask}
-                                            onDelete={openDeleteDialog}
-                                            onView={handleViewTask}
-                                        />
-                                    ))}
+                                <CardContent className="p-4 pt-0 min-h-[100px] space-y-3">
+                                   {column.tasks.map(task => {
+                                        const user = users.find(u => u.name === task.assignedTo);
+                                        return (
+                                            <Card key={task.id} className="bg-card hover:shadow-md transition-shadow">
+                                                 <CardHeader className="p-3 flex-row items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        {roleIcons[task.taskRole]}
+                                                        <span className="text-sm font-medium">{user?.name || task.assignedTo}</span>
+                                                    </div>
+                                                     <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => handleViewTask(task)}>
+                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                <span>View Details</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleEditTask(task)}>
+                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                <span>Edit</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onClick={() => openDeleteDialog(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                <span>Delete</span>
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                 </CardHeader>
+                                                 <CardContent className="p-3 pt-0">
+                                                    <p className="font-semibold text-sm mb-2">{task.taskName}</p>
+                                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                       <div className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4" />
+                                                            <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
+                                                       </div>
+                                                       <div className="flex items-center gap-1">
+                                                            <Avatar className="h-6 w-6">
+                                                                <AvatarImage src={user?.avatar || `https://placehold.co/40x40.png?text=${task.assignedTo.charAt(0)}`} data-ai-hint="person face" />
+                                                                <AvatarFallback>{task.assignedTo.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            {priorityIcons[task.priority]}
+                                                       </div>
+                                                    </div>
+                                                 </CardContent>
+                                            </Card>
+                                        );
+                                   })}
                                 </CardContent>
                             </Card>
                         </div>
