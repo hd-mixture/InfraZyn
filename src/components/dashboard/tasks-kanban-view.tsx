@@ -138,6 +138,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
+    const [managerProjects, setManagerProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewingUserTasks, setViewingUserTasks] = useState<GroupedTask | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -163,52 +164,63 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         };
     }, []);
     
-     useEffect(() => {
+    // Admin: Fetch all tasks
+    useEffect(() => {
+        if (userRole !== 'admin') return;
         setLoading(true);
-        let unsubscribe = () => {};
-    
-        const setupTaskListener = (taskQuery: any) => {
-            return onSnapshot(taskQuery, (snapshot) => {
-                const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-                setTasks(fetchedTasks);
-                setLoading(false);
-            }, (err) => {
-                console.error("Error fetching tasks: ", err);
-                setLoading(false)
-            });
-        };
+        const tasksQuery = query(collection(db, "tasks"));
+        const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            setTasks(fetchedTasks);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error fetching tasks for admin: ", err);
+            setLoading(false)
+        });
+        return () => unsubscribe();
+    }, [userRole]);
 
-        if (userRole === 'admin') {
-            const tasksQuery = query(collection(db, "tasks"));
-            unsubscribe = setupTaskListener(tasksQuery);
-        } else if (userRole === 'manager' && managerName) {
-            const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
-            const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
-                const managerProjectIds = projectSnapshot.docs.map(doc => doc.id);
-                
-                if (managerProjectIds.length > 0) {
-                    const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
-                    unsubscribe = setupTaskListener(tasksQuery);
-                } else {
-                    setTasks([]);
-                    setLoading(false);
-                }
-            }, (err) => {
-                 console.error("Error fetching manager projects: ", err);
-                 setLoading(false);
-            });
-    
-            return () => {
-                unsubscribeProjects();
-                unsubscribe();
-            };
-        } else {
+
+    // Manager: Fetch projects first, then tasks
+    useEffect(() => {
+        if (userRole !== 'manager' || !managerName) return;
+
+        setLoading(true);
+        const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+        const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
+            const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            setManagerProjects(fetchedProjects);
+        }, (err) => {
+            console.error("Error fetching manager projects: ", err);
+            setLoading(false);
+        });
+        
+        return () => unsubscribeProjects();
+    }, [userRole, managerName]);
+
+    useEffect(() => {
+        if (userRole !== 'manager') return;
+
+        const projectIds = managerProjects.map(p => p.id);
+
+        if (projectIds.length === 0) {
             setTasks([]);
             setLoading(false);
+            return;
         }
-    
-        return () => unsubscribe();
-    }, [userRole, managerName]);
+
+        const tasksQuery = query(collection(db, "tasks"), where('project', 'in', projectIds));
+        const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            setTasks(fetchedTasks);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error fetching manager tasks: ", err);
+            setLoading(false);
+        });
+
+        return () => unsubscribeTasks();
+    }, [userRole, managerProjects]);
     
 
     const filteredTasks = useMemo(() => {
@@ -277,16 +289,25 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }, [filteredTasks, projects, users]);
 
     useEffect(() => {
-        if (isViewDialogOpen && viewingUserTasks) {
-            // Find the corresponding userTask group in the new columns data
-            for (const column of columns) {
-                const updatedUserTask = column.userTasks.find(ut => ut.user.id === viewingUserTasks.user.id);
-                if (updatedUserTask) {
-                    setViewingUserTasks(updatedUserTask);
-                    break;
-                }
+        if (!isViewDialogOpen || !viewingUserTasks) return;
+
+        // Find the user's task group in the newly computed columns
+        let updatedUserTask: GroupedTask | undefined;
+        for (const column of columns) {
+            const found = column.userTasks.find(ut => ut.user.id === viewingUserTasks.user.id);
+            if (found) {
+                updatedUserTask = found;
+                break;
             }
         }
+        
+        // If the user still has tasks, update the view. Otherwise, close it.
+        if (updatedUserTask) {
+             setViewingUserTasks(updatedUserTask);
+        } else {
+            setIsViewDialogOpen(false);
+        }
+
     }, [tasks, columns, isViewDialogOpen, viewingUserTasks]);
 
 
