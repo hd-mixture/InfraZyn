@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDetailsDialog } from './view-task-details-dialog';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 
 export type Task = {
@@ -97,10 +98,19 @@ const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onO
                     {roleIcons[userTask.user.role as 'developer' | 'qa']}
                     <span className="text-sm font-medium">{userTask.user.name}</span>
                 </div>
-                 <Avatar className="h-6 w-6">
-                    <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
-                    <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
-                </Avatar>
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Avatar className="h-6 w-6">
+                                <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
+                                <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{userTask.projectManager}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
             </CardHeader>
             <CardContent className="p-3 pt-0">
                 <div className="flex flex-wrap gap-1 mb-2">
@@ -113,13 +123,31 @@ const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onO
                     <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
                </div>
                <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                        <AvatarImage src={userTask.user.avatar} />
-                        <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
-                       <Eye className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={userTask.user.avatar} />
+                                    <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{userTask.user.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
+                                   <Eye className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View Details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                </div>
              </CardFooter>
         </Card>
@@ -157,7 +185,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         };
     }, []);
     
-    // Admin: Fetch all tasks
     useEffect(() => {
         if (userRole !== 'admin') return;
         setLoading(true);
@@ -174,9 +201,11 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }, [userRole]);
 
 
-    // Manager: Fetch projects first, then tasks
     useEffect(() => {
-        if (userRole !== 'manager' || !managerName) return;
+        if (userRole !== 'manager' || !managerName) {
+            if (userRole === 'manager') setLoading(false);
+            return;
+        }
 
         setLoading(true);
         const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
