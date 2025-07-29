@@ -269,7 +269,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
                     <CardHeader>
                         <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
-                                <Avatar className="h-12 w-12 border">
+                                <Avatar className="h-12 w-12 border rounded-md">
                                     <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
                                     <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
                                 </Avatar>
