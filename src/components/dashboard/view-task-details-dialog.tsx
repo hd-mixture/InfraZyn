@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader } from '../ui/card';
 
 type ViewTaskDetailsDialogProps = {
     userTasks: GroupedTask;
