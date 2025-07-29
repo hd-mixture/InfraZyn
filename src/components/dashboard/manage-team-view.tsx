@@ -17,6 +17,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '../ui/scroll-area';
 
 
 type User = {
@@ -71,27 +72,26 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 const unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
                     const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                     setTasks(fetchedTasks);
+                    setLoading(false);
                 }, (err) => {
                     console.error("Error fetching tasks: ", err);
+                    setLoading(false);
                 });
 
                 return () => unsubscribeTasks();
             } else {
                  setTasks([]);
+                 setLoading(false);
             }
         }, (err) => {
              console.error("Error fetching projects: ", err);
+             setLoading(false);
         });
-
-        // This is a bit of a hack to wait for all data to load
-        // A better approach might use Promise.all if we weren't using realtime listeners
-        const timer = setTimeout(() => setLoading(false), 2000);
 
 
         return () => {
             unsubscribeProjects();
             unsubscribeUsers();
-            clearTimeout(timer);
         };
     }, [managerName]);
     
@@ -139,61 +139,63 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
     }
 
     return (
-        <div className="space-y-6">
-            {sortedProjects.length === 0 ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>No Projects Found</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">You are not assigned to any projects yet.</p>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sortedProjects.map((project) => (
-                        <Card key={project.id} className="flex flex-col">
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <CardTitle>{project.projectName}</CardTitle>
-                                        <CardDescription>Manage the team members for this project.</CardDescription>
-                                    </div>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                                    <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{project.pinned ? 'Unpin project' : 'Pin project'}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <div className="flex flex-wrap gap-4">
-                                    {projectTeams[project.id]?.map(user => (
-                                        <div key={user.id} className="flex flex-col items-center gap-2 text-center w-20">
-                                            <Avatar className="w-12 h-12">
-                                                <AvatarImage src={user.avatar || `https://placehold.co/48x48.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
-                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="text-sm font-medium leading-tight truncate w-full">{user.name}</div>
-                                            <div className="text-xs text-muted-foreground capitalize">{user.role}</div>
+        <ScrollArea className="h-[calc(100vh-200px)]">
+            <div className="space-y-6 pr-4">
+                {sortedProjects.length === 0 ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>No Projects Found</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">You are not assigned to any projects yet.</p>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {sortedProjects.map((project) => (
+                            <Card key={project.id} className="flex flex-col">
+                                <CardHeader>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <CardTitle>{project.projectName}</CardTitle>
+                                            <CardDescription>Manage the team members for this project.</CardDescription>
                                         </div>
-                                    ))}
-                                    {(!projectTeams[project.id] || projectTeams[project.id].length === 0) && (
-                                        <p className="text-sm text-muted-foreground py-4">No team members assigned to tasks in this project yet.</p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
-        </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                        <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{project.pinned ? 'Unpin project' : 'Pin project'}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <div className="flex flex-wrap gap-4">
+                                        {projectTeams[project.id]?.map(user => (
+                                            <div key={user.id} className="flex flex-col items-center gap-2 text-center w-20">
+                                                <Avatar className="w-12 h-12">
+                                                    <AvatarImage src={user.avatar || `https://placehold.co/48x48.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="text-sm font-medium leading-tight truncate w-full">{user.name}</div>
+                                                <div className="text-xs text-muted-foreground capitalize">{user.role}</div>
+                                            </div>
+                                        ))}
+                                        {(!projectTeams[project.id] || projectTeams[project.id].length === 0) && (
+                                            <p className="text-sm text-muted-foreground py-4">No team members assigned to tasks in this project yet.</p>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </ScrollArea>
     );
 }
