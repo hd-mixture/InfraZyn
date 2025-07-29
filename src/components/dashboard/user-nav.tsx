@@ -18,7 +18,7 @@ export function UserNav() {
   const [userName, setUserName] = useState('Admin');
   const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
   const [userRole, setUserRole] = useState('admin');
-  const [profileLink, setProfileLink] = useState('/');
+  const [profileLink, setProfileLink] = useState('/?view=profile');
   const [settingsLink, setSettingsLink] = useState('/');
   const [avatar, setAvatar] = useState<string | null>(null);
 
@@ -40,7 +40,7 @@ export function UserNav() {
         setUserName('Admin');
         setUserEmail('admin@devtexhhub.com');
         setUserRole('admin');
-        setProfileLink('/');
+        setProfileLink('/?view=profile');
         setSettingsLink('/'); // Admin settings page if needed
     }
   }, []);

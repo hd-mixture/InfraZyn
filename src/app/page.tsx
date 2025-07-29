@@ -16,6 +16,7 @@ import { TimeLogView } from "@/components/dashboard/time-log-view";
 import { ResourceManagementView } from "@/components/dashboard/resource-management-view";
 import { ProjectTableView } from "@/components/dashboard/project-table-view";
 import { EditProjectForm } from "@/components/dashboard/edit-project-form";
+import { AdminProfileView } from "@/components/dashboard/admin-profile-view";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -38,11 +39,13 @@ function DashboardContent() {
       case 'projects':
         return <ProjectTableView searchQuery={searchQuery} onEditProject={handleEditProject} />;
       case 'tasks':
-        return <TasksKanbanView />;
+        return <TasksKanbanView userRole="admin" />;
       case 'time-log':
         return <TimeLogView />;
       case 'resource-mgmt':
         return <ResourceManagementView />;
+      case 'profile':
+        return <AdminProfileView />;
       default:
         return (
           <>
