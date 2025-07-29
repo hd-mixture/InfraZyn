@@ -115,14 +115,6 @@ export function AppSidebar() {
         </div>
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('settings')} tooltip="Settings" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/?view=settings">
-                    <Settings />
-                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
                     <Link href="/login">
                       <LogOut />
