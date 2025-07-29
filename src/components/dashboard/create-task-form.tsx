@@ -18,7 +18,13 @@ import { Label } from '../ui/label';
 import { CreateDeveloperTaskForm } from './create-developer-task-form';
 import { CreateQATaskForm } from './create-qa-task-form';
 
-export function CreateTaskForm({ children }: { children: React.ReactNode }) {
+type CreateTaskFormProps = {
+    children: React.ReactNode;
+    userRole: 'admin' | 'manager';
+    managerName?: string | null;
+}
+
+export function CreateTaskForm({ children, userRole, managerName }: CreateTaskFormProps) {
   const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'developer' | 'qa' | null>(null);
 
@@ -72,8 +78,8 @@ export function CreateTaskForm({ children }: { children: React.ReactNode }) {
                     </Label>
                 </RadioGroup>
 
-                {selectedRole === 'developer' && <CreateDeveloperTaskForm onSuccess={handleSuccess} />}
-                {selectedRole === 'qa' && <CreateQATaskForm onSuccess={handleSuccess} />}
+                {selectedRole === 'developer' && <CreateDeveloperTaskForm onSuccess={handleSuccess} userRole={userRole} managerName={managerName} />}
+                {selectedRole === 'qa' && <CreateQATaskForm onSuccess={handleSuccess} userRole={userRole} managerName={managerName} />}
             </div>
         </ScrollArea>
       </DialogContent>

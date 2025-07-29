@@ -329,7 +329,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-end mb-4">
-                <CreateTaskForm>
+                <CreateTaskForm userRole={userRole} managerName={managerName}>
                     <Button>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add Task

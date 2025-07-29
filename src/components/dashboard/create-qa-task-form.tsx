@@ -58,7 +58,13 @@ type Project = {
     projectName: string;
 }
 
-export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
+type CreateQATaskFormProps = {
+    onSuccess: () => void;
+    userRole: 'admin' | 'manager';
+    managerName?: string | null;
+}
+
+export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQATaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -92,8 +98,13 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
             const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
             setUsers(fetchedUsers);
 
-            const projectRef = collection(db, "projects");
-            const projectSnapshot = await getDocs(projectRef);
+            let projectQuery;
+            if (userRole === 'manager' && managerName) {
+                projectQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+            } else {
+                projectQuery = query(collection(db, "projects"));
+            }
+            const projectSnapshot = await getDocs(projectQuery);
             const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
             setProjects(fetchedProjects);
 
@@ -107,7 +118,7 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
         }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, userRole, managerName]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
