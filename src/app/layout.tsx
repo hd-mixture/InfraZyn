@@ -3,6 +3,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
+import './orbit.css';
 import { Toaster } from "@/components/ui/toaster"
 import { useEffect } from 'react';
 

@@ -79,15 +79,29 @@ export function UserNav() {
         updateUserData();
     }
   }
+  
+  const AdminAvatar = () => (
+      <div className="orbit-container">
+          <div className="orbit"></div>
+          <div className="avatar-container">
+            <Avatar className="h-9 w-9">
+                <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
+                <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </div>
+      </div>
+  );
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
-            <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
-          </Avatar>
+         {userRole === 'admin' ? <AdminAvatar /> : (
+            <Avatar className="h-9 w-9">
+                <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
+                <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+            </Avatar>
+         )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
