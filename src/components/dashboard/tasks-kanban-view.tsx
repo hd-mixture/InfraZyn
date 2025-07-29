@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Code, ShieldCheck, Eye } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Code, ShieldCheck, Eye, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { CreateTaskForm } from './create-task-form';
 import { format } from 'date-fns';
 import {
@@ -65,6 +65,7 @@ type Project = {
     id: string;
     projectName: string;
     projectManager: string;
+    pinned?: boolean;
 }
 
 const roleIcons = {
@@ -81,7 +82,7 @@ type TasksKanbanViewProps = {
 export type GroupedTask = {
     user: User;
     tasks: Task[];
-    projects: string[];
+    projects: Project[];
     nearestDueDate: Timestamp;
     highestPriority: 'Critical' | 'High' | 'Medium' | 'Low';
     projectManager: string;
@@ -90,7 +91,9 @@ export type GroupedTask = {
 
 const priorityOrder = ['Critical', 'High', 'Medium', 'Low'];
 
-const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onOpenDetails: (userTask: GroupedTask) => void }) => {
+const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: GroupedTask, onOpenDetails: (userTask: GroupedTask) => void, onPinProject: (projectId: string, pinned: boolean) => void }) => {
+    const primaryProject = userTask.projects[0];
+    
     return (
         <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
             <CardHeader className="p-3 flex-row items-start justify-between">
@@ -101,20 +104,25 @@ const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onO
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                             <Avatar className="h-6 w-6">
-                                <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
-                                <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 relative group/pin" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
+                                 <Avatar className="h-6 w-6 transition-opacity duration-200 group-hover/pin:opacity-0">
+                                    <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
+                                    <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/pin:opacity-100">
+                                    <Star className={`h-4 w-4 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                </div>
+                            </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{userTask.projectManager}</p>
+                            <p>Pin {primaryProject.projectName}</p>
                         </TooltipContent>
                     </Tooltip>
                  </TooltipProvider>
             </CardHeader>
             <CardContent className="p-3 pt-0">
                 <div className="flex flex-wrap gap-1 mb-2">
-                    {userTask.projects.map(p => <Badge key={p} variant="secondary">{p}</Badge>)}
+                    {userTask.projects.map(p => <Badge key={p.id} variant="secondary">{p.projectName}</Badge>)}
                 </div>
             </CardContent>
              <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
@@ -165,6 +173,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         const usersQuery = query(collection(db, "users"));
@@ -283,8 +292,9 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
                 const uniqueProjectIds = [...new Set(tasks.map(t => t.project))];
                 const projectDetails = uniqueProjectIds.map(id => projectMap.get(id)).filter(Boolean) as Project[];
-                const projectNames = projectDetails.map(p => p.projectName);
 
+                if (projectDetails.length === 0) return null;
+                
                 const projectManagerName = projectDetails[0]?.projectManager || 'N/A';
                 const managerUser = userMap.get(projectManagerName);
 
@@ -301,7 +311,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 return {
                     user,
                     tasks,
-                    projects: projectNames,
+                    projects: projectDetails,
                     nearestDueDate,
                     highestPriority,
                     projectManager: projectManagerName,
@@ -351,6 +361,24 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         setIsEditDialogOpen(true);
     };
 
+     const handlePinProject = async (projectId: string, pinned: boolean) => {
+        try {
+            const projectRef = doc(db, "projects", projectId);
+            await updateDoc(projectRef, { pinned });
+             toast({
+                title: `Project ${pinned ? 'Pinned' : 'Unpinned'}!`,
+                description: `The project has been successfully ${pinned ? 'pinned' : 'unpinned'}.`,
+            });
+        } catch(e) {
+            console.error("Error pinning project: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem pinning the project.",
+            });
+        }
+    };
+
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading tasks...</div>
@@ -379,7 +407,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px] space-y-3">
                                    {column.userTasks.map((userTask) => (
-                                        <UserTasksCard key={userTask.user.id} userTask={userTask} onOpenDetails={handleViewUserTasks} />
+                                        <UserTasksCard key={userTask.user.id} userTask={userTask} onOpenDetails={handleViewUserTasks} onPinProject={handlePinProject} />
                                    ))}
                                 </CardContent>
                             </Card>
