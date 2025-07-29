@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -42,14 +41,14 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             setLoading(false);
             return;
         }
-    
-        setLoading(true);
-    
+
         const projectsQuery = query(
             collection(db, "projects"),
             where("projectManager", "==", managerName)
         );
-    
+
+        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
+
         const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
             const fetchedProjects = projectSnapshot.docs.map(doc => ({
                 id: doc.id,
@@ -58,9 +57,8 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 endDate: doc.data().endDate as Timestamp,
                 startDate: doc.data().startDate as Timestamp,
             } as Project));
-    
             setProjects(fetchedProjects);
-    
+
             if (fetchedProjects.length > 0) {
                 const projectIds = fetchedProjects.map(p => p.id);
                 const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
@@ -68,22 +66,21 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
                 const unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
                     const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                     setTasks(fetchedTasks);
-                    // Defer loading state change until tasks are also loaded
-                });
+                    setLoading(false); // All data is loaded
+                }, () => setLoading(false));
 
                 return () => unsubscribeTasks();
             } else {
                  setTasks([]);
+                 setLoading(false);
             }
-        });
-    
-        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
+        }, () => setLoading(false));
+
         const unsubscribeUsers = onSnapshot(usersQuery, (userSnapshot) => {
             const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
             setUsers(fetchedUsers);
-            setLoading(false); // Set loading to false after all data is fetched
         });
-    
+
         return () => {
             unsubscribeProjects();
             unsubscribeUsers();
