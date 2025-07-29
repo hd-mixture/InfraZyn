@@ -13,7 +13,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, HardHat, Info, List, Paperclip, ShieldCheck, Tag, Target, User, Edit } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, List, Paperclip, ShieldCheck, Tag, Target, User, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
@@ -53,10 +53,8 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     
-    // Effect to reset selected task when dialog re-opens with new user tasks
     React.useEffect(() => {
         if (isOpen && userTasks && userTasks.tasks.length > 0) {
-            // Sort tasks to have a consistent order if needed
             const sortedTasks = [...userTasks.tasks].sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
             setSelectedTask(sortedTasks[0]);
         }
@@ -95,7 +93,6 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                     </DialogTitle>
                 </DialogHeader>
                 <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-0 min-h-0">
-                    {/* Left Vertical Nav */}
                     <ScrollArea className="md:col-span-1 h-full border-r bg-muted/30">
                         <div className="p-4 space-y-2">
                            {userTasks.tasks.map(task => (
@@ -104,8 +101,8 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                 variant="ghost"
                                 onClick={() => setSelectedTask(task)}
                                 className={cn(
-                                    "w-full justify-start text-left h-auto py-2",
-                                    selectedTask?.id === task.id && "bg-muted text-primary-foreground"
+                                    "w-full justify-start text-left h-auto py-3 px-4",
+                                    selectedTask?.id === task.id && "bg-background text-foreground"
                                 )}
                             >
                                 <div className="flex flex-col items-start">
@@ -117,7 +114,6 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                         </div>
                     </ScrollArea>
                     
-                    {/* Right Content */}
                     <ScrollArea className="md:col-span-3 h-full">
                         <div className="p-6 space-y-6">
                             <Card className="border-none shadow-none">

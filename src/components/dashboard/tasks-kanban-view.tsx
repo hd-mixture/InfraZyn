@@ -4,7 +4,7 @@
 import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Code, ShieldCheck, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
@@ -87,19 +87,60 @@ export type GroupedTask = {
 
 const priorityOrder = ['Critical', 'High', 'Medium', 'Low'];
 
+const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onOpenDetails: (userTask: GroupedTask) => void }) => {
+    return (
+        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
+            <CardHeader className="p-3 flex-row items-start justify-between">
+                <div className="flex items-center gap-2">
+                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                    <span className="text-sm font-medium">{userTask.user.name}</span>
+                </div>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onOpenDetails(userTask)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>View Details</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+                <div className="flex flex-wrap gap-1 mb-2">
+                    {userTask.projects.map(p => <Badge key={p} variant="secondary">{p}</Badge>)}
+                </div>
+            </CardContent>
+             <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+               <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
+               </div>
+               <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                        <AvatarImage src={userTask.user.avatar} />
+                        <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
+                       <Eye className="h-4 w-4" />
+                    </Button>
+               </div>
+             </CardFooter>
+        </Card>
+    );
+};
+
 
 export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKanbanViewProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [viewingUserTasks, setViewingUserTasks] = useState<GroupedTask | null>(null);
-    const [deletingTask, setDeletingTask] = useState<Task | null>(null);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const { toast } = useToast();
 
     useEffect(() => {
         const usersQuery = query(collection(db, "users"));
@@ -181,41 +222,10 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         });
     }, [tasks, searchQuery, projects]);
     
-    const handleEditTask = (task: Task) => {
-        setEditingTask(task);
-        setIsEditDialogOpen(true);
-    };
-
     const handleViewUserTasks = (userTasks: GroupedTask) => {
         setViewingUserTasks(userTasks);
         setIsViewDialogOpen(true);
     };
-
-    const openDeleteDialog = (task: Task) => {
-        setDeletingTask(task);
-        setIsDeleteDialogOpen(true);
-    }
-    
-    const handleDelete = async () => {
-        if(!deletingTask) return;
-        try {
-            await deleteDoc(doc(db, "tasks", deletingTask.id));
-            toast({
-                title: "Task Deleted!",
-                description: "The task has been successfully deleted.",
-            });
-        } catch(e) {
-            console.error("Error deleting document: ", e);
-            toast({
-                variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: "There was a problem deleting the task.",
-            });
-        } finally {
-            setIsDeleteDialogOpen(false);
-            setDeletingTask(null);
-        }
-    }
 
     const columns = useMemo(() => {
         const groupedByStatus: { [key: string]: { [key: string]: Task[] } } = {
@@ -297,43 +307,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px] space-y-3">
                                    {column.userTasks.map((userTask) => (
-                                        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
-                                             <CardHeader className="p-3 flex-row items-start justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
-                                                    <span className="text-sm font-medium">{userTask.user.name}</span>
-                                                </div>
-                                                 <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleViewUserTasks(userTask)}>
-                                                            <Eye className="mr-2 h-4 w-4" />
-                                                            <span>View Details</span>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                             </CardHeader>
-                                             <CardContent className="p-3 pt-0">
-                                                <div className="flex flex-wrap gap-2 mb-2">
-                                                    {userTask.projects.map(p => <Badge key={p} variant="outline">{p}</Badge>)}
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                   <div className="flex items-center gap-2">
-                                                        <Clock className="h-4 w-4" />
-                                                        <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
-                                                   </div>
-                                                   <div className="flex items-center gap-2">
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewUserTasks(userTask)}>
-                                                           <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                   </div>
-                                                </div>
-                                             </CardContent>
-                                        </Card>
+                                        <UserTasksCard key={userTask.user.id} userTask={userTask} onOpenDetails={handleViewUserTasks} />
                                    ))}
                                 </CardContent>
                             </Card>
@@ -342,13 +316,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 </div>
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
-             {editingTask && (
-                <EditTaskForm
-                    task={editingTask}
-                    isOpen={isEditDialogOpen}
-                    onOpenChange={setIsEditDialogOpen}
-                />
-            )}
              {viewingUserTasks && (
                 <ViewTaskDetailsDialog
                     userTasks={viewingUserTasks}
@@ -356,23 +323,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     onOpenChange={setIsViewDialogOpen}
                 />
             )}
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this task
-                        and remove its data from our servers.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeletingTask(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                        Delete
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 }
