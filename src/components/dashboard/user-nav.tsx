@@ -95,7 +95,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
          {userRole === 'admin' ? <AdminAvatar /> : (
             <Avatar className="h-9 w-9">
                 <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
