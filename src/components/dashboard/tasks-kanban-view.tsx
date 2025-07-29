@@ -105,17 +105,23 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 relative group/pin" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
-                                 <Avatar className="h-6 w-6 transition-opacity duration-200 group-hover/pin:opacity-0">
+                                 <Avatar className="h-6 w-6">
                                     <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
                                     <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/pin:opacity-100">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-200 group-hover/pin:opacity-100">
                                     <Star className={`h-4 w-4 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                                 </div>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Pin {primaryProject.projectName}</p>
+                           {primaryProject.pinned ? <p>Unpin</p> : (
+                                <div className="flex items-center gap-2">
+                                    <span>Pin</span>
+                                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                                    <span>{userTask.user.name}</span>
+                                </div>
+                           )}
                         </TooltipContent>
                     </Tooltip>
                  </TooltipProvider>
@@ -319,6 +325,15 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 };
             }).filter(Boolean) as GroupedTask[];
             
+            // Sort user tasks: pinned first
+            processedUserTasks.sort((a, b) => {
+                const aPinned = a.projects[0]?.pinned || false;
+                const bPinned = b.projects[0]?.pinned || false;
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                return 0; // or sort by other criteria if needed
+            });
+
             return {
                 id: status.toLowerCase().replace(' ', ''),
                 title: status,
@@ -341,7 +356,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             }
         }
         
-        // If the user still has tasks, update the view. Otherwise, close it.
         if (updatedUserTask) {
              setViewingUserTasks(updatedUserTask);
         } else {
