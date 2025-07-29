@@ -2,34 +2,44 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Users, Briefcase, ListChecks, DollarSign, Camera, Loader2, Phone, Calendar, User } from 'lucide-react';
+import { Mail, Users, Briefcase, ListChecks, DollarSign, Camera, Loader2, Phone, Calendar, User, Edit } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import axios from 'axios';
+import { EditAdminProfileForm } from './edit-admin-profile-form';
 
 
 export function AdminProfileView() {
     const [stats, setStats] = useState({ projects: 0, users: 0, tasks: 0, revenue: 0 });
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [avatar, setAvatar] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('adminAvatar');
-        }
-        return null;
-    });
+    
+    // State for admin details, defaulting to values from localStorage or hardcoded fallbacks
+    const [adminName, setAdminName] = useState('Admin');
+    const [adminPhone, setAdminPhone] = useState('+91 98765 43210 (Default)');
+    const [avatar, setAvatar] = useState<string | null>(null);
+
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
+    
+    const updateAdminDetails = () => {
+        if (typeof window !== 'undefined') {
+            setAdminName(localStorage.getItem('adminName') || 'Admin');
+            setAdminPhone(localStorage.getItem('adminPhone') || '+91 98765 43210 (Default)');
+            setAvatar(localStorage.getItem('adminAvatar'));
+        }
+    };
+    
     useEffect(() => {
+        updateAdminDetails();
+        
         const fetchStats = async () => {
             try {
                 const projectsQuery = query(collection(db, "projects"));
@@ -61,8 +71,8 @@ export function AdminProfileView() {
         fetchStats();
 
         const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === 'adminAvatar') {
-                setAvatar(event.newValue);
+            if (['adminAvatar', 'adminName', 'adminPhone'].includes(event.key || '')) {
+                updateAdminDetails();
             }
         };
 
@@ -96,7 +106,7 @@ export function AdminProfileView() {
             const avatarUrl = response.data.secure_url;
             setAvatar(avatarUrl);
             localStorage.setItem('adminAvatar', avatarUrl);
-            window.dispatchEvent(new StorageEvent('storage', { key: 'userAvatar', newValue: avatarUrl }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'adminAvatar', newValue: avatarUrl }));
 
 
             toast({
@@ -134,7 +144,7 @@ export function AdminProfileView() {
                             <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                                 <Avatar className="w-24 h-24 border-4 border-background">
                                     <AvatarImage src={avatar || `https://placehold.co/96x96.png?text=A`} data-ai-hint="admin user" />
-                                    <AvatarFallback>A</AvatarFallback>
+                                    <AvatarFallback>{adminName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     {uploading ? (
@@ -145,7 +155,7 @@ export function AdminProfileView() {
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <CardTitle className="text-3xl">Admin</CardTitle>
+                                <CardTitle className="text-3xl">{adminName}</CardTitle>
                                 <CardDescription className="text-lg">System Administrator</CardDescription>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-2">
@@ -154,7 +164,7 @@ export function AdminProfileView() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Phone className="w-5 h-5" /> 
-                                        <span>+91 98765 43210 (Default)</span>
+                                        <span>{adminPhone}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <User className="w-5 h-5" /> 
@@ -166,6 +176,10 @@ export function AdminProfileView() {
                                     </div>
                                 </div>
                             </div>
+                             <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Profile
+                            </Button>
                         </CardHeader>
                     </Card>
                 </div>
@@ -219,6 +233,14 @@ export function AdminProfileView() {
                 </Card>
             </div>
         </ScrollArea>
+        {isEditDialogOpen && (
+             <EditAdminProfileForm
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                currentName={adminName}
+                currentPhone={adminPhone}
+            />
+        )}
         </>
     );
 }

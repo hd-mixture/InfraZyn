@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,14 @@ import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+
+const mockLoginHistory = [
+    { date: 'Aug 22, 2024', time: '10:30 AM', ip: '192.168.1.101', device: 'Chrome on macOS' },
+    { date: 'Aug 21, 2024', time: '02:15 PM', ip: '203.0.113.25', device: 'Safari on iPhone' },
+    { date: 'Aug 20, 2024', time: '09:00 AM', ip: '198.51.100.12', device: 'Chrome on Windows' },
+    { date: 'Aug 19, 2024', time: '05:45 PM', ip: '192.168.1.101', device: 'Chrome on macOS' },
+];
 
 export function AdminSettingsView() {
     const { toast } = useToast();
@@ -142,27 +150,60 @@ export function AdminSettingsView() {
                             </form>
                         </CardContent>
                     </Card>
-                    
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>UI Preferences</CardTitle>
+                            <CardDescription>Customize the look and feel of the application.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label className="font-medium">Theme</Label>
+                                <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
+                                    <Sun className="mr-2 h-4 w-4" /> Light
+                                </Button>
+                                <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
+                                    <Moon className="mr-2 h-4 w-4" /> Dark
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>UI Preferences</CardTitle>
-                        <CardDescription>Customize the look and feel of the application.</CardDescription>
+                        <CardTitle>Admin Login History</CardTitle>
+                        <CardDescription>
+                            Recent sign-in activity on your account.
+                             <br/><span className="text-xs italic text-muted-foreground/80">(This is sample data for demonstration.)</span>
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                             <Label className="font-medium">Theme</Label>
-                             <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
-                        </div>
-                        <div className="flex space-x-2">
-                            <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
-                                <Sun className="mr-2 h-4 w-4" /> Light
-                            </Button>
-                            <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
-                                <Moon className="mr-2 h-4 w-4" /> Dark
-                            </Button>
-                        </div>
+                    <CardContent>
+                         <div className="border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date & Time</TableHead>
+                                            <TableHead>IP Address</TableHead>
+                                            <TableHead>Device</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {mockLoginHistory.map((entry, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    <div>{entry.date}</div>
+                                                    <div className="text-xs text-muted-foreground">{entry.time}</div>
+                                                </TableCell>
+                                                <TableCell className="font-mono">{entry.ip}</TableCell>
+                                                <TableCell>{entry.device}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                             </div>
                     </CardContent>
                 </Card>
             </div>

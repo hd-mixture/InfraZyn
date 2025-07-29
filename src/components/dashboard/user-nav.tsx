@@ -27,22 +27,32 @@ export function UserNav() {
     const role = localStorage.getItem('userRole');
     const name = localStorage.getItem('userName');
     const email = localStorage.getItem('userEmail');
-    const userAvatar = localStorage.getItem('userAvatar') || localStorage.getItem('adminAvatar');
+    let userAvatar = localStorage.getItem('userAvatar');
 
-    setAvatar(userAvatar);
-
-    if (role === 'manager' && name) {
+    if (role === 'admin') {
+        const adminName = localStorage.getItem('adminName');
+        const adminAvatar = localStorage.getItem('adminAvatar');
+        setUserName(adminName || 'Admin');
+        setUserEmail('admin@devtexhhub.com');
+        setUserRole('admin');
+        setProfileLink('/?view=profile');
+        setSettingsLink('/?view=settings');
+        setAvatar(adminAvatar);
+    } else if (role === 'manager' && name) {
         setUserName(name);
         setUserEmail(email || `${name.toLowerCase().replace(' ', '.')}@devtexhhub.com`);
         setUserRole('manager');
         setProfileLink('/manager-dashboard?view=profile');
         setSettingsLink('/manager-dashboard?view=settings');
+        setAvatar(userAvatar);
     } else {
+        // Default to admin if no role is set (e.g., initial state)
         setUserName('Admin');
         setUserEmail('admin@devtexhhub.com');
         setUserRole('admin');
         setProfileLink('/?view=profile');
         setSettingsLink('/?view=settings');
+        setAvatar(localStorage.getItem('adminAvatar'));
     }
   }, []);
 
@@ -60,11 +70,12 @@ export function UserNav() {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userAvatar');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('adminAvatar');
+        const adminTheme = localStorage.getItem('theme');
+        // Clear everything except theme
+        localStorage.clear();
+        if (adminTheme) {
+            localStorage.setItem('theme', adminTheme);
+        }
         updateUserData();
     }
   }
