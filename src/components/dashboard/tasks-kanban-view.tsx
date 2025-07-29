@@ -160,6 +160,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 unsubscribe();
             };
         } else {
+            setTasks([]);
             setLoading(false);
         }
     
@@ -326,13 +327,9 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                         <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
                                                    </div>
                                                    <div className="flex items-center gap-2">
-                                                        <Avatar className="h-6 w-6">
-                                                            <AvatarImage src={userTask.user.avatar || `https://placehold.co/40x40.png?text=${userTask.user.name.charAt(0)}`} data-ai-hint="person face" />
-                                                            <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
-                                                        </Avatar>
-                                                        <Avatar className="h-6 w-6 bg-muted text-muted-foreground text-xs flex items-center justify-center">
-                                                            {userTask.highestPriority.charAt(0)}
-                                                        </Avatar>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewUserTasks(userTask)}>
+                                                           <Eye className="h-4 w-4" />
+                                                        </Button>
                                                    </div>
                                                 </div>
                                              </CardContent>
