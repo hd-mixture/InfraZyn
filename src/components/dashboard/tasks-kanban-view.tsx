@@ -231,8 +231,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
     const handleEditTask = (task: Task) => {
         setEditingTask(task);
-        setIsViewDialogOpen(false); // Close details dialog
-        setIsEditDialogOpen(true); // Open edit dialog
+        setIsEditDialogOpen(true);
     };
 
     const columns = useMemo(() => {
