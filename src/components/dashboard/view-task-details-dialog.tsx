@@ -11,12 +11,14 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader } from '../ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+
 
 type ViewTaskDetailsDialogProps = {
     userTasks: GroupedTask;
@@ -29,6 +31,13 @@ const priorityColor: { [key: string]: string } = {
     'Medium': "border-yellow-500 text-yellow-500 bg-yellow-500/10",
     'Low': "border-green-500 text-green-500 bg-green-500/10",
     'Critical': "border-red-700 text-red-700 bg-red-700/10",
+};
+
+const priorityIcons: { [key: string]: React.ReactNode } = {
+    'High': <ArrowUp className="h-4 w-4 text-red-500" />,
+    'Medium': <ArrowRight className="h-4 w-4 text-yellow-500" />,
+    'Low': <ArrowDown className="h-4 w-4 text-green-500" />,
+    'Critical': <ArrowUp className="h-4 w-4 text-red-700" />
 };
 
 const statusColor: { [key: string]: string } = {
@@ -59,11 +68,16 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
     React.useEffect(() => {
         if (isOpen && sortedTasks.length > 0) {
             setSelectedTask(sortedTasks[0]);
+        } else {
+            setSelectedTask(null);
         }
     }, [isOpen, sortedTasks]);
 
 
-    if (!userTasks || !selectedTask) return null;
+    if (!userTasks) return null;
+
+    const taskToDisplay = selectedTask || sortedTasks[0];
+    if (!taskToDisplay) return null;
 
     const {
         taskName,
@@ -80,7 +94,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
         techStack,
         testType,
         bugSeverity,
-    } = selectedTask;
+    } = taskToDisplay;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -95,20 +109,41 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                     <ScrollArea className="md:col-span-1 h-full border-r bg-muted/30">
                         <div className="p-4 space-y-2">
                            {sortedTasks.map(task => (
-                             <Button
+                             <div
                                 key={task.id}
-                                variant="ghost"
                                 onClick={() => setSelectedTask(task)}
                                 className={cn(
-                                    "w-full justify-start text-left h-auto py-3 px-4",
-                                    selectedTask?.id === task.id && "bg-background text-foreground"
+                                    "w-full text-left h-auto rounded-md p-3 group relative cursor-pointer",
+                                    selectedTask?.id === task.id ? "bg-background text-foreground" : "hover:bg-background/50"
                                 )}
                             >
-                                <div className="flex flex-col items-start">
-                                    <span className="font-medium text-sm">{task.taskName}</span>
-                                    <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                             <DropdownMenuItem className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
-                             </Button>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col items-start">
+                                        <span className="font-medium text-sm pr-6">{task.taskName}</span>
+                                        <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        {priorityIcons[task.priority]}
+                                    </div>
+                                </div>
+                             </div>
                            ))}
                         </div>
                     </ScrollArea>
@@ -156,7 +191,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                     <div>
                                         <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
                                         <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
-                                            {description || (taskRole === 'qa' && selectedTask.testDescription) || 'No description provided.'}
+                                            {description || (taskRole === 'qa' && selectedTask?.testDescription) || 'No description provided.'}
                                         </div>
                                     </div>
                                     
