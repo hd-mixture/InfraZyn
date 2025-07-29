@@ -22,6 +22,7 @@
         #34A853 270deg 360deg
     );
     animation: spin 2s linear infinite;
+    filter: blur(2px);
 }
 
 .avatar-container {
@@ -49,3 +50,31 @@
     transform: rotate(360deg);
   }
 }
+
+.orbit-glow {
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    border-radius: 50%;
+    background: conic-gradient(
+        #4285F4 0deg 90deg,
+        #EA4335 90deg 180deg,
+        #FBBC05 180deg 270deg,
+        #34A853 270deg 360deg
+    );
+    filter: blur(10px);
+    animation: spin 2s linear infinite, glow 4s ease-in-out infinite alternate;
+    z-index: -1;
+}
+
+@keyframes glow {
+    from {
+        opacity: 0.5;
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(12px);
+    }
+}
+

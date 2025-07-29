@@ -82,6 +82,7 @@ export function UserNav() {
   
   const AdminAvatar = () => (
       <div className="orbit-container">
+          <div className="orbit-glow"></div>
           <div className="orbit"></div>
           <div className="avatar-container">
             <Avatar className="h-9 w-9">
