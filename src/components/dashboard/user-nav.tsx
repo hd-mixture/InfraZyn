@@ -70,12 +70,10 @@ export function UserNav() {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-        const adminTheme = localStorage.getItem('theme');
-        // Clear everything except theme
-        localStorage.clear();
-        if (adminTheme) {
-            localStorage.setItem('theme', adminTheme);
-        }
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userAvatar');
         updateUserData();
     }
   }

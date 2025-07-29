@@ -30,6 +30,13 @@ export default function LoginPage() {
             // Special case for admin login
             await signInWithEmailAndPassword(auth, email, password);
             localStorage.setItem('userRole', 'admin');
+            
+            const adminName = localStorage.getItem('adminName');
+            const adminAvatar = localStorage.getItem('adminAvatar');
+
+            if (adminName) localStorage.setItem('userName', adminName);
+            if (adminAvatar) localStorage.setItem('userAvatar', adminAvatar);
+
             router.push('/');
             toast({ title: "Admin login successful!" });
 
