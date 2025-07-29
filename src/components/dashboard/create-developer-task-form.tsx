@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,9 +29,9 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import axios from 'axios';
 
 const formSchema = z.object({
   taskName: z.string().min(1, 'Task name is required.'),
@@ -125,10 +124,15 @@ export function CreateDeveloperTaskForm({ onSuccess, userRole, managerName }: Cr
         let attachmentUrls: { name: string, url: string }[] = [];
         if (values.attachments && values.attachments.length > 0) {
             for (const file of Array.from(values.attachments as FileList)) {
-                const storageRef = ref(storage, `task-attachments/dev/${Date.now()}_${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(snapshot.ref);
-                attachmentUrls.push({ name: file.name, url });
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+                
+                const response = await axios.post(
+                `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                formData
+                );
+                attachmentUrls.push({ name: file.name, url: response.data.secure_url });
             }
         }
 

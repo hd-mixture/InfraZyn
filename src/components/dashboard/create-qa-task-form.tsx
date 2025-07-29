@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,9 +29,9 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import axios from 'axios';
 
 const formSchema = z.object({
   testCaseTitle: z.string().min(1, 'Test case title is required.'),
@@ -126,10 +125,15 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
         let attachmentUrls: { name: string, url: string }[] = [];
         if (values.attachments && values.attachments.length > 0) {
             for (const file of Array.from(values.attachments as FileList)) {
-                const storageRef = ref(storage, `task-attachments/qa/${Date.now()}_${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(snapshot.ref);
-                attachmentUrls.push({ name: file.name, url });
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+                
+                const response = await axios.post(
+                `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                formData
+                );
+                attachmentUrls.push({ name: file.name, url: response.data.secure_url });
             }
         }
 
@@ -382,6 +386,40 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
                     />
                 </FormControl>
                 <FormMessage />
+                </FormItem>
+            )}
+        />
+
+        <FormField
+            control={form.control}
+            name="attachments"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Attachments (Optional)</FormLabel>
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <label
+                                htmlFor="attachments-upload-qa"
+                                className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80 w-full justify-center"
+                            >
+                                <Upload className="h-4 w-4" />
+                                <span>Upload Files</span>
+                            </label>
+                            <Input
+                                id="attachments-upload-qa"
+                                type="file"
+                                multiple
+                                className="hidden"
+                                {...attachmentsRef}
+                            />
+                        </div>
+                    </FormControl>
+                    {form.watch('attachments') && Array.from(form.watch('attachments') as FileList).length > 0 && (
+                        <div className="text-xs text-muted-foreground pt-1">
+                            Selected {Array.from(form.watch('attachments') as FileList).length} file(s)
+                        </div>
+                    )}
+                    <FormMessage />
                 </FormItem>
             )}
         />
