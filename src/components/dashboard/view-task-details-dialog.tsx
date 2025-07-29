@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -75,8 +76,6 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
 
     React.useEffect(() => {
         if (isOpen && sortedTasks.length > 0) {
-            // If the previously selected task still exists in the list, keep it.
-            // Otherwise, default to the first (newest) task.
             const stillExists = sortedTasks.find(t => t.id === selectedTask?.id);
             if (!stillExists) {
                 setSelectedTask(sortedTasks[0]);
@@ -85,6 +84,15 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
             setSelectedTask(null);
         }
     }, [isOpen, sortedTasks, selectedTask?.id]);
+
+    React.useEffect(() => {
+        if(isOpen && selectedTask) {
+             const updatedSelectedTask = userTasks.tasks.find(t => t.id === selectedTask.id);
+             if (updatedSelectedTask) {
+                setSelectedTask(updatedSelectedTask);
+             }
+        }
+    }, [userTasks, isOpen, selectedTask]);
 
     const openDeleteDialog = (task: Task) => {
         setDeletingTask(task);
@@ -99,8 +107,6 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                 title: "Task Deleted!",
                 description: `Task "${deletingTask.taskName}" has been successfully deleted.`,
             });
-            // The onSnapshot listener in TasksKanbanView will handle the UI update.
-            // If the deleted task was the last one, close the main dialog.
             if (sortedTasks.length === 1) {
                 onOpenChange(false);
             }
