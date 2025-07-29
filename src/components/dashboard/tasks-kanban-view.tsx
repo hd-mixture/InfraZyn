@@ -141,6 +141,8 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [loading, setLoading] = useState(true);
     const [viewingUserTasks, setViewingUserTasks] = useState<GroupedTask | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     useEffect(() => {
         const usersQuery = query(collection(db, "users"));
@@ -225,6 +227,12 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const handleViewUserTasks = (userTasks: GroupedTask) => {
         setViewingUserTasks(userTasks);
         setIsViewDialogOpen(true);
+    };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setIsViewDialogOpen(false); // Close details dialog
+        setIsEditDialogOpen(true); // Open edit dialog
     };
 
     const columns = useMemo(() => {
@@ -321,6 +329,14 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     userTasks={viewingUserTasks}
                     isOpen={isViewDialogOpen}
                     onOpenChange={setIsViewDialogOpen}
+                    onEditTask={handleEditTask}
+                />
+            )}
+            {editingTask && (
+                <EditTaskForm 
+                    task={editingTask}
+                    isOpen={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
                 />
             )}
         </div>

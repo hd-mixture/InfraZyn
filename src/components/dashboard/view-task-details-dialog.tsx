@@ -18,12 +18,17 @@ import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 
 type ViewTaskDetailsDialogProps = {
     userTasks: GroupedTask;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
+    onEditTask: (task: Task) => void;
 };
 
 const priorityColor: { [key: string]: string } = {
@@ -57,8 +62,11 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 );
 
 
-export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
+export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditTask }: ViewTaskDetailsDialogProps) {
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
+    const [deletingTask, setDeletingTask] = React.useState<Task | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+    const { toast } = useToast();
     
     const sortedTasks = React.useMemo(() => {
         if (!userTasks) return [];
@@ -67,16 +75,52 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
 
     React.useEffect(() => {
         if (isOpen && sortedTasks.length > 0) {
-            setSelectedTask(sortedTasks[0]);
-        } else {
+            // If the previously selected task still exists in the list, keep it.
+            // Otherwise, default to the first (newest) task.
+            const stillExists = sortedTasks.find(t => t.id === selectedTask?.id);
+            if (!stillExists) {
+                setSelectedTask(sortedTasks[0]);
+            }
+        } else if (!isOpen) {
             setSelectedTask(null);
         }
-    }, [isOpen, sortedTasks]);
+    }, [isOpen, sortedTasks, selectedTask?.id]);
+
+    const openDeleteDialog = (task: Task) => {
+        setDeletingTask(task);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteTask = async () => {
+        if (!deletingTask) return;
+        try {
+            await deleteDoc(doc(db, "tasks", deletingTask.id));
+            toast({
+                title: "Task Deleted!",
+                description: `Task "${deletingTask.taskName}" has been successfully deleted.`,
+            });
+            // The onSnapshot listener in TasksKanbanView will handle the UI update.
+            // If the deleted task was the last one, close the main dialog.
+            if (sortedTasks.length === 1) {
+                onOpenChange(false);
+            }
+        } catch (e) {
+            console.error("Error deleting task: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem deleting the task.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setDeletingTask(null);
+        }
+    };
 
 
     if (!userTasks) return null;
 
-    const taskToDisplay = selectedTask || (sortedTasks.length > 0 ? sortedTasks[0] : null);
+    const taskToDisplay = selectedTask;
     if (!taskToDisplay) return null;
 
     const {
@@ -113,7 +157,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                 key={task.id}
                                 onClick={() => setSelectedTask(task)}
                                 className={cn(
-                                    "w-full text-left h-auto rounded-md p-3 group relative cursor-pointer flex items-center justify-between",
+                                    "w-full text-left h-auto rounded-md p-3 group/item relative cursor-pointer flex items-center justify-between",
                                     selectedTask?.id === task.id ? "bg-background text-foreground" : "hover:bg-background/50"
                                 )}
                             >
@@ -134,10 +178,10 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => onEditTask(task)}>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">
+                                                <DropdownMenuItem onClick={() => openDeleteDialog(task)} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -221,6 +265,23 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                         </div>
                     </ScrollArea>
                 </div>
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the task
+                                "{deletingTask?.taskName}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeletingTask(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteTask} className="bg-destructive hover:bg-destructive/90">
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </DialogContent>
         </Dialog>
     );
