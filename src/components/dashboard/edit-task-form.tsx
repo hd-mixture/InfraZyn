@@ -130,10 +130,14 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
     try {
         const { attachments, ...taskData } = values;
 
-        const dataToUpdate = {
+        const dataToUpdate: any = {
             ...taskData,
             dueDate: Timestamp.fromDate(values.dueDate),
         };
+
+        if (!dataToUpdate.description) {
+            delete dataToUpdate.description;
+        }
 
         const taskRef = doc(db, 'tasks', task.id);
         await updateDoc(taskRef, dataToUpdate);
@@ -352,5 +356,3 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
     </Dialog>
   );
 }
-
-
