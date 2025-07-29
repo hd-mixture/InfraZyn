@@ -41,27 +41,37 @@ export default function LoginPage() {
             toast({ title: "Admin login successful!" });
 
         } else {
-            // Logic for other roles (manager)
+            // Logic for other roles (manager, qa)
             const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email), where("role", "==", "manager"));
+            const q = query(usersRef, where("email", "==", email));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                const user = querySnapshot.docs[0].data();
+                const userDoc = querySnapshot.docs[0];
+                const user = userDoc.data();
                 
                 await signInWithEmailAndPassword(auth, email, password);
 
-                localStorage.setItem('userRole', 'manager');
+                localStorage.setItem('userRole', user.role);
                 localStorage.setItem('userName', user.name);
                 localStorage.setItem('userEmail', user.email);
                 localStorage.setItem('userAvatar', user.avatar || '');
-                router.push('/manager-dashboard');
-                toast({ title: "Manager login successful!" });
+                
+                if (user.role === 'manager') {
+                    router.push('/manager-dashboard');
+                    toast({ title: "Manager login successful!" });
+                } else if (user.role === 'qa') {
+                    router.push('/qa-dashboard');
+                    toast({ title: "QA login successful!" });
+                } else {
+                     router.push('/'); // Fallback for other roles if any
+                }
+
             } else {
                  toast({
                     variant: "destructive",
                     title: "Login Failed",
-                    description: "No manager account found with this email.",
+                    description: "No account found with this email.",
                 });
             }
         }

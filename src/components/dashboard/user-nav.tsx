@@ -45,6 +45,13 @@ export function UserNav() {
         setProfileLink('/manager-dashboard?view=profile');
         setSettingsLink('/manager-dashboard?view=settings');
         setAvatar(userAvatar);
+    } else if (role === 'qa' && name) {
+        setUserName(name);
+        setUserEmail(email || `${name.toLowerCase().replace(' ', '.')}@example.com`);
+        setUserRole('qa');
+        setProfileLink('/qa-dashboard?view=profile');
+        setSettingsLink('/qa-dashboard?view=settings');
+        setAvatar(userAvatar);
     } else {
         // Default to admin if no role is set (e.g., initial state)
         setUserName('Admin');
@@ -70,10 +77,18 @@ export function UserNav() {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userAvatar');
+        const theme = localStorage.getItem('theme');
+        const adminName = localStorage.getItem('adminName');
+        const adminPhone = localStorage.getItem('adminPhone');
+        const adminAvatar = localStorage.getItem('adminAvatar');
+
+        localStorage.clear();
+
+        if (theme) localStorage.setItem('theme', theme);
+        if (adminName) localStorage.setItem('adminName', adminName);
+        if (adminPhone) localStorage.setItem('adminPhone', adminPhone);
+        if (adminAvatar) localStorage.setItem('adminAvatar', adminAvatar);
+
         updateUserData();
     }
   }
