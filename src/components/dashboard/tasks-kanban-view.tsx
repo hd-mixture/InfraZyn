@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Code, ShieldCheck, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
+import { ViewTaskDetailsDialog } from './view-task-details-dialog';
 
 
 export type Task = {
@@ -29,13 +30,28 @@ export type Task = {
     taskName: string;
     project: string;
     status: 'To Do' | 'In Progress' | 'Done';
-    priority: 'High' | 'Medium' | 'Low';
+    priority: 'High' | 'Medium' | 'Low' | 'Critical';
     dueDate: Timestamp;
     assignedTo: string;
     description?: string;
     attachmentUrls?: { name: string; url: string }[];
     createdAt: Timestamp;
+    // Developer specific
+    taskRole: 'developer' | 'qa';
+    taskType?: 'Feature' | 'Bug Fix' | 'Enhancement';
+    estimatedHours?: number;
+    techStack?: string;
+    subtasks?: string;
+    // QA specific
+    testCaseTitle?: string;
+    relatedModule?: string;
+    testDescription?: string;
+    testType?: 'Manual' | 'Automation' | 'Regression' | 'Smoke';
+    bugSeverity?: 'Low' | 'Medium' | 'High' | 'Critical';
+    expectedResult?: string;
+    testData?: string;
 };
+
 
 type User = {
     id: string;
@@ -52,15 +68,24 @@ type Project = {
 const priorityIcons = {
     'High': <ArrowUp className="h-4 w-4 text-red-500" />,
     'Medium': <ArrowRight className="h-4 w-4 text-yellow-500" />,
-    'Low': <ArrowDown className="h-4 w-4 text-green-500" />
+    'Low': <ArrowDown className="h-4 w-4 text-green-500" />,
+    'Critical': <ArrowUp className="h-4 w-4 text-red-700" />
 };
 
-function TaskCard({ task, assignedUser, projectName, onEdit, onDelete }: { task: Task, assignedUser?: User, projectName?: string, onEdit: (task: Task) => void, onDelete: (task: Task) => void }) {
+const roleIcons = {
+    'developer': <Code className="h-4 w-4 text-blue-500" />,
+    'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
+}
+
+function TaskCard({ task, assignedUser, projectName, onEdit, onDelete, onView }: { task: Task, assignedUser?: User, projectName?: string, onEdit: (task: Task) => void, onDelete: (task: Task) => void, onView: (task: Task) => void }) {
     return (
-        <Card className="mb-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="mb-4 bg-card hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                    <p className="font-semibold text-sm mb-2">{task.taskName}</p>
+                <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                        {roleIcons[task.taskRole]}
+                        <p className="font-semibold text-sm">{task.taskName}</p>
+                    </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -68,6 +93,10 @@ function TaskCard({ task, assignedUser, projectName, onEdit, onDelete }: { task:
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => onView(task)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>View Details</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onEdit(task)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
@@ -113,8 +142,10 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [viewingTask, setViewingTask] = useState<Task | null>(null);
     const [deletingTask, setDeletingTask] = useState<Task | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { toast } = useToast();
 
@@ -162,7 +193,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                     setTasks(fetchedTasks);
                     setLoading(false);
-                });
+                }, () => setLoading(false));
                 return () => unsubscribe();
             } else {
                 setTasks([]);
@@ -180,6 +211,11 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const handleEditTask = (task: Task) => {
         setEditingTask(task);
         setIsEditDialogOpen(true);
+    };
+
+    const handleViewTask = (task: Task) => {
+        setViewingTask(task);
+        setIsViewDialogOpen(true);
     };
 
     const openDeleteDialog = (task: Task) => {
@@ -210,7 +246,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
 
     const columns = useMemo(() => {
-        const findUser = (userId: string) => users.find(u => u.id === userId);
+        const findUserByName = (userName: string) => users.find(u => u.name === userName);
         const findProject = (projectId: string) => projects.find(p => p.id === projectId);
 
         return [
@@ -219,18 +255,11 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             { id: 'done', title: 'Done', tasks: filteredTasks.filter(t => t.status === 'Done') }
         ].map(column => ({
             ...column,
-            tasks: column.tasks.map(task => {
-                const assignedUser = findUser(task.assignedTo);
-                // In create forms we save user ID, but older tasks might have name.
-                // This logic handles both cases for display.
-                const userToShow = assignedUser || users.find(u => u.name === task.assignedTo);
-
-                return {
+            tasks: column.tasks.map(task => ({
                     ...task,
-                    assignedUser: userToShow,
+                    assignedUser: findUserByName(task.assignedTo),
                     projectName: findProject(task.project)?.projectName
-                }
-            })
+            }))
         }));
     }, [filteredTasks, users, projects]);
 
@@ -269,6 +298,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                             projectName={task.projectName} 
                                             onEdit={handleEditTask}
                                             onDelete={openDeleteDialog}
+                                            onView={handleViewTask}
                                         />
                                     ))}
                                 </CardContent>
@@ -283,6 +313,13 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     task={editingTask}
                     isOpen={isEditDialogOpen}
                     onOpenChange={setIsEditDialogOpen}
+                />
+            )}
+             {viewingTask && (
+                <ViewTaskDetailsDialog
+                    task={viewingTask}
+                    isOpen={isViewDialogOpen}
+                    onOpenChange={setIsViewDialogOpen}
                 />
             )}
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
