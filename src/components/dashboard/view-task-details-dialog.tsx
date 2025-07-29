@@ -39,7 +39,7 @@ const statusColor: { [key: string]: string } = {
 };
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
-    <div className="grid grid-cols-3 items-center gap-2">
+    <div className="grid grid-cols-3 items-start gap-4">
         <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
             {icon}
             <span>{label}</span>
@@ -50,7 +50,7 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 
 
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
     
     React.useEffect(() => {
         if (isOpen && userTasks && userTasks.tasks.length > 0) {
@@ -114,8 +114,8 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                     </ScrollArea>
                     
                     <ScrollArea className="md:col-span-3 h-full">
-                        <div className="p-6 space-y-6">
-                            <Card className="border-none shadow-none">
+                        <div className="p-6">
+                            <Card className="border-none shadow-none bg-transparent">
                                 <CardHeader className="p-0">
                                     <h2 className="text-2xl font-bold">{taskName}</h2>
                                      <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
@@ -129,7 +129,8 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-0 mt-8 space-y-5">
+                                <Separator className="my-6" />
+                                <CardContent className="p-0 space-y-5">
                                     
                                     <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
                                     <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
