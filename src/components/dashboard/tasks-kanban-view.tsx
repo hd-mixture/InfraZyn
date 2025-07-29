@@ -66,13 +66,6 @@ type Project = {
     projectManager: string;
 }
 
-const priorityIcons = {
-    'High': <ArrowUp className="h-4 w-4 text-red-500" />,
-    'Medium': <ArrowRight className="h-4 w-4 text-yellow-500" />,
-    'Low': <ArrowDown className="h-4 w-4 text-green-500" />,
-    'Critical': <ArrowUp className="h-4 w-4 text-red-700" />
-};
-
 const roleIcons = {
     'developer': <Code className="h-4 w-4 text-blue-500" />,
     'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
@@ -83,6 +76,17 @@ type TasksKanbanViewProps = {
     userRole: 'admin' | 'manager';
     managerName?: string | null;
 }
+
+type GroupedTask = {
+    user: User;
+    tasks: Task[];
+    projects: string[];
+    nearestDueDate: Timestamp;
+    highestPriority: 'Critical' | 'High' | 'Medium' | 'Low';
+}
+
+const priorityOrder = ['Critical', 'High', 'Medium', 'Low'];
+
 
 export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKanbanViewProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -125,7 +129,10 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                 setTasks(fetchedTasks);
                 setLoading(false);
-            }, () => setLoading(false));
+            }, (err) => {
+                console.error("Error fetching tasks: ", err);
+                setLoading(false)
+            });
         };
 
         if (userRole === 'admin') {
@@ -143,6 +150,9 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     setTasks([]);
                     setLoading(false);
                 }
+            }, (err) => {
+                 console.error("Error fetching manager projects: ", err);
+                 setLoading(false);
             });
     
             return () => {
@@ -207,26 +217,57 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }
 
     const columns = useMemo(() => {
-        const columns: { [key: string]: Task[] } = {
-            'To Do': [],
-            'In Progress': [],
-            'Done': [],
+        const groupedByStatus: { [key: string]: { [key: string]: Task[] } } = {
+            'To Do': {},
+            'In Progress': {},
+            'Done': {},
         };
-        filteredTasks.forEach(task => {
-            if (columns[task.status]) {
-                columns[task.status].push(task);
-            }
-        });
-        return [
-            { id: 'todo', title: 'To Do', tasks: columns['To Do'] },
-            { id: 'inprogress', title: 'In Progress', tasks: columns['In Progress'] },
-            { id: 'done', title: 'Done', tasks: columns['Done'] }
-        ];
-    }, [filteredTasks]);
 
-    const getProjectName = (projectId: string) => {
-        return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
-    };
+        filteredTasks.forEach(task => {
+            if (!groupedByStatus[task.status]) return;
+            if (!groupedByStatus[task.status][task.assignedTo]) {
+                groupedByStatus[task.status][task.assignedTo] = [];
+            }
+            groupedByStatus[task.status][task.assignedTo].push(task);
+        });
+
+        const projectMap = new Map(projects.map(p => [p.id, p.projectName]));
+
+        return Object.entries(groupedByStatus).map(([status, userTasks]) => {
+            const processedUserTasks: GroupedTask[] = Object.entries(userTasks).map(([userName, tasks]) => {
+                const user = users.find(u => u.name === userName);
+                if (!user) return null;
+
+                const uniqueProjectIds = [...new Set(tasks.map(t => t.project))];
+                const projectNames = uniqueProjectIds.map(id => projectMap.get(id) || 'Unknown Project');
+                
+                const nearestDueDate = tasks.reduce((nearest, current) => {
+                    return current.dueDate.toMillis() < nearest.dueDate.toMillis() ? current : nearest;
+                }).dueDate;
+
+                const highestPriority = tasks.reduce((highest, current) => {
+                    return priorityOrder.indexOf(current.priority) < priorityOrder.indexOf(highest.priority) ? current : highest;
+                }).priority;
+
+
+                return {
+                    user,
+                    tasks,
+                    projects: projectNames,
+                    nearestDueDate,
+                    highestPriority,
+                };
+            }).filter(Boolean) as GroupedTask[];
+            
+            return {
+                id: status.toLowerCase().replace(' ', ''),
+                title: status,
+                userTasks: processedUserTasks
+            };
+        });
+
+    }, [filteredTasks, projects, users]);
+
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading tasks...</div>
@@ -250,66 +291,57 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 <CardHeader className="p-4">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-base font-medium">{column.title}</CardTitle>
-                                        <Badge variant="secondary">{column.tasks.length}</Badge>
+                                        <Badge variant="secondary">{column.userTasks.reduce((acc, ut) => acc + ut.tasks.length, 0)}</Badge>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px] space-y-3">
-                                   {column.tasks.map(task => {
-                                        const user = users.find(u => u.name === task.assignedTo);
-                                        return (
-                                            <Card key={task.id} className="bg-card hover:shadow-md transition-shadow">
-                                                 <CardHeader className="p-3 flex-row items-start justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        {roleIcons[task.taskRole]}
-                                                        <span className="text-sm font-medium">{user?.name || task.assignedTo}</span>
-                                                    </div>
-                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => handleViewTask(task)}>
-                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                <span>View Details</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                                                                <Edit className="mr-2 h-4 w-4" />
-                                                                <span>Edit</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => openDeleteDialog(task)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                <span>Delete</span>
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                 </CardHeader>
-                                                 <CardContent className="p-3 pt-0">
-                                                    <div className="flex flex-wrap gap-2 mb-2">
-                                                        <Badge variant="outline">{getProjectName(task.project)}</Badge>
-                                                    </div>
-                                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                       <div className="flex items-center gap-2">
-                                                            <Clock className="h-4 w-4" />
-                                                            <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
-                                                       </div>
-                                                       <div className="flex items-center gap-2">
-                                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                                            <Avatar className="h-6 w-6">
-                                                                <AvatarImage src={user?.avatar || `https://placehold.co/40x40.png?text=${task.assignedTo.charAt(0)}`} data-ai-hint="person face" />
-                                                                <AvatarFallback>{task.assignedTo.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <Avatar className="h-6 w-6 bg-muted text-muted-foreground text-xs flex items-center justify-center">
-                                                                {task.priority.charAt(0)}
-                                                            </Avatar>
-                                                       </div>
-                                                    </div>
-                                                 </CardContent>
-                                            </Card>
-                                        );
-                                   })}
+                                   {column.userTasks.map(({ user, tasks, projects, nearestDueDate, highestPriority }) => (
+                                        <Card key={user.id} className="bg-card hover:shadow-md transition-shadow">
+                                             <CardHeader className="p-3 flex-row items-start justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    {roleIcons[user.role as 'developer' | 'qa']}
+                                                    <span className="text-sm font-medium">{user.name}</span>
+                                                </div>
+                                                 <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => {
+                                                            // For now, view the first task. This will be expanded later.
+                                                            if(tasks[0]) handleViewTask(tasks[0])
+                                                        }}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            <span>View Details</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                             </CardHeader>
+                                             <CardContent className="p-3 pt-0">
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {projects.map(p => <Badge key={p} variant="outline">{p}</Badge>)}
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                   <div className="flex items-center gap-2">
+                                                        <Clock className="h-4 w-4" />
+                                                        <span>{format(nearestDueDate.toDate(), 'MMM dd')}</span>
+                                                   </div>
+                                                   <div className="flex items-center gap-2">
+                                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                        <Avatar className="h-6 w-6 bg-muted text-muted-foreground text-xs flex items-center justify-center">
+                                                            {highestPriority.charAt(0)}
+                                                        </Avatar>
+                                                   </div>
+                                                </div>
+                                             </CardContent>
+                                        </Card>
+                                   ))}
                                 </CardContent>
                             </Card>
                         </div>
