@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where, Timestamp } from "firebase/firestore";
-import { format, isBefore, addDays } from 'date-fns';
+import { format, isBefore, isAfter, startOfToday } from 'date-fns';
 
 type Task = {
     id: string;
@@ -44,18 +44,21 @@ export function UpcomingDeadlinesCard({ developerName }: UpcomingDeadlinesCardPr
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             setTasks(fetchedTasks);
             setLoading(false);
+        }, (error) => {
+            console.error("Firebase Error in UpcomingDeadlinesCard: ", error);
+            setLoading(false);
         });
 
         return () => unsubscribe();
     }, [developerName]);
 
     const upcomingTasks = useMemo(() => {
-        const now = new Date();
-        const nextWeek = addDays(now, 7);
+        const today = startOfToday();
         return tasks
             .filter(task => {
                 const dueDate = task.dueDate.toDate();
-                return isBefore(dueDate, nextWeek) && !isBefore(dueDate, now);
+                // isAfter check ensures we only show tasks from today onwards
+                return isAfter(dueDate, today) || format(dueDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
             })
             .sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis())
             .slice(0, 5); // Limit to 5 tasks
@@ -65,7 +68,7 @@ export function UpcomingDeadlinesCard({ developerName }: UpcomingDeadlinesCardPr
         <Card>
             <CardHeader>
                 <CardTitle>Upcoming Deadlines</CardTitle>
-                <CardDescription>Tasks due in the next 7 days.</CardDescription>
+                <CardDescription>Tasks due soon.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loading ? (
