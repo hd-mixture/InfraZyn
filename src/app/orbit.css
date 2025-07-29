@@ -27,26 +27,25 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    animation: orbit-spin var(--orbit-duration) linear infinite;
+    animation: glow-pulse var(--orbit-duration) ease-in-out infinite;
+    box-shadow: 0 0 0 0 var(--orbit-color);
+    border: 2px solid transparent;
 }
 
-.orbit::after {
-    content: '';
-    position: absolute;
-    width: var(--dot-size);
-    height: var(--dot-size);
-    background-color: var(--orbit-color);
-    border-radius: 50%;
-    top: calc(var(--dot-size) / -2);
-    left: calc(50% - var(--dot-size) / 2);
-    box-shadow: 0 0 8px 0px var(--orbit-color);
-}
 
-@keyframes orbit-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+@keyframes glow-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px hsla(var(--primary), 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 hsla(var(--primary), 0);
+  }
 }
