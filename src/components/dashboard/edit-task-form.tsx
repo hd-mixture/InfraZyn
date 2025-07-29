@@ -48,10 +48,9 @@ const formSchema = z.object({
   taskName: z.string().min(1, 'Task name is required.'),
   description: z.string().optional(),
   project: z.string().min(1, 'Please select a project.'),
-  assignedTo: z.string().min(1, 'Please assign the task to a user.'),
   dueDate: z.date({ required_error: 'A due date is required.' }),
   status: z.enum(['To Do', 'In Progress', 'Done']),
-  priority: z.enum(['Low', 'Medium', 'High']),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   attachments: z.any().optional(),
 });
 
@@ -88,6 +87,7 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
     if (task && isOpen) {
         form.reset({
             ...task,
+            priority: task.priority,
             dueDate: task.dueDate.toDate(),
         });
     }
@@ -230,28 +230,6 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
                 
                 <div className="grid grid-cols-2 gap-4">
                     <FormField
-                    control={form.control}
-                    name="assignedTo"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Assigned To</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a user" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {users.map(user => (
-                                <SelectItem key={user.id} value={user.id}>{user.name} ({user.role})</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
                         control={form.control}
                         name="priority"
                         render={({ field }) => (
@@ -267,15 +245,13 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
                                     <SelectItem value="Low">Low</SelectItem>
                                     <SelectItem value="Medium">Medium</SelectItem>
                                     <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Critical">Critical</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
                     <FormField
                         control={form.control}
                         name="dueDate"
@@ -306,8 +282,10 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
                                     mode="single"
                                     selected={field.value}
                                     onSelect={(date) => {
-                                        field.onChange(date);
-                                        setIsDueDatePickerOpen(false);
+                                        if (date) {
+                                            field.onChange(date);
+                                            setIsDueDatePickerOpen(false);
+                                        }
                                     }}
                                     disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                                     initialFocus
@@ -318,6 +296,9 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
                             </FormItem>
                         )}
                     />
+                </div>
+                
+                <div className="grid grid-cols-1">
                      <FormField
                         control={form.control}
                         name="status"
