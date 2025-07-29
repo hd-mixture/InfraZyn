@@ -23,7 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDetailsDialog } from './view-task-details-dialog';
-import { Tooltip, TooltipProvider, TooltipContent } from '../ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 
 export type Task = {
@@ -95,19 +95,13 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
     const primaryProject = userTask.projects[0];
     
     return (
-        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow relative">
+        <div className="relative">
              <div className="absolute top-2 right-2 z-10">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 relative group/pin" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
-                                    <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-200 group-hover/pin:opacity-100">
-                                    <Star className={`h-4 w-4 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                </div>
+                                <Star className={`h-4 w-4 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -122,51 +116,53 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
                     </Tooltip>
                 </TooltipProvider>
             </div>
-            <CardHeader className="p-3">
-                <div className="flex items-center gap-2 pr-8">
-                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
-                    <span className="text-sm font-medium truncate">{userTask.user.name}</span>
+            <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
+                <CardHeader className="p-3">
+                    <div className="flex items-center gap-2 pr-8">
+                        {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                        <span className="text-sm font-medium truncate">{userTask.user.name}</span>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="flex flex-wrap gap-1 mb-2">
+                        {userTask.projects.map(p => <Badge key={p.id} variant="secondary">{p.projectName}</Badge>)}
+                    </div>
+                </CardContent>
+                <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
                 </div>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-                <div className="flex flex-wrap gap-1 mb-2">
-                    {userTask.projects.map(p => <Badge key={p.id} variant="secondary">{p.projectName}</Badge>)}
+                <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarImage src={userTask.user.avatar} />
+                                        <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{userTask.user.name}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
+                                    <Eye className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>View Details</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                 </div>
-            </CardContent>
-             <CardFooter className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-               <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
-               </div>
-               <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={userTask.user.avatar} />
-                                    <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>{userTask.user.name}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenDetails(userTask)}>
-                                   <Eye className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>View Details</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-               </div>
-             </CardFooter>
-        </Card>
+                </CardFooter>
+            </Card>
+        </div>
     );
 };
 
