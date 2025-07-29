@@ -17,6 +17,7 @@ import { ResourceManagementView } from "@/components/dashboard/resource-manageme
 import { ProjectTableView } from "@/components/dashboard/project-table-view";
 import { EditProjectForm } from "@/components/dashboard/edit-project-form";
 import { AdminProfileView } from "@/components/dashboard/admin-profile-view";
+import { AdminSettingsView } from "@/components/dashboard/admin-settings-view";
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -46,6 +47,8 @@ function DashboardContent() {
         return <ResourceManagementView />;
       case 'profile':
         return <AdminProfileView />;
+      case 'settings':
+        return <AdminSettingsView />;
       default:
         return (
           <>

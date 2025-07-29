@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { LayoutDashboard, Folders, ListChecks, Users, Settings, LogOut, PlusCircle, Timer, ClipboardList, Package, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
@@ -113,6 +114,14 @@ export function AppSidebar() {
             </SidebarMenu>
         </div>
         <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('settings')} tooltip="Settings" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/?view=settings">
+                    <Settings />
+                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
                     <Link href="/login">

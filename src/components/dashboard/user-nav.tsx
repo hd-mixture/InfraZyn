@@ -1,4 +1,5 @@
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,14 +20,14 @@ export function UserNav() {
   const [userEmail, setUserEmail] = useState('admin@devtexhhub.com');
   const [userRole, setUserRole] = useState('admin');
   const [profileLink, setProfileLink] = useState('/?view=profile');
-  const [settingsLink, setSettingsLink] = useState('/');
+  const [settingsLink, setSettingsLink] = useState('/?view=settings');
   const [avatar, setAvatar] = useState<string | null>(null);
 
   const updateUserData = useCallback(() => {
     const role = localStorage.getItem('userRole');
     const name = localStorage.getItem('userName');
     const email = localStorage.getItem('userEmail');
-    const userAvatar = localStorage.getItem('userAvatar');
+    const userAvatar = localStorage.getItem('userAvatar') || localStorage.getItem('adminAvatar');
 
     setAvatar(userAvatar);
 
@@ -41,7 +42,7 @@ export function UserNav() {
         setUserEmail('admin@devtexhhub.com');
         setUserRole('admin');
         setProfileLink('/?view=profile');
-        setSettingsLink('/'); // Admin settings page if needed
+        setSettingsLink('/?view=settings');
     }
   }, []);
 
@@ -63,6 +64,7 @@ export function UserNav() {
         localStorage.removeItem('userName');
         localStorage.removeItem('userAvatar');
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('adminAvatar');
         updateUserData();
     }
   }
