@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useState }from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +11,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, List, Paperclip, ShieldCheck, Tag, Target, User, Edit } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
@@ -52,12 +51,16 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
     
+    const sortedTasks = React.useMemo(() => {
+        if (!userTasks) return [];
+        return [...userTasks.tasks].sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    }, [userTasks]);
+
     React.useEffect(() => {
-        if (isOpen && userTasks && userTasks.tasks.length > 0) {
-            const sortedTasks = [...userTasks.tasks].sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+        if (isOpen && sortedTasks.length > 0) {
             setSelectedTask(sortedTasks[0]);
         }
-    }, [isOpen, userTasks]);
+    }, [isOpen, sortedTasks]);
 
 
     if (!userTasks || !selectedTask) return null;
@@ -75,11 +78,8 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
         taskType,
         estimatedHours,
         techStack,
-        subtasks,
         testType,
         bugSeverity,
-        expectedResult,
-        testData
     } = selectedTask;
 
     return (
@@ -94,7 +94,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                 <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-0 min-h-0">
                     <ScrollArea className="md:col-span-1 h-full border-r bg-muted/30">
                         <div className="p-4 space-y-2">
-                           {userTasks.tasks.map(task => (
+                           {sortedTasks.map(task => (
                              <Button
                                 key={task.id}
                                 variant="ghost"
