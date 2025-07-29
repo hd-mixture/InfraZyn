@@ -114,7 +114,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         form.reset({
             ...project,
             projectManager: manager ? manager.id : '',
-            revenue: project.revenue ?? '',
+            revenue: project.revenue,
             progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
             endDate: project.endDate.toDate(),
@@ -514,4 +514,3 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
-
