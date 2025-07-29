@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -40,7 +39,7 @@ const statusColor: { [key: string]: string } = {
 };
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 items-center gap-2">
         <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
             {icon}
             <span>{label}</span>
@@ -118,42 +117,40 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                         <div className="p-6 space-y-6">
                             <Card className="border-none shadow-none">
                                 <CardHeader className="p-0">
-                                    <div className="flex justify-between items-start">
-                                        <h2 className="text-2xl font-bold">{taskName}</h2>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
+                                    <h2 className="text-2xl font-bold">{taskName}</h2>
+                                     <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-semibold">STATUS</span>
-                                            <Badge variant="outline" className={statusColor[status]}>{status}</Badge>
+                                            <span className="text-xs font-semibold tracking-wider">STATUS</span>
+                                            <Badge variant="outline" className={cn(statusColor[status], 'rounded-md')}>{status}</Badge>
                                         </div>
-                                         <Separator orientation="vertical" className="h-4" />
                                         <div className="flex items-center gap-2">
-                                             <span className="text-xs font-semibold">PRIORITY</span>
-                                             <Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>
+                                             <span className="text-xs font-semibold tracking-wider">PRIORITY</span>
+                                             <Badge variant="outline" className={cn(priorityColor[priority], 'rounded-md')}>{priority}</Badge>
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-0 mt-6 space-y-4">
+                                <CardContent className="p-0 mt-8 space-y-5">
+                                    
                                     <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
                                     <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
                                     <DetailRow icon={<Clock size={16}/>} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
                                     
-                                    <Separator />
+                                    <Separator className="my-6" />
 
                                     {taskRole === 'developer' ? (
-                                        <>
+                                        <div className="space-y-5">
                                             {taskType && <DetailRow icon={<Tag size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />}
                                             {estimatedHours && <DetailRow icon={<Clock size={16}/>} label="Estimate" value={`${estimatedHours} hours`} />}
                                             {techStack && <DetailRow icon={<Code size={16}/>} label="Tech Stack" value={techStack} />}
-                                        </>
+                                        </div>
                                     ) : (
-                                         <>
+                                         <div className="space-y-5">
                                             {testType && <DetailRow icon={<Tag size={16}/>} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />}
                                             {bugSeverity && <DetailRow icon={<Flag size={16}/>} label="Bug Severity" value={<Badge variant="outline" className={priorityColor[bugSeverity]}>{bugSeverity}</Badge>} />}
-                                         </>
+                                         </div>
                                     )}
 
-                                    <Separator />
+                                    <Separator className="my-6" />
                                     
                                     <div>
                                         <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
