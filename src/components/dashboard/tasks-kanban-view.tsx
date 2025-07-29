@@ -224,16 +224,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         });
     }, [tasks, searchQuery, projects]);
     
-    const handleViewUserTasks = (userTasks: GroupedTask) => {
-        setViewingUserTasks(userTasks);
-        setIsViewDialogOpen(true);
-    };
-
-    const handleEditTask = (task: Task) => {
-        setEditingTask(task);
-        setIsEditDialogOpen(true);
-    };
-
     const columns = useMemo(() => {
         const groupedByStatus: { [key: string]: { [key: string]: Task[] } } = {
             'To Do': {},
@@ -285,6 +275,30 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         });
 
     }, [filteredTasks, projects, users]);
+
+    useEffect(() => {
+        if (isViewDialogOpen && viewingUserTasks) {
+            // Find the corresponding userTask group in the new columns data
+            for (const column of columns) {
+                const updatedUserTask = column.userTasks.find(ut => ut.user.id === viewingUserTasks.user.id);
+                if (updatedUserTask) {
+                    setViewingUserTasks(updatedUserTask);
+                    break;
+                }
+            }
+        }
+    }, [tasks, columns, isViewDialogOpen, viewingUserTasks]);
+
+
+    const handleViewUserTasks = (userTasks: GroupedTask) => {
+        setViewingUserTasks(userTasks);
+        setIsViewDialogOpen(true);
+    };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setIsEditDialogOpen(true);
+    };
 
 
     if (loading) {
