@@ -35,18 +35,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2, Upload, Paperclip, X } from 'lucide-react';
+import { CalendarIcon, Loader2, Upload, Paperclip, X, Code, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where, or } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ScrollArea } from '../ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
   taskName: z.string().min(1, 'Task name is required.'),
   description: z.string().optional(),
   project: z.string().min(1, 'Please select a project.'),
+  assigneeRole: z.enum(['developer', 'qa'], { required_error: 'You must select an assignee role.'}),
   assignedTo: z.string().min(1, 'Please assign the task to a user.'),
   dueDate: z.date({ required_error: 'A due date is required.' }),
   status: z.enum(['To Do', 'In Progress', 'Done']),
@@ -86,6 +88,7 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
 
   const attachmentsRef = form.register('attachments');
   const watchedFiles = form.watch('attachments');
+  const selectedRole = form.watch('assigneeRole');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,6 +169,8 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
     }
     setOpen(isOpen);
   }
+  
+  const availableUsers = users.filter(u => u.role === selectedRole);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -182,7 +187,7 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
         <ScrollArea className="max-h-[70vh]">
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
-                 <FormField
+                <FormField
                     control={form.control}
                     name="project"
                     render={({ field }) => (
@@ -205,73 +210,83 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                     )}
                 />
                 <FormField
-                control={form.control}
-                name="taskName"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Task Title</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g., Implement user login feature" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Task Description</FormLabel>
-                    <FormControl>
-                        <Textarea
-                        placeholder="Add a brief description of the task..."
-                        className="resize-none"
-                        rows={3}
-                        {...field}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+                    control={form.control}
+                    name="taskName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Task Title</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g., Implement user login feature" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
                 <FormField
                     control={form.control}
-                    name="attachments"
+                    name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Attachments (Optional)</FormLabel>
-                             <FormControl>
-                                <div className="flex items-center gap-2">
-                                    <label
-                                        htmlFor="attachments-upload"
-                                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80 text-sm"
-                                    >
-                                        <Upload className="h-4 w-4" />
-                                        <span>Upload Files</span>
-                                    </label>
-                                    <Input
-                                        id="attachments-upload"
-                                        type="file"
-                                        multiple
-                                        className="hidden"
-                                        {...attachmentsRef}
-                                    />
+                        <FormLabel>Task Description</FormLabel>
+                        <FormControl>
+                            <Textarea
+                            placeholder="Add a brief description of the task..."
+                            className="resize-none"
+                            rows={3}
+                            {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="assigneeRole"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                        <FormLabel>Assignee Role</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                            onValueChange={(value) => {
+                                field.onChange(value);
+                                form.resetField('assignedTo');
+                            }}
+                            defaultValue={field.value}
+                            className="grid grid-cols-2 gap-4"
+                            >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                <div className="flex items-center p-4 border rounded-md has-[:checked]:border-primary cursor-pointer w-full">
+                                    <RadioGroupItem value="developer" id="developer" className="sr-only" />
+                                    <Code className="mr-3 h-6 w-6" />
+                                    <div className='flex flex-col'>
+                                        <FormLabel htmlFor="developer" className="font-semibold cursor-pointer">
+                                        Developer
+                                        </FormLabel>
+                                        <p className="text-xs text-muted-foreground">For technical implementation tasks.</p>
+                                    </div>
                                 </div>
-                            </FormControl>
-                             {watchedFiles && Array.from(watchedFiles).length > 0 && (
-                                <div className="space-y-2 mt-2">
-                                    {Array.from(watchedFiles as FileList).map((file, index) => (
-                                         <div key={index} className="text-xs text-muted-foreground flex items-center justify-between p-1.5 bg-muted rounded-md">
-                                             <div className="flex items-center gap-2">
-                                                <Paperclip className="h-3 w-3" />
-                                                <span>{file.name}</span>
-                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <FormMessage />
+                                </FormControl>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <div className="flex items-center p-4 border rounded-md has-[:checked]:border-primary cursor-pointer w-full">
+                                    <RadioGroupItem value="qa" id="qa" className="sr-only" />
+                                    <ShieldCheck className="mr-3 h-6 w-6" />
+                                    <div className='flex flex-col'>
+                                        <FormLabel htmlFor="qa" className="font-semibold cursor-pointer">
+                                        QA Tester
+                                        </FormLabel>
+                                        <p className="text-xs text-muted-foreground">For testing and quality assurance tasks.</p>
+                                    </div>
+                                   </div>
+                                </FormControl>
+                            </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
                         </FormItem>
                     )}
                 />
@@ -283,16 +298,19 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Assigned To</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a user" />
+                                <SelectValue placeholder={selectedRole ? "Select a user" : "Select a role first"} />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            {users.map(user => (
-                                <SelectItem key={user.id} value={user.id}>{user.name} ({user.role})</SelectItem>
-                            ))}
+                               {availableUsers.map(user => (
+                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                ))}
+                                {selectedRole && availableUsers.length === 0 && (
+                                    <SelectItem value="no-users" disabled>No {selectedRole}s found</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -395,4 +413,3 @@ export function CreateTaskForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
-
