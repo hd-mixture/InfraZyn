@@ -148,7 +148,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { toast } = useToast();
-    const [managerProjectIds, setManagerProjectIds] = useState<string[]>([]);
 
 
     useEffect(() => {
@@ -171,40 +170,46 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }, []);
     
     useEffect(() => {
-      if (userRole === 'manager' && managerName && projects.length > 0) {
-        const projectIds = projects
-          .filter(p => p.projectManager === managerName)
-          .map(p => p.id);
-        setManagerProjectIds(projectIds);
-      }
-    }, [projects, userRole, managerName]);
-
-
-    useEffect(() => {
         setLoading(true);
+    
+        let unsubscribeTasks = () => {};
+    
         if (userRole === 'admin') {
             const tasksQuery = query(collection(db, "tasks"));
-            const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+            unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
                 const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
                 setTasks(fetchedTasks);
                 setLoading(false);
             }, () => setLoading(false));
-            return () => unsubscribe();
-        } else if (userRole === 'manager') {
-            if (managerProjectIds.length > 0) {
-                const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
-                const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
-                    const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-                    setTasks(fetchedTasks);
+        } else if (userRole === 'manager' && managerName) {
+            const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+            const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
+                const managerProjectIds = projectSnapshot.docs.map(doc => doc.id);
+                
+                if (managerProjectIds.length > 0) {
+                    const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
+                    unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
+                        const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+                        setTasks(fetchedTasks);
+                        setLoading(false);
+                    }, () => setLoading(false));
+                } else {
+                    setTasks([]);
                     setLoading(false);
-                }, () => setLoading(false));
-                return () => unsubscribe();
-            } else {
-                setTasks([]);
-                setLoading(false);
-            }
+                }
+            });
+    
+            return () => {
+                unsubscribeProjects();
+                unsubscribeTasks();
+            };
+        } else {
+            setLoading(false);
         }
-    }, [userRole, managerProjectIds]);
+    
+        return () => unsubscribeTasks();
+    }, [userRole, managerName]);
+    
 
     const filteredTasks = useMemo(() => {
         if (!searchQuery) return tasks;
