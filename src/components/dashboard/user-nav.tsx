@@ -52,6 +52,13 @@ export function UserNav() {
         setProfileLink('/qa-dashboard?view=profile');
         setSettingsLink('/qa-dashboard?view=settings');
         setAvatar(userAvatar);
+    } else if (role === 'developer' && name) {
+        setUserName(name);
+        setUserEmail(email || `${name.toLowerCase().replace(' ', '.')}@example.com`);
+        setUserRole('developer');
+        setProfileLink('/developer-dashboard?view=profile');
+        setSettingsLink('/developer-dashboard?view=settings');
+        setAvatar(userAvatar);
     } else {
         // Default to admin if no role is set (e.g., initial state)
         setUserName('Admin');

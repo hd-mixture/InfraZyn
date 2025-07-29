@@ -41,7 +41,7 @@ export default function LoginPage() {
             toast({ title: "Admin login successful!" });
 
         } else {
-            // Logic for other roles (manager, qa)
+            // Logic for other roles (manager, qa, developer)
             const usersRef = collection(db, "users");
             const q = query(usersRef, where("email", "==", email));
             const querySnapshot = await getDocs(q);
@@ -63,6 +63,9 @@ export default function LoginPage() {
                 } else if (user.role === 'qa') {
                     router.push('/qa-dashboard');
                     toast({ title: "QA login successful!" });
+                } else if (user.role === 'developer') {
+                    router.push('/developer-dashboard');
+                    toast({ title: "Developer login successful!" });
                 } else {
                      router.push('/'); // Fallback for other roles if any
                 }
