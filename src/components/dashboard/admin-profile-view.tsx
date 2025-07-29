@@ -71,7 +71,7 @@ export function AdminProfileView() {
         fetchStats();
 
         const handleStorageChange = (event: StorageEvent) => {
-            if (['adminAvatar', 'adminName', 'adminPhone'].includes(event.key || '')) {
+             if (['adminAvatar', 'adminName', 'adminPhone'].includes(event.key || '')) {
                 updateAdminDetails();
             }
         };

@@ -64,14 +64,15 @@ export function EditAdminProfileForm({ isOpen, onOpenChange, currentName, curren
     try {
         // Store in local storage as admin is not a regular DB user
         localStorage.setItem('adminName', values.name);
+        window.dispatchEvent(new StorageEvent('storage', { key: 'adminName', newValue: values.name }));
+
         if (values.phone) {
             localStorage.setItem('adminPhone', values.phone);
+            window.dispatchEvent(new StorageEvent('storage', { key: 'adminPhone', newValue: values.phone }));
         } else {
             localStorage.removeItem('adminPhone');
+            window.dispatchEvent(new StorageEvent('storage', { key: 'adminPhone' }));
         }
-
-        // Dispatch storage event to notify other components like user-nav
-        window.dispatchEvent(new Event('storage'));
 
         toast({
             title: 'Profile Updated!',
