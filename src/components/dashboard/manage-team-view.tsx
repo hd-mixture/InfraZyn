@@ -121,8 +121,8 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
         
         projects.forEach(project => {
             const projectTasks = tasks.filter(task => task.project === project.id);
-            const userIds = [...new Set(projectTasks.map(task => task.assignedTo))];
-            const teamMembers = users.filter(user => userIds.includes(user.id));
+            const userNames = [...new Set(projectTasks.map(task => task.assignedTo))];
+            const teamMembers = users.filter(user => userNames.includes(user.name));
             teams[project.id] = teamMembers;
         });
 
