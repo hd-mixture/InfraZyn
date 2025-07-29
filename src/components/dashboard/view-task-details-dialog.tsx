@@ -76,7 +76,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
 
     if (!userTasks) return null;
 
-    const taskToDisplay = selectedTask || sortedTasks[0];
+    const taskToDisplay = selectedTask || (sortedTasks.length > 0 ? sortedTasks[0] : null);
     if (!taskToDisplay) return null;
 
     const {
@@ -113,34 +113,35 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewT
                                 key={task.id}
                                 onClick={() => setSelectedTask(task)}
                                 className={cn(
-                                    "w-full text-left h-auto rounded-md p-3 group relative cursor-pointer",
+                                    "w-full text-left h-auto rounded-md p-3 group relative cursor-pointer flex items-center justify-between",
                                     selectedTask?.id === task.id ? "bg-background text-foreground" : "hover:bg-background/50"
                                 )}
                             >
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                             <DropdownMenuItem className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                <div className="flex flex-col items-start">
+                                    <span className="font-medium text-sm pr-6">{task.taskName}</span>
+                                    <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex flex-col items-start">
-                                        <span className="font-medium text-sm pr-6">{task.taskName}</span>
-                                        <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
+
+                                <div className="relative group/menu h-7 w-7 flex items-center justify-center">
+                                    <div className="transition-opacity duration-200 group-hover/menu:opacity-0">
+                                         {priorityIcons[task.priority]}
                                     </div>
-                                    <div className="flex-shrink-0">
-                                        {priorityIcons[task.priority]}
+                                    <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/menu:opacity-100">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-full w-full">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
                              </div>
