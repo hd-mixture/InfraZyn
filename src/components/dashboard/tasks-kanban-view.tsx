@@ -17,7 +17,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -95,12 +94,36 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
     const primaryProject = userTask.projects[0];
     
     return (
-        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
-            <CardHeader className="p-3">
-                <div className="flex items-center gap-2 pr-8">
+        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow relative">
+             <CardHeader className="p-3 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
                     {roleIcons[userTask.user.role as 'developer' | 'qa']}
                     <span className="text-sm font-medium truncate">{userTask.user.name}</span>
                 </div>
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="relative group/avatar">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={userTask.managerAvatar} />
+                                    <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <Button variant="ghost" size="icon" className="absolute inset-0 h-full w-full opacity-0 group-hover/avatar:opacity-100 bg-black/30" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
+                                     <Star className={`h-3 w-3 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-white'}`} />
+                                </Button>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           {primaryProject.pinned ? <p>Unpin</p> : (
+                                <div className="flex items-center gap-2">
+                                    <span>Pin</span>
+                                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                                    <span>{userTask.user.name}</span>
+                                </div>
+                           )}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </CardHeader>
             <CardContent className="p-3 pt-0">
                 <div className="flex flex-wrap gap-1 mb-2">
@@ -113,30 +136,6 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
                     <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
             </div>
             <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="relative group/avatar">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={userTask.managerAvatar} />
-                                        <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <Button variant="ghost" size="icon" className="absolute inset-0 h-full w-full opacity-0 group-hover/avatar:opacity-100 bg-black/30" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
-                                         <Star className={`h-3 w-3 ${primaryProject.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-white'}`} />
-                                    </Button>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                               {primaryProject.pinned ? <p>Unpin</p> : (
-                                    <div className="flex items-center gap-2">
-                                        <span>Pin</span>
-                                        <span>{userTask.projectManager}</span>
-                                    </div>
-                               )}
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -239,13 +238,17 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     useEffect(() => {
         if (userRole !== 'manager') return;
 
-        if (managerProjects.length === 0) {
+        if (managerProjects.length === 0 && !loading) {
             setTasks([]);
-            setLoading(false);
             return;
         }
         
         const projectIds = managerProjects.map(p => p.id);
+        if (projectIds.length === 0) {
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
 
         const tasksQuery = query(collection(db, "tasks"), where('project', 'in', projectIds));
         const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
@@ -258,7 +261,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         });
 
         return () => unsubscribeTasks();
-    }, [userRole, managerProjects]);
+    }, [userRole, managerProjects, loading]);
     
 
     const filteredTasks = useMemo(() => {
