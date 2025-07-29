@@ -127,15 +127,26 @@ export function CreateDeveloperTaskForm({ onSuccess }: { onSuccess: () => void }
             throw new Error('Selected developer not found');
         }
         
-        const dataToSave = {
+        const dataToSave: any = {
             ...taskData,
-            assignedTo: assignee.id,
+            assignedTo: assignee.name,
             taskRole: 'developer',
             status: 'To Do',
             dueDate: Timestamp.fromDate(values.dueDate),
             createdAt: Timestamp.now(),
             attachmentUrls,
         };
+
+        // Remove optional fields if they are empty to avoid storing 'undefined' in Firestore
+        if (dataToSave.estimatedHours === undefined || dataToSave.estimatedHours === null || isNaN(dataToSave.estimatedHours)) {
+            delete dataToSave.estimatedHours;
+        }
+        if (!dataToSave.techStack) {
+            delete dataToSave.techStack;
+        }
+        if (!dataToSave.subtasks) {
+            delete dataToSave.subtasks;
+        }
 
         await addDoc(collection(db, "tasks"), dataToSave);
         

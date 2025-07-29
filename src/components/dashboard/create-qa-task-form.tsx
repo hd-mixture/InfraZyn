@@ -77,6 +77,7 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
       expectedResult: '',
       testData: '',
       attachments: undefined,
+      bugSeverity: undefined,
     },
   });
 
@@ -127,17 +128,24 @@ export function CreateQATaskForm({ onSuccess }: { onSuccess: () => void }) {
             throw new Error('Selected QA not found');
         }
         
-        const dataToSave = {
+        const dataToSave: any = {
             ...taskData,
             taskName: values.testCaseTitle,
             project: values.relatedModule,
-            assignedTo: assignee.id,
+            assignedTo: assignee.name,
             taskRole: 'qa',
             status: 'To Do',
             dueDate: Timestamp.fromDate(values.deadline),
             createdAt: Timestamp.now(),
             attachmentUrls,
         };
+
+        // Remove optional fields if they are empty
+        if (!dataToSave.testDescription) delete dataToSave.testDescription;
+        if (!dataToSave.bugSeverity) delete dataToSave.bugSeverity;
+        if (!dataToSave.expectedResult) delete dataToSave.expectedResult;
+        if (!dataToSave.testData) delete dataToSave.testData;
+
 
         await addDoc(collection(db, "tasks"), dataToSave);
         
