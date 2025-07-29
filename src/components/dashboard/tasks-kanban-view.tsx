@@ -83,6 +83,8 @@ export type GroupedTask = {
     projects: string[];
     nearestDueDate: Timestamp;
     highestPriority: 'Critical' | 'High' | 'Medium' | 'Low';
+    projectManager: string;
+    managerAvatar?: string;
 }
 
 const priorityOrder = ['Critical', 'High', 'Medium', 'Low'];
@@ -95,19 +97,10 @@ const UserTasksCard = ({ userTask, onOpenDetails }: { userTask: GroupedTask, onO
                     {roleIcons[userTask.user.role as 'developer' | 'qa']}
                     <span className="text-sm font-medium">{userTask.user.name}</span>
                 </div>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onOpenDetails(userTask)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            <span>View Details</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                 <Avatar className="h-6 w-6">
+                    <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
+                    <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
+                </Avatar>
             </CardHeader>
             <CardContent className="p-3 pt-0">
                 <div className="flex flex-wrap gap-1 mb-2">
@@ -251,15 +244,21 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             groupedByStatus[task.status][task.assignedTo].push(task);
         });
 
-        const projectMap = new Map(projects.map(p => [p.id, p.projectName]));
+        const projectMap = new Map(projects.map(p => [p.id, p]));
+        const userMap = new Map(users.map(u => [u.name, u]));
 
         return Object.entries(groupedByStatus).map(([status, userTasks]) => {
             const processedUserTasks: GroupedTask[] = Object.entries(userTasks).map(([userName, tasks]) => {
-                const user = users.find(u => u.name === userName);
+                const user = userMap.get(userName);
                 if (!user) return null;
 
                 const uniqueProjectIds = [...new Set(tasks.map(t => t.project))];
-                const projectNames = uniqueProjectIds.map(id => projectMap.get(id) || 'Unknown Project');
+                const projectDetails = uniqueProjectIds.map(id => projectMap.get(id)).filter(Boolean) as Project[];
+                const projectNames = projectDetails.map(p => p.projectName);
+
+                const projectManagerName = projectDetails[0]?.projectManager || 'N/A';
+                const managerUser = userMap.get(projectManagerName);
+
                 
                 const nearestDueDate = tasks.reduce((nearest, current) => {
                     return current.dueDate.toMillis() < nearest.dueDate.toMillis() ? current : nearest;
@@ -276,6 +275,8 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     projects: projectNames,
                     nearestDueDate,
                     highestPriority,
+                    projectManager: projectManagerName,
+                    managerAvatar: managerUser?.avatar,
                 };
             }).filter(Boolean) as GroupedTask[];
             
