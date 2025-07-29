@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
@@ -44,6 +44,7 @@ import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc } 
 import type { Project } from './project-summary';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import axios from 'axios';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -55,6 +56,7 @@ const formSchema = z.object({
   status: z.enum(['Not Started', 'In Progress', 'Completed', 'On Hold', 'Delayed', 'At risk']),
   priority: z.enum(['Low', 'Medium', 'High']),
   progress: z.number().min(0).max(100).optional(),
+  logo: z.any().optional(),
 });
 
 type User = {
@@ -80,6 +82,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+
+  const fileRef = form.register('logo');
 
   useEffect(() => {
     const fetchManagers = async () => {
@@ -132,6 +136,21 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     if (!project) return;
     setLoading(true);
     try {
+        let logoUrl = project.logoUrl;
+        if (values.logo && values.logo.length > 0) {
+            const file = values.logo[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+            
+            const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            formData
+            );
+            
+            logoUrl = response.data.secure_url;
+        }
+
         const projectRef = doc(db, "projects", project.id);
         
         const manager = managers.find(m => m.id === values.projectManager);
@@ -139,8 +158,11 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
             throw new Error('Selected manager not found');
         }
 
+        const { logo, ...projectData } = values;
+
         const dataToUpdate: any = {
-            ...values,
+            ...projectData,
+            logoUrl,
             projectManager: manager.name,
             progress: values.progress === undefined ? null : values.progress,
             startDate: Timestamp.fromDate(values.startDate),
@@ -291,6 +313,40 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                         )}
                         />
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="logo"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Update Project Logo (Optional)</FormLabel>
+                            <FormControl>
+                                <div className="flex items-center gap-2">
+                                    <label
+                                        htmlFor="logo-update-upload"
+                                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80"
+                                    >
+                                        <Upload className="h-4 w-4" />
+                                        <span>Upload New Logo</span>
+                                    </label>
+                                    <Input
+                                        id="logo-update-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        {...fileRef}
+                                    />
+                                    {form.watch('logo') && form.watch('logo').length > 0 && (
+                                        <span className="text-sm text-muted-foreground">
+                                            {form.watch('logo')[0].name}
+                                        </span>
+                                    )}
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 
                 <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -458,3 +514,4 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
     </Dialog>
   );
 }
+
