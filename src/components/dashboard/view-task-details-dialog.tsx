@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,15 +9,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
-import type { Task } from './tasks-kanban-view';
+import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, HardHat, Info, List, Paperclip, ShieldCheck, Tag, Target, User } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, HardHat, Info, List, Paperclip, ShieldCheck, Tag, Target, User, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 type ViewTaskDetailsDialogProps = {
-    task: Task;
+    userTasks: GroupedTask;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 };
@@ -35,18 +38,36 @@ const statusColor: { [key: string]: string } = {
 };
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
-    <div className="flex items-start gap-4">
-        <div className="text-muted-foreground w-6 h-6 flex-shrink-0">{icon}</div>
-        <div className="flex-1">
-            <div className="text-sm text-muted-foreground">{label}</div>
-            <div className="font-medium text-sm">{value}</div>
+    <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
+            {icon}
+            <span>{label}</span>
         </div>
+        <div className="col-span-2 font-medium text-sm">{value}</div>
     </div>
 );
 
 
-export function ViewTaskDetailsDialog({ task, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
-    if (!task) return null;
+export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange }: ViewTaskDetailsDialogProps) {
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+    useState(() => {
+        if (userTasks && userTasks.tasks.length > 0) {
+            setSelectedTask(userTasks.tasks[0]);
+        }
+    });
+    
+    // Effect to reset selected task when dialog re-opens with new user tasks
+    React.useEffect(() => {
+        if (isOpen && userTasks && userTasks.tasks.length > 0) {
+            // Sort tasks to have a consistent order if needed
+            const sortedTasks = [...userTasks.tasks].sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+            setSelectedTask(sortedTasks[0]);
+        }
+    }, [isOpen, userTasks]);
+
+
+    if (!userTasks || !selectedTask) return null;
 
     const {
         taskName,
@@ -66,111 +87,114 @@ export function ViewTaskDetailsDialog({ task, isOpen, onOpenChange }: ViewTaskDe
         bugSeverity,
         expectedResult,
         testData
-    } = task;
+    } = selectedTask;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-2">
                     <DialogTitle className="flex items-center gap-2">
-                        {taskRole === 'developer' ? <HardHat /> : <ShieldCheck />}
-                        {taskName}
+                        <User className="w-6 h-6" />
+                        Tasks for {userTasks.user.name}
                     </DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh]">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pr-4">
-                        {/* Main Content */}
-                        <div className="md:col-span-2 space-y-6">
-                             {/* Description */}
-                            <div>
-                                <h3 className="font-semibold mb-2 flex items-center gap-2"><Info className="w-4 h-4" /> Description</h3>
-                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                    {description || (taskRole === 'qa' && task.testDescription) || 'No description provided.'}
-                                </p>
-                            </div>
-
-                            {/* Developer Details */}
-                            {taskRole === 'developer' && subtasks && (
-                                 <div>
-                                    <h3 className="font-semibold mb-2 flex items-center gap-2"><List className="w-4 h-4" /> Subtasks</h3>
-                                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md whitespace-pre-wrap">
-                                        {subtasks}
-                                    </div>
+                <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-0 min-h-0">
+                    {/* Left Vertical Nav */}
+                    <ScrollArea className="md:col-span-1 h-full border-r bg-muted/30">
+                        <div className="p-4 space-y-2">
+                           {userTasks.tasks.map(task => (
+                             <Button
+                                key={task.id}
+                                variant="ghost"
+                                onClick={() => setSelectedTask(task)}
+                                className={cn(
+                                    "w-full justify-start text-left h-auto py-2",
+                                    selectedTask?.id === task.id && "bg-muted text-primary-foreground"
+                                )}
+                            >
+                                <div className="flex flex-col items-start">
+                                    <span className="font-medium text-sm">{task.taskName}</span>
+                                    <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
                                 </div>
-                            )}
-
-                             {/* QA Details */}
-                             {taskRole === 'qa' && (
-                                <>
-                                {expectedResult && (
-                                     <div>
-                                        <h3 className="font-semibold mb-2 flex items-center gap-2"><Target className="w-4 h-4" /> Expected Result</h3>
-                                        <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md whitespace-pre-wrap">
-                                            {expectedResult}
+                             </Button>
+                           ))}
+                        </div>
+                    </ScrollArea>
+                    
+                    {/* Right Content */}
+                    <ScrollArea className="md:col-span-3 h-full">
+                        <div className="p-6 space-y-6">
+                            <Card className="border-none shadow-none">
+                                <CardHeader className="p-0">
+                                    <div className="flex justify-between items-start">
+                                        <h2 className="text-2xl font-bold">{taskName}</h2>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-semibold">STATUS</span>
+                                            <Badge variant="outline" className={statusColor[status]}>{status}</Badge>
+                                        </div>
+                                         <Separator orientation="vertical" className="h-4" />
+                                        <div className="flex items-center gap-2">
+                                             <span className="text-xs font-semibold">PRIORITY</span>
+                                             <Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>
                                         </div>
                                     </div>
-                                )}
-                                {testData && (
-                                     <div>
-                                        <h3 className="font-semibold mb-2 flex items-center gap-2"><File className="w-4 h-4" /> Test Data</h3>
-                                        <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md whitespace-pre-wrap">
-                                            {testData}
+                                </CardHeader>
+                                <CardContent className="p-0 mt-6 space-y-4">
+                                    <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
+                                    <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
+                                    <DetailRow icon={<Clock size={16}/>} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
+                                    
+                                    <Separator />
+
+                                    {taskRole === 'developer' ? (
+                                        <>
+                                            {taskType && <DetailRow icon={<Tag size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />}
+                                            {estimatedHours && <DetailRow icon={<Clock size={16}/>} label="Estimate" value={`${estimatedHours} hours`} />}
+                                            {techStack && <DetailRow icon={<Code size={16}/>} label="Tech Stack" value={techStack} />}
+                                        </>
+                                    ) : (
+                                         <>
+                                            {testType && <DetailRow icon={<Tag size={16}/>} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />}
+                                            {bugSeverity && <DetailRow icon={<Flag size={16}/>} label="Bug Severity" value={<Badge variant="outline" className={priorityColor[bugSeverity]}>{bugSeverity}</Badge>} />}
+                                         </>
+                                    )}
+
+                                    <Separator />
+                                    
+                                    <div>
+                                        <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
+                                            {description || (taskRole === 'qa' && selectedTask.testDescription) || 'No description provided.'}
+                                        </p>
+                                    </div>
+                                    
+                                    {attachmentUrls && attachmentUrls.length > 0 && (
+                                        <div>
+                                            <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Attachments</h3>
+                                            <div className="space-y-2 pl-6">
+                                                {attachmentUrls.map((file, index) => (
+                                                    <Link
+                                                        key={index}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        <File className="w-4 h-4" />
+                                                        {file.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                </>
-                            )}
-                            
-                            {/* Attachments */}
-                            {attachmentUrls && attachmentUrls.length > 0 && (
-                                <div>
-                                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Paperclip className="w-4 h-4" /> Attachments</h3>
-                                    <div className="space-y-2">
-                                        {attachmentUrls.map((file, index) => (
-                                            <Link
-                                                key={index}
-                                                href={file.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                                            >
-                                                <File className="w-4 h-4" />
-                                                {file.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                    )}
 
+                                </CardContent>
+                            </Card>
                         </div>
-
-                         {/* Sidebar with metadata */}
-                        <div className="md:col-span-1 space-y-4 md:border-l md:pl-6">
-                           <DetailRow icon={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} label="Status" value={status} />
-                            <Separator />
-                            <DetailRow icon={<Flag />} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
-                            <DetailRow icon={<User />} label="Assigned To" value={assignedTo} />
-                            <DetailRow icon={<Calendar />} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
-                            <DetailRow icon={<Clock />} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
-                           
-                            {taskRole === 'developer' && (
-                                <>
-                                <Separator />
-                                {taskType && <DetailRow icon={<Tag />} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />}
-                                {estimatedHours && <DetailRow icon={<Clock />} label="Estimated Hours" value={`${estimatedHours} hours`} />}
-                                {techStack && <DetailRow icon={<Code />} label="Tech Stack" value={techStack} />}
-                                </>
-                            )}
-                            {taskRole === 'qa' && (
-                                <>
-                                <Separator />
-                                {testType && <DetailRow icon={<Tag />} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />}
-                                {bugSeverity && <DetailRow icon={<Flag />} label="Bug Severity" value={<Badge variant="outline" className={priorityColor[bugSeverity]}>{bugSeverity}</Badge>} />}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </ScrollArea>
+                    </ScrollArea>
+                </div>
             </DialogContent>
         </Dialog>
     );

@@ -77,7 +77,7 @@ type TasksKanbanViewProps = {
     managerName?: string | null;
 }
 
-type GroupedTask = {
+export type GroupedTask = {
     user: User;
     tasks: Task[];
     projects: string[];
@@ -94,7 +94,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [viewingTask, setViewingTask] = useState<Task | null>(null);
+    const [viewingUserTasks, setViewingUserTasks] = useState<GroupedTask | null>(null);
     const [deletingTask, setDeletingTask] = useState<Task | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -120,7 +120,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         };
     }, []);
     
-    useEffect(() => {
+     useEffect(() => {
         setLoading(true);
         let unsubscribe = () => {};
     
@@ -185,8 +185,8 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         setIsEditDialogOpen(true);
     };
 
-    const handleViewTask = (task: Task) => {
-        setViewingTask(task);
+    const handleViewUserTasks = (userTasks: GroupedTask) => {
+        setViewingUserTasks(userTasks);
         setIsViewDialogOpen(true);
     };
 
@@ -295,12 +295,12 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 min-h-[100px] space-y-3">
-                                   {column.userTasks.map(({ user, tasks, projects, nearestDueDate, highestPriority }) => (
-                                        <Card key={user.id} className="bg-card hover:shadow-md transition-shadow">
+                                   {column.userTasks.map((userTask) => (
+                                        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
                                              <CardHeader className="p-3 flex-row items-start justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    {roleIcons[user.role as 'developer' | 'qa']}
-                                                    <span className="text-sm font-medium">{user.name}</span>
+                                                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                                                    <span className="text-sm font-medium">{userTask.user.name}</span>
                                                 </div>
                                                  <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -309,10 +309,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => {
-                                                            // For now, view the first task. This will be expanded later.
-                                                            if(tasks[0]) handleViewTask(tasks[0])
-                                                        }}>
+                                                        <DropdownMenuItem onClick={() => handleViewUserTasks(userTask)}>
                                                             <Eye className="mr-2 h-4 w-4" />
                                                             <span>View Details</span>
                                                         </DropdownMenuItem>
@@ -321,21 +318,20 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                              </CardHeader>
                                              <CardContent className="p-3 pt-0">
                                                 <div className="flex flex-wrap gap-2 mb-2">
-                                                    {projects.map(p => <Badge key={p} variant="outline">{p}</Badge>)}
+                                                    {userTask.projects.map(p => <Badge key={p} variant="outline">{p}</Badge>)}
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                                                    <div className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4" />
-                                                        <span>{format(nearestDueDate.toDate(), 'MMM dd')}</span>
+                                                        <span>{format(userTask.nearestDueDate.toDate(), 'MMM dd')}</span>
                                                    </div>
                                                    <div className="flex items-center gap-2">
-                                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                                         <Avatar className="h-6 w-6">
-                                                            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
-                                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                            <AvatarImage src={userTask.user.avatar || `https://placehold.co/40x40.png?text=${userTask.user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                            <AvatarFallback>{userTask.user.name.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                         <Avatar className="h-6 w-6 bg-muted text-muted-foreground text-xs flex items-center justify-center">
-                                                            {highestPriority.charAt(0)}
+                                                            {userTask.highestPriority.charAt(0)}
                                                         </Avatar>
                                                    </div>
                                                 </div>
@@ -356,9 +352,9 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     onOpenChange={setIsEditDialogOpen}
                 />
             )}
-             {viewingTask && (
+             {viewingUserTasks && (
                 <ViewTaskDetailsDialog
-                    task={viewingTask}
+                    userTasks={viewingUserTasks}
                     isOpen={isViewDialogOpen}
                     onOpenChange={setIsViewDialogOpen}
                 />
