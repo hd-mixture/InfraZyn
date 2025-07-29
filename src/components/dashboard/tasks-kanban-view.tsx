@@ -23,7 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDetailsDialog } from './view-task-details-dialog';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent } from '../ui/tooltip';
 
 
 export type Task = {
@@ -95,17 +95,13 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
     const primaryProject = userTask.projects[0];
     
     return (
-        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow">
-            <CardHeader className="p-3 flex-row items-start justify-between">
-                <div className="flex items-center gap-2">
-                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
-                    <span className="text-sm font-medium">{userTask.user.name}</span>
-                </div>
-                 <TooltipProvider>
+        <Card key={userTask.user.id} className="bg-card hover:shadow-md transition-shadow relative">
+             <div className="absolute top-2 right-2 z-10">
+                <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 relative group/pin" onClick={() => onPinProject(primaryProject.id, !primaryProject.pinned)}>
-                                 <Avatar className="h-6 w-6">
+                                <Avatar className="h-6 w-6">
                                     <AvatarImage src={userTask.managerAvatar} data-ai-hint="manager face" />
                                     <AvatarFallback>{userTask.projectManager.charAt(0)}</AvatarFallback>
                                 </Avatar>
@@ -124,7 +120,13 @@ const UserTasksCard = ({ userTask, onOpenDetails, onPinProject }: { userTask: Gr
                            )}
                         </TooltipContent>
                     </Tooltip>
-                 </TooltipProvider>
+                </TooltipProvider>
+            </div>
+            <CardHeader className="p-3">
+                <div className="flex items-center gap-2 pr-8">
+                    {roleIcons[userTask.user.role as 'developer' | 'qa']}
+                    <span className="text-sm font-medium truncate">{userTask.user.name}</span>
+                </div>
             </CardHeader>
             <CardContent className="p-3 pt-0">
                 <div className="flex flex-wrap gap-1 mb-2">
@@ -201,18 +203,19 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }, []);
     
     useEffect(() => {
-        if (userRole !== 'admin') return;
-        setLoading(true);
-        const tasksQuery = query(collection(db, "tasks"));
-        const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
-            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-            setTasks(fetchedTasks);
-            setLoading(false);
-        }, (err) => {
-            console.error("Error fetching tasks for admin: ", err);
-            setLoading(false)
-        });
-        return () => unsubscribe();
+        if (userRole === 'admin') {
+            setLoading(true);
+            const tasksQuery = query(collection(db, "tasks"));
+            const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+                const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+                setTasks(fetchedTasks);
+                setLoading(false);
+            }, (err) => {
+                console.error("Error fetching tasks for admin: ", err);
+                setLoading(false)
+            });
+            return () => unsubscribe();
+        }
     }, [userRole]);
 
 
@@ -229,7 +232,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             setManagerProjects(fetchedProjects);
         }, (err) => {
             console.error("Error fetching manager projects: ", err);
-            setLoading(false);
         });
         
         return () => unsubscribeProjects();
@@ -325,13 +327,12 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 };
             }).filter(Boolean) as GroupedTask[];
             
-            // Sort user tasks: pinned first
             processedUserTasks.sort((a, b) => {
                 const aPinned = a.projects[0]?.pinned || false;
                 const bPinned = b.projects[0]?.pinned || false;
                 if (aPinned && !bPinned) return -1;
                 if (!aPinned && bPinned) return 1;
-                return 0; // or sort by other criteria if needed
+                return 0;
             });
 
             return {
@@ -346,7 +347,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     useEffect(() => {
         if (!isViewDialogOpen || !viewingUserTasks) return;
 
-        // Find the user's task group in the newly computed columns
         let updatedUserTask: GroupedTask | undefined;
         for (const column of columns) {
             const found = column.userTasks.find(ut => ut.user.id === viewingUserTasks.user.id);
@@ -362,7 +362,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             setIsViewDialogOpen(false);
         }
 
-    }, [tasks, columns, isViewDialogOpen, viewingUserTasks]);
+    }, [columns, isViewDialogOpen, viewingUserTasks]);
 
 
     const handleViewUserTasks = (userTasks: GroupedTask) => {
