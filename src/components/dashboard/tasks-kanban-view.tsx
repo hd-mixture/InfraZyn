@@ -103,8 +103,17 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
             setUsers(fetchedUsers);
         });
+
+        const projectsQuery = query(collection(db, "projects"));
+        const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
+            const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+            setProjects(fetchedProjects);
+        });
         
-        return () => unsubscribeUsers();
+        return () => {
+            unsubscribeUsers();
+            unsubscribeProjects();
+        };
     }, []);
     
     useEffect(() => {
@@ -126,7 +135,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
             const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
                 const managerProjectIds = projectSnapshot.docs.map(doc => doc.id);
-                setProjects(projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
                 
                 if (managerProjectIds.length > 0) {
                     const tasksQuery = query(collection(db, "tasks"), where('project', 'in', managerProjectIds));
@@ -152,8 +160,15 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const filteredTasks = useMemo(() => {
         if (!searchQuery) return tasks;
         const lowercasedQuery = searchQuery.toLowerCase();
-        return tasks.filter(task => task.taskName.toLowerCase().includes(lowercasedQuery) || task.assignedTo.toLowerCase().includes(lowercasedQuery));
-    }, [tasks, searchQuery]);
+        const projectMap = new Map(projects.map(p => [p.id, p.projectName]));
+
+        return tasks.filter(task => {
+            const projectName = projectMap.get(task.project)?.toLowerCase() || '';
+            return task.taskName.toLowerCase().includes(lowercasedQuery) || 
+                   task.assignedTo.toLowerCase().includes(lowercasedQuery) ||
+                   projectName.includes(lowercasedQuery);
+        });
+    }, [tasks, searchQuery, projects]);
     
     const handleEditTask = (task: Task) => {
         setEditingTask(task);
@@ -209,6 +224,10 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         ];
     }, [filteredTasks]);
 
+    const getProjectName = (projectId: string) => {
+        return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
+    };
+
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading tasks...</div>
     }
@@ -239,7 +258,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                         const user = users.find(u => u.name === task.assignedTo);
                                         return (
                                             <Card key={task.id} className="bg-card hover:shadow-md transition-shadow">
-                                                 <CardHeader className="p-3 flex-row items-center justify-between">
+                                                 <CardHeader className="p-3 flex-row items-start justify-between">
                                                     <div className="flex items-center gap-2">
                                                         {roleIcons[task.taskRole]}
                                                         <span className="text-sm font-medium">{user?.name || task.assignedTo}</span>
@@ -268,18 +287,23 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                     </DropdownMenu>
                                                  </CardHeader>
                                                  <CardContent className="p-3 pt-0">
-                                                    <p className="font-semibold text-sm mb-2">{task.taskName}</p>
+                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                        <Badge variant="outline">{getProjectName(task.project)}</Badge>
+                                                    </div>
                                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                                                        <div className="flex items-center gap-2">
                                                             <Clock className="h-4 w-4" />
                                                             <span>{format(task.dueDate.toDate(), 'MMM dd')}</span>
                                                        </div>
-                                                       <div className="flex items-center gap-1">
+                                                       <div className="flex items-center gap-2">
+                                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                                             <Avatar className="h-6 w-6">
                                                                 <AvatarImage src={user?.avatar || `https://placehold.co/40x40.png?text=${task.assignedTo.charAt(0)}`} data-ai-hint="person face" />
                                                                 <AvatarFallback>{task.assignedTo.charAt(0)}</AvatarFallback>
                                                             </Avatar>
-                                                            {priorityIcons[task.priority]}
+                                                            <Avatar className="h-6 w-6 bg-muted text-muted-foreground text-xs flex items-center justify-center">
+                                                                {task.priority.charAt(0)}
+                                                            </Avatar>
                                                        </div>
                                                     </div>
                                                  </CardContent>
