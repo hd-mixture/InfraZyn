@@ -34,6 +34,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
@@ -49,7 +50,7 @@ import axios from 'axios';
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
-  projectManager: z.string().min(1, 'Please select a project manager.'),
+  projectManager: z.string().optional(),
   revenue: z.any().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
@@ -71,6 +72,8 @@ type EditProjectFormProps = {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 }
+
+const ASSIGN_LATER_VALUE = '_assign_later_';
 
 export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFormProps) {
   const [loading, setLoading] = useState(false);
@@ -113,7 +116,18 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         const manager = managers.find(m => m.name === project.projectManager);
         form.reset({
             ...project,
-            projectManager: manager ? manager.id : '',
+            projectManager: manager ? manager.id : ASSIGN_LATER_VALUE,
+            revenue: project.revenue,
+            progress: project.progress ?? 0,
+            startDate: project.startDate.toDate(),
+            endDate: project.endDate.toDate(),
+            status: project.status as any,
+        });
+    }
+    if (project && !project.projectManager && isOpen) {
+         form.reset({
+            ...project,
+            projectManager: ASSIGN_LATER_VALUE,
             revenue: project.revenue,
             progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
@@ -153,17 +167,20 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
 
         const projectRef = doc(db, "projects", project.id);
         
-        const manager = managers.find(m => m.id === values.projectManager);
-        if(!manager) {
-            throw new Error('Selected manager not found');
+        let managerName = '';
+        if (values.projectManager && values.projectManager !== ASSIGN_LATER_VALUE) {
+            const manager = managers.find(m => m.id === values.projectManager);
+            if (manager) {
+                managerName = manager.name;
+            }
         }
-
+        
         const { logo, ...projectData } = values;
 
         const dataToUpdate: any = {
             ...projectData,
             logoUrl,
-            projectManager: manager.name,
+            projectManager: managerName,
             progress: values.progress === undefined ? null : values.progress,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
@@ -276,6 +293,10 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 </SelectItem>
                                 ))
                             )}
+                            <SelectSeparator />
+                             <SelectItem value={ASSIGN_LATER_VALUE}>
+                                Assign Later
+                             </SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -379,7 +400,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 mode="single"
                                 selected={field.value}
                                 onSelect={(date) => {
-                                    field.onChange(date);
+                                    if(date) field.onChange(date);
                                     setIsStartDatePickerOpen(false);
                                 }}
                                 initialFocus
@@ -420,7 +441,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                                 mode="single"
                                 selected={field.value}
                                 onSelect={(date) => {
-                                    field.onChange(date);
+                                    if(date) field.onChange(date);
                                     setIsEndDatePickerOpen(false);
                                 }}
                                 initialFocus
@@ -439,7 +460,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
@@ -464,7 +485,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Priority</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select priority" />

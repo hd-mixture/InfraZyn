@@ -33,6 +33,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
@@ -47,7 +48,7 @@ import axios from 'axios';
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
   description: z.string().optional(),
-  projectManager: z.string().min(1, 'Please select a project manager.'),
+  projectManager: z.string().optional(),
   revenue: z.coerce.number().optional(),
   startDate: z.date({ required_error: 'A start date is required.' }),
   endDate: z.date({ required_error: 'An end date is required.' }),
@@ -62,6 +63,8 @@ type User = {
     role: string;
     avatar?: string;
 };
+
+const ASSIGN_LATER_VALUE = '_assign_later_';
 
 export function CreateProjectForm({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -125,14 +128,18 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
 
         const { logo, ...projectData } = values;
 
-        const manager = managers.find(m => m.id === projectData.projectManager);
-        if(!manager) {
-            throw new Error('Selected manager not found');
+        let managerName = '';
+        if (projectData.projectManager && projectData.projectManager !== ASSIGN_LATER_VALUE) {
+            const manager = managers.find(m => m.id === projectData.projectManager);
+            if(manager) {
+                managerName = manager.name;
+            }
         }
+        
 
         const dataToSave: any = {
             ...projectData,
-            projectManager: manager.name,
+            projectManager: managerName,
             logoUrl,
             startDate: Timestamp.fromDate(values.startDate),
             endDate: Timestamp.fromDate(values.endDate),
@@ -230,7 +237,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Project Manager</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a manager" />
@@ -241,7 +248,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 <SelectItem value="no-manager" disabled>No managers found</SelectItem>
                             ) : (
                                 managers.map(manager => (
-                                <SelectItem key={manager.id} value={manager.id} className="pl-2">
+                                <SelectItem key={manager.id} value={manager.id}>
                                     <div className='flex items-center gap-2'>
                                         <Avatar className="h-6 w-6">
                                             <AvatarImage src={manager.avatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
@@ -252,6 +259,10 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 </SelectItem>
                                 ))
                             )}
+                             <SelectSeparator />
+                             <SelectItem value={ASSIGN_LATER_VALUE}>
+                                Assign Later
+                             </SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -355,7 +366,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={(date) => {
-                                    field.onChange(date);
+                                    if(date) field.onChange(date);
                                     setIsStartDatePickerOpen(false);
                                 }}
                                 initialFocus
@@ -396,7 +407,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={(date) => {
-                                    field.onChange(date);
+                                    if(date) field.onChange(date);
                                     setIsEndDatePickerOpen(false);
                                 }}
                                 initialFocus
