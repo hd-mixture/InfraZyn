@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to delete a user from Firebase Authentication.
@@ -14,9 +15,15 @@ import { getAuth } from 'firebase-admin/auth';
 // In a real environment, this should be stored securely (e.g., as a secret).
 let adminApp: App | undefined;
 try {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : undefined;
+  let serviceAccount;
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    // The private_key in the service account JSON from an environment variable needs its newlines properly escaped.
+    // Here we replace the literal '\\n' with actual newline characters '\n'.
+    if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+  }
 
   if (serviceAccount && !getApps().length) {
     adminApp = initializeApp({
