@@ -266,7 +266,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
     }, []);
 
     const managerTeams = useMemo(() => {
-        const teams: Record<string, User[]> = {};
+        const teams: Record<string, { members: User[], manager: User | undefined }> = {};
         const allManagers = users.filter(u => u.role === 'manager');
         const userMap = new Map(users.map(u => [u.name, u]));
 
@@ -283,25 +283,41 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                     teamMembers.push(user);
                 }
             });
-            teams[manager.name] = teamMembers;
+            teams[manager.name] = { members: teamMembers, manager: manager };
         });
-
         return teams;
     }, [users, projects, tasks]);
 
+    const userToManagerMap = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const [managerName, { members }] of Object.entries(managerTeams)) {
+            members.forEach(member => {
+                if (!map.has(member.id)) {
+                    map.set(member.id, managerName);
+                } else {
+                    // If user is on multiple teams, mark as ambiguous
+                    map.set(member.id, 'Multiple');
+                }
+            });
+        }
+        return map;
+    }, [managerTeams]);
+
     const filteredUsers = useMemo(() => {
         if (userRole === 'manager' && managerName) {
-            const teamMemberSet = new Set<User>();
+            const teamMemberSet = new Set<string>();
             
             // Add users assigned to manager's projects
-            const teamMembersFromProjects = managerTeams[managerName] || [];
-            teamMembersFromProjects.forEach(member => teamMemberSet.add(member));
+            (managerTeams[managerName]?.members || []).forEach(member => teamMemberSet.add(member.id));
 
             // Add users created by this manager
-            const usersAddedByManager = users.filter(user => user.addedBy === managerName);
-            usersAddedByManager.forEach(member => teamMemberSet.add(member));
+            users.forEach(user => {
+                if (user.addedBy === managerName) {
+                    teamMemberSet.add(user.id);
+                }
+            });
 
-            return Array.from(teamMemberSet);
+            return users.filter(user => teamMemberSet.has(user.id));
         }
         return users; // For admin
     }, [userRole, managerName, users, managerTeams]);
@@ -336,7 +352,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
 
             toast({
                 title: "User Deleted!",
-                description: `User ${deletingUser.name} has been deleted.`,
+                description: `User "${deletingUser.name}" has been deleted.`,
             });
         } catch (e: any) {
             console.error("Error deleting user: ", e);
@@ -384,90 +400,93 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                     <TableCell colSpan={5} className="text-center h-24">No users found.</TableCell>
                                 </TableRow>
                             ) : (
-                                filteredUsers.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
-                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <div className="font-medium flex items-center gap-2">
-                                                    <span>{user.name}</span>
-                                                    {userRole === 'admin' && user.addedBy && (
-                                                        <span className="text-xs text-muted-foreground italic">
-                                                            (Added by {user.addedBy})
-                                                        </span>
+                                filteredUsers.map((user) => {
+                                    const inferredManager = userToManagerMap.get(user.id);
+                                    return (
+                                        <TableRow key={user.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar>
+                                                        <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <div className="font-medium flex items-center gap-2">
+                                                            <span>{user.name}</span>
+                                                            {userRole === 'admin' && (user.addedBy || (inferredManager && inferredManager !== 'Multiple')) && (
+                                                                <span className="text-xs text-muted-foreground italic">
+                                                                    ({user.addedBy ? `Added by ${user.addedBy}` : `Managed by ${inferredManager}`})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                                                    </div>
+                                                    {user.role === 'manager' && userRole === 'admin' && (
+                                                        <div className="flex -space-x-3 items-center pl-2">
+                                                            {(managerTeams[user.name]?.members || []).slice(0, 3).map(member => (
+                                                                <TooltipProvider key={member.id}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Avatar className="h-6 w-6 border-2 border-background">
+                                                                                <AvatarImage src={member.avatar} data-ai-hint="person face" />
+                                                                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                                                            </Avatar>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>{member.name} ({member.role})</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            ))}
+                                                            {(managerTeams[user.name]?.members.length || 0) > 3 && (
+                                                                <Avatar className="h-6 w-6 border-2 border-background">
+                                                                    <AvatarFallback className="text-xs">
+                                                                        +{(managerTeams[user.name]?.members.length || 0) - 3}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-muted-foreground">{user.email}</div>
-                                            </div>
-                                             {user.role === 'manager' && userRole === 'admin' && (
-                                                <div className="flex -space-x-3 items-center pl-2">
-                                                    {(managerTeams[user.name] || []).slice(0, 3).map(member => (
-                                                        <TooltipProvider key={member.id}>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Avatar className="h-6 w-6 border-2 border-background">
-                                                                        <AvatarImage src={member.avatar} data-ai-hint="person face" />
-                                                                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                                                    </Avatar>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{member.name} ({member.role})</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    ))}
-                                                    {(managerTeams[user.name]?.length || 0) > 3 && (
-                                                        <Avatar className="h-6 w-6 border-2 border-background">
-                                                            <AvatarFallback className="text-xs">
-                                                                +{(managerTeams[user.name]?.length || 0) - 3}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={roleVariant[user.role]}>
-                                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'} className={user.status === 'Active' ? "text-green-600" : ""}>
-                                            {user.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy') : 'N/A'}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    <span>Edit</span>
-                                                </DropdownMenuItem>
-                                                 {user.role !== 'manager' && (
-                                                    <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        <span>Delete</span>
-                                                    </DropdownMenuItem>
-                                                 )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                                ))
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={roleVariant[user.role]}>
+                                                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'} className={user.status === 'Active' ? "text-green-600" : ""}>
+                                                    {user.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            <span>Edit</span>
+                                                        </DropdownMenuItem>
+                                                        {user.role !== 'manager' && (
+                                                            <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                <span>Delete</span>
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>
