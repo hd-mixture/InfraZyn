@@ -61,6 +61,7 @@ export type User = {
     createdAt: Timestamp;
     status: 'Active' | 'Inactive';
     avatar?: string;
+    addedBy?: string;
 };
 
 type Project = {
@@ -83,9 +84,10 @@ const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "o
 
 type CreateUserFormProps = {
     userRole: 'admin' | 'manager';
+    managerName?: string | null;
 }
 
-function CreateUserForm({ userRole }: CreateUserFormProps) {
+function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -105,13 +107,19 @@ function CreateUserForm({ userRole }: CreateUserFormProps) {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, 'DTXH2025');
             const user = userCredential.user;
 
-            await setDoc(doc(db, "users", user.uid), {
+            const userData: any = {
                 name: values.name,
                 email: values.email,
                 role: values.role,
                 createdAt: Timestamp.now(),
                 status: 'Active'
-            });
+            };
+
+            if (userRole === 'manager' && managerName) {
+                userData.addedBy = managerName;
+            }
+
+            await setDoc(doc(db, "users", user.uid), userData);
 
             toast({
                 title: "User Created!",
@@ -282,8 +290,17 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
 
     const filteredUsers = useMemo(() => {
         if (userRole === 'manager' && managerName) {
-            const teamMembers = managerTeams[managerName] || [];
-            return teamMembers;
+            const teamMemberSet = new Set<User>();
+            
+            // Add users assigned to manager's projects
+            const teamMembersFromProjects = managerTeams[managerName] || [];
+            teamMembersFromProjects.forEach(member => teamMemberSet.add(member));
+
+            // Add users created by this manager
+            const usersAddedByManager = users.filter(user => user.addedBy === managerName);
+            usersAddedByManager.forEach(member => teamMemberSet.add(member));
+
+            return Array.from(teamMemberSet);
         }
         return users; // For admin
     }, [userRole, managerName, users, managerTeams]);
@@ -330,7 +347,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                             {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Your assigned developers and QAs across all projects.'}
                         </CardDescription>
                     </div>
-                    {userRole === 'admin' || userRole === 'manager' ? <CreateUserForm userRole={userRole} /> : null}
+                     { (userRole === 'admin' || userRole === 'manager') && <CreateUserForm userRole={userRole} managerName={managerName} /> }
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -362,7 +379,14 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <div className="font-medium">{user.name}</div>
+                                                <div className="font-medium flex items-center gap-2">
+                                                    <span>{user.name}</span>
+                                                    {userRole === 'admin' && user.addedBy && (
+                                                        <span className="text-xs text-muted-foreground italic">
+                                                            (Added by {user.addedBy})
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="text-sm text-muted-foreground">{user.email}</div>
                                             </div>
                                              {user.role === 'manager' && userRole === 'admin' && (
