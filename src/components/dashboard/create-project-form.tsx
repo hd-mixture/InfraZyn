@@ -38,11 +38,11 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import axios from 'axios';
 
 const formSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -111,9 +111,16 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
         let logoUrl = '';
         if (values.logo && values.logo.length > 0) {
             const file = values.logo[0];
-            const storageRef = ref(storage, `project-logos/${Date.now()}_${file.name}`);
-            const snapshot = await uploadBytes(storageRef, file);
-            logoUrl = await getDownloadURL(snapshot.ref);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+            
+            const response = await axios.post(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            formData
+            );
+            
+            logoUrl = response.data.secure_url;
         }
 
         const { logo, ...projectData } = values;
@@ -155,7 +162,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
         toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
-            description: "There was a problem with your request.",
+            description: "There was a problem with your request. Check your Cloudinary credentials.",
         });
     } finally {
         setLoading(false);

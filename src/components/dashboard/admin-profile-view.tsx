@@ -119,7 +119,7 @@ export function AdminProfileView() {
             toast({
                 variant: 'destructive',
                 title: 'Upload Failed',
-                description: 'There was a problem uploading your image.',
+                description: 'There was a problem uploading your image. Check your Cloudinary credentials.',
             });
         } finally {
             setUploading(false);
