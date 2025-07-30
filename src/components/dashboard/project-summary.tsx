@@ -220,7 +220,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
 
 
   const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
-  const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
+  const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager).filter(Boolean))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
 
   const filteredProjects = useMemo(() => {
