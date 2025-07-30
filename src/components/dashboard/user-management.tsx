@@ -402,6 +402,17 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                             ) : (
                                 filteredUsers.map((user) => {
                                     const inferredManager = userToManagerMap.get(user.id);
+                                    let addedByText = '';
+                                    if (userRole === 'admin') {
+                                        if (user.addedBy) {
+                                            addedByText = `(Added by ${user.addedBy})`;
+                                        } else if (inferredManager && inferredManager !== 'Multiple') {
+                                            addedByText = `(Managed by ${inferredManager})`;
+                                        } else if (!user.addedBy && user.role !== 'manager') {
+                                            addedByText = '(Added by You)';
+                                        }
+                                    }
+
                                     return (
                                         <TableRow key={user.id}>
                                             <TableCell>
@@ -413,9 +424,9 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                     <div>
                                                         <div className="font-medium flex items-center gap-2">
                                                             <span>{user.name}</span>
-                                                            {userRole === 'admin' && (user.addedBy || (inferredManager && inferredManager !== 'Multiple')) && (
+                                                            {addedByText && (
                                                                 <span className="text-xs text-muted-foreground italic">
-                                                                    ({user.addedBy ? `Added by ${user.addedBy}` : `Managed by ${inferredManager}`})
+                                                                    {addedByText}
                                                                 </span>
                                                             )}
                                                         </div>
