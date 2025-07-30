@@ -100,9 +100,13 @@ export function CreateDeveloperTaskForm({ onSuccess, userRole, managerName }: Cr
 
                 // Fetch tasks for those projects to find team members
                 const projectIds = managerProjects.map(p => p.id);
-                const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
-                const tasksSnapshot = await getDocs(tasksQuery);
-                const teamMemberNames = new Set(tasksSnapshot.docs.map(doc => doc.data().assignedTo));
+                const teamMemberNames = new Set<string>();
+
+                if (projectIds.length > 0) {
+                    const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
+                    const tasksSnapshot = await getDocs(tasksQuery);
+                    tasksSnapshot.docs.forEach(doc => teamMemberNames.add(doc.data().assignedTo));
+                }
                 
                 // Fetch users added by this manager
                 const addedByQuery = query(collection(db, "users"), where("addedBy", "==", managerName), where("role", "==", "developer"));
@@ -277,10 +281,10 @@ export function CreateDeveloperTaskForm({ onSuccess, userRole, managerName }: Cr
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Assigned To</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={users.length === 0}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder="Select a developer" />
+                        <SelectValue placeholder={users.length === 0 ? "No developers available" : "Select a developer"} />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>

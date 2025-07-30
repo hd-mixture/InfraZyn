@@ -101,9 +101,13 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
                 
                 // Fetch tasks for those projects to find team members
                 const projectIds = managerProjects.map(p => p.id);
-                const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
-                const tasksSnapshot = await getDocs(tasksQuery);
-                const teamMemberNames = new Set(tasksSnapshot.docs.map(doc => doc.data().assignedTo));
+                const teamMemberNames = new Set<string>();
+
+                if (projectIds.length > 0) {
+                    const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
+                    const tasksSnapshot = await getDocs(tasksQuery);
+                    tasksSnapshot.forEach(doc => teamMemberNames.add(doc.data().assignedTo));
+                }
                 
                 // Fetch users added by this manager
                 const addedByQuery = query(collection(db, "users"), where("addedBy", "==", managerName), where("role", "==", "qa"));
@@ -271,10 +275,10 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Assigned To</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={users.length === 0}>
                         <FormControl>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select a QA" />
+                            <SelectValue placeholder={users.length === 0 ? "No QAs available" : "Select a QA"} />
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
