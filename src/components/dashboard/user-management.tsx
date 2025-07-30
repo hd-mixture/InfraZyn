@@ -330,7 +330,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                             {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Your assigned developers and QAs across all projects.'}
                         </CardDescription>
                     </div>
-                    {userRole === 'admin' && <CreateUserForm userRole={userRole} />}
+                    {userRole === 'admin' || userRole === 'manager' ? <CreateUserForm userRole={userRole} /> : null}
                 </CardHeader>
                 <CardContent>
                     <Table>
