@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
 import axios from 'axios';
+import type { Project } from './project-summary';
 
 const formSchema = z.object({
   testCaseTitle: z.string().min(1, 'Test case title is required.'),
@@ -51,11 +52,6 @@ type User = {
     id: string;
     name: string;
 };
-
-type Project = {
-    id: string;
-    projectName: string;
-}
 
 type CreateQATaskFormProps = {
     onSuccess: () => void;
@@ -91,21 +87,50 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const usersRef = collection(db, "users");
-            const userQuery = query(usersRef, where("role", "==", "qa"));
-            const userSnapshot = await getDocs(userQuery);
-            const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
-            setUsers(fetchedUsers);
-
-            let projectQuery;
             if (userRole === 'manager' && managerName) {
-                projectQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
-            } else {
-                projectQuery = query(collection(db, "projects"));
+                // Fetch projects managed by this manager
+                const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+                const projectSnapshot = await getDocs(projectsQuery);
+                const managerProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+                setProjects(managerProjects);
+
+                if (managerProjects.length === 0) {
+                    setUsers([]);
+                    return;
+                }
+                
+                // Fetch tasks for those projects to find team members
+                const projectIds = managerProjects.map(p => p.id);
+                const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
+                const tasksSnapshot = await getDocs(tasksQuery);
+                const teamMemberNames = new Set(tasksSnapshot.docs.map(doc => doc.data().assignedTo));
+                
+                // Fetch users added by this manager
+                const addedByQuery = query(collection(db, "users"), where("addedBy", "==", managerName), where("role", "==", "qa"));
+                const addedBySnapshot = await getDocs(addedByQuery);
+                addedBySnapshot.forEach(doc => teamMemberNames.add(doc.data().name));
+                
+                // Fetch full user details for the team members
+                 if (teamMemberNames.size > 0) {
+                    const usersQuery = query(collection(db, "users"), where("name", "in", Array.from(teamMemberNames)), where("role", "==", "qa"));
+                    const userSnapshot = await getDocs(usersQuery);
+                    const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
+                    setUsers(fetchedUsers);
+                } else {
+                    setUsers([]);
+                }
+            } else { // Admin role
+                const usersRef = collection(db, "users");
+                const userQuery = query(usersRef, where("role", "==", "qa"));
+                const userSnapshot = await getDocs(userQuery);
+                const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
+                setUsers(fetchedUsers);
+
+                const projectQuery = query(collection(db, "projects"));
+                const projectSnapshot = await getDocs(projectQuery);
+                const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+                setProjects(fetchedProjects);
             }
-            const projectSnapshot = await getDocs(projectQuery);
-            const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
-            setProjects(fetchedProjects);
 
         } catch(e) {
             console.error("Error fetching data: ", e);
