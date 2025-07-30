@@ -7,20 +7,28 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
 // This is a placeholder for your service account key.
 // In a real environment, this should be stored securely (e.g., as a secret).
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  : undefined;
+let adminApp: App | undefined;
+try {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : undefined;
 
-if (!getApps().length) {
-  initializeApp({
-    credential: serviceAccount ? cert(serviceAccount) : undefined,
-  });
+  if (serviceAccount && !getApps().length) {
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else if (getApps().length > 0) {
+    adminApp = getApps()[0];
+  }
+} catch (e) {
+    console.warn("Firebase Admin SDK initialization failed. User deletion from Auth will be skipped. Error:", e);
 }
+
 
 const DeleteUserInputSchema = z.object({
   uid: z.string().describe('The UID of the user to delete.'),
@@ -46,8 +54,14 @@ const deleteUserFlow = ai.defineFlow(
     outputSchema: DeleteUserOutputSchema,
   },
   async ({ uid }) => {
+    if (!adminApp) {
+        return {
+            success: true, // Allow Firestore deletion to proceed
+            message: 'Firebase Admin SDK not configured. Skipping deletion from Authentication, but proceeding with database deletion.'
+        }
+    }
     try {
-      await getAuth().deleteUser(uid);
+      await getAuth(adminApp).deleteUser(uid);
       return {
         success: true,
         message: `Successfully deleted user ${uid} from Firebase Authentication.`,
