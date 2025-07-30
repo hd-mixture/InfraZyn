@@ -27,7 +27,7 @@ function ManagerDashboardContent() {
   const renderContent = () => {
     switch (view) {
       case 'users':
-        return <UserManagement userRole="manager" />;
+        return <UserManagement userRole="manager" managerName={managerName} />;
       case 'tasks':
         return <TasksKanbanView searchQuery={searchQuery} userRole="manager" managerName={managerName} />;
       case 'manage-team':

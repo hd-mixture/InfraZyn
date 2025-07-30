@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,6 +44,7 @@ import { format } from 'date-fns';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { EditUserForm } from './edit-user-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 
 const userSchema = z.object({
@@ -61,6 +62,18 @@ export type User = {
     status: 'Active' | 'Inactive';
     avatar?: string;
 };
+
+type Project = {
+    id: string;
+    projectName: string;
+    projectManager: string;
+}
+
+type Task = {
+    id: string;
+    project: string;
+    assignedTo: string;
+}
 
 const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
     "manager": "default",
@@ -89,8 +102,6 @@ function CreateUserForm({ userRole }: CreateUserFormProps) {
     async function onSubmit(values: z.infer<typeof userSchema>) {
         setLoading(true);
         try {
-            // This is NOT secure for a production app. 
-            // User creation should be handled by a backend function with admin privileges.
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, 'DTXH2025');
             const user = userCredential.user;
 
@@ -211,10 +222,13 @@ function CreateUserForm({ userRole }: CreateUserFormProps) {
 
 type UserManagementProps = {
     userRole?: 'admin' | 'manager';
+    managerName?: string | null;
 }
 
-export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
+export function UserManagement({ userRole = 'admin', managerName }: UserManagementProps) {
     const [users, setUsers] = useState<User[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -223,21 +237,57 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
     const { toast } = useToast();
 
     useEffect(() => {
-        const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const usersData: User[] = [];
-            querySnapshot.forEach((doc) => {
-                usersData.push({ id: doc.id, ...doc.data() } as User);
-            });
-            setUsers(usersData);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching users: ", error);
+        setLoading(true);
+        const usersQuery = query(collection(db, "users"), orderBy("createdAt", "desc"));
+        const projectsQuery = query(collection(db, "projects"));
+        const tasksQuery = query(collection(db, "tasks"));
+
+        const unSubUsers = onSnapshot(usersQuery, (snap) => setUsers(snap.docs.map(d => ({id: d.id, ...d.data()}) as User)));
+        const unSubProjects = onSnapshot(projectsQuery, (snap) => setProjects(snap.docs.map(d => ({id: d.id, ...d.data()}) as Project)));
+        const unSubTasks = onSnapshot(tasksQuery, (snap) => {
+            setTasks(snap.docs.map(d => ({id: d.id, ...d.data()}) as Task));
             setLoading(false);
         });
-
-        return () => unsubscribe();
+        
+        return () => {
+            unSubUsers();
+            unSubProjects();
+            unSubTasks();
+        };
     }, []);
+
+    const managerTeams = useMemo(() => {
+        const teams: Record<string, User[]> = {};
+        const allManagers = users.filter(u => u.role === 'manager');
+        const userMap = new Map(users.map(u => [u.name, u]));
+
+        allManagers.forEach(manager => {
+            const managerProjects = projects.filter(p => p.projectManager === manager.name);
+            const managerProjectIds = managerProjects.map(p => p.id);
+            const managerTasks = tasks.filter(t => managerProjectIds.includes(t.project));
+            
+            const teamMemberNames = new Set(managerTasks.map(t => t.assignedTo));
+            const teamMembers: User[] = [];
+            teamMemberNames.forEach(name => {
+                const user = userMap.get(name);
+                if (user) {
+                    teamMembers.push(user);
+                }
+            });
+            teams[manager.name] = teamMembers;
+        });
+
+        return teams;
+    }, [users, projects, tasks]);
+
+    const filteredUsers = useMemo(() => {
+        if (userRole === 'manager' && managerName) {
+            const teamMembers = managerTeams[managerName] || [];
+            return teamMembers;
+        }
+        return users; // For admin
+    }, [userRole, managerName, users, managerTeams]);
+    
 
     const handleEditUser = (user: User) => {
         setEditingUser(user);
@@ -270,10 +320,6 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
         }
     };
     
-    const filteredUsers = userRole === 'manager' 
-        ? users.filter(user => user.role === 'developer' || user.role === 'qa')
-        : users;
-
     return (
         <>
             <Card className="shadow-sm hover:shadow-md transition-shadow">
@@ -281,10 +327,10 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                     <div>
                         <CardTitle>{userRole === 'admin' ? 'User Management' : 'Team Members'}</CardTitle>
                         <CardDescription>
-                            {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Add and manage developers and QAs for your projects.'}
+                            {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Your assigned developers and QAs across all projects.'}
                         </CardDescription>
                     </div>
-                    <CreateUserForm userRole={userRole} />
+                    {userRole === 'admin' && <CreateUserForm userRole={userRole} />}
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -304,7 +350,7 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                                 </TableRow>
                             ) : filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">No users found. Add one to get started!</TableCell>
+                                    <TableCell colSpan={5} className="text-center h-24">No users found.</TableCell>
                                 </TableRow>
                             ) : (
                                 filteredUsers.map((user) => (
@@ -319,6 +365,32 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                                                 <div className="font-medium">{user.name}</div>
                                                 <div className="text-sm text-muted-foreground">{user.email}</div>
                                             </div>
+                                             {user.role === 'manager' && userRole === 'admin' && (
+                                                <div className="flex -space-x-3 items-center pl-2">
+                                                    {(managerTeams[user.name] || []).slice(0, 3).map(member => (
+                                                        <TooltipProvider key={member.id}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Avatar className="h-6 w-6 border-2 border-background">
+                                                                        <AvatarImage src={member.avatar} data-ai-hint="person face" />
+                                                                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{member.name} ({member.role})</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    ))}
+                                                    {(managerTeams[user.name]?.length || 0) > 3 && (
+                                                        <Avatar className="h-6 w-6 border-2 border-background">
+                                                            <AvatarFallback className="text-xs">
+                                                                +{(managerTeams[user.name]?.length || 0) - 3}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -347,10 +419,12 @@ export function UserManagement({ userRole = 'admin' }: UserManagementProps) {
                                                     <Edit className="mr-2 h-4 w-4" />
                                                     <span>Edit</span>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    <span>Delete</span>
-                                                </DropdownMenuItem>
+                                                 {user.role !== 'manager' && (
+                                                    <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <span>Delete</span>
+                                                    </DropdownMenuItem>
+                                                 )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
