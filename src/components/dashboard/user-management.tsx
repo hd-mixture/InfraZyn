@@ -44,7 +44,7 @@ import { format } from 'date-fns';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { EditUserForm } from './edit-user-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 
 const userSchema = z.object({
