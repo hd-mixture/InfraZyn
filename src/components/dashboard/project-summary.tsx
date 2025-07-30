@@ -48,10 +48,17 @@ export type Project = {
     createdAt: Timestamp;
 }
 
+type Task = {
+    id: string;
+    project: string;
+    assignedTo: string;
+};
+
 type User = {
     id: string;
     name: string;
     avatar?: string;
+    role: 'developer' | 'qa' | 'manager';
 };
 
 
@@ -99,6 +106,7 @@ type ProjectSummaryProps = {
 export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
@@ -134,11 +142,18 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
         });
         setUsers(usersData);
     });
+    
+    const tasksQuery = query(collection(db, "tasks"));
+    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+        const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        setTasks(fetchedTasks);
+    });
 
 
     return () => {
         unsubscribe();
         unsubscribeUsers();
+        unsubscribeTasks();
     };
   }, []);
 
@@ -186,6 +201,24 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
         });
     }
   };
+  
+  const projectTeams = useMemo(() => {
+    const teams: { [projectId: string]: { manager: User | undefined, members: User[] } } = {};
+    const userMap = new Map(users.map(u => [u.name, u]));
+
+    projects.forEach(project => {
+        const manager = userMap.get(project.projectManager);
+        const projectTasks = tasks.filter(task => task.project === project.id);
+        const memberNames = [...new Set(projectTasks.map(task => task.assignedTo))];
+        const members = memberNames.map(name => userMap.get(name)).filter(Boolean) as User[];
+        
+        teams[project.id] = { manager, members };
+    });
+
+    return teams;
+  }, [projects, tasks, users]);
+
+
   const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
   const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
@@ -264,108 +297,131 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
             <div className="text-center text-muted-foreground py-10">No projects found.</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredProjects.map((project) => (
-                <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-12 w-12 border rounded-md">
-                                    <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
-                                    <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <CardTitle className="text-lg">{project.projectName}</CardTitle>
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-5 w-5">
-                                            <AvatarImage src={getManagerAvatar(project.projectManager)} data-ai-hint="person face" />
-                                            <AvatarFallback>{project.projectManager.charAt(0)}</AvatarFallback>
+                {filteredProjects.map((project) => {
+                    const team = projectTeams[project.id];
+                    return (
+                        <Card key={project.id} className="flex flex-col shadow-none border hover:border-primary/50 transition-colors">
+                            <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-12 w-12 border rounded-md">
+                                            <AvatarImage src={project.logoUrl || 'https://placehold.co/48x48.png'} data-ai-hint="logo company" alt={project.projectName} />
+                                            <AvatarFallback>{project.projectName.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+                                        <div>
+                                            <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                                            <CardDescription className="text-xs">{project.projectManager}</CardDescription>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                        <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => onEditProject(project)}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    <span>Edit</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    <span>Delete</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handlePinProject(project.id, !project.pinned)}>
-                                                <Star className={`h-4 w-4 ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{project.pinned ? 'Unpin' : 'Pin'}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Open menu</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => onEditProject(project)}>
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            <span>Edit</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={() => openDeleteDialog(project)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            <span>Delete</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                        <div className="flex justify-between items-center">
-                            <Badge variant="outline" className={statusColor[project.status] || ''}>
-                                {project.status}
-                            </Badge>
-                            <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
-                                {project.priority.toUpperCase()} PRIORITY
-                            </Badge>
-                        </div>
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm font-semibold">Progress</span>
-                                <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
-                            </div>
-                            <Progress 
-                                value={project.progress || 0}
-                                indicatorClassName={progressColor[project.status]}
-                                className={cn(project.status === 'In Progress' && 'animated-progress')}
-                            />
-                        </div>
-                        <div className="flex items-center">
-                            <div className="flex -space-x-2">
-                            <Avatar className="h-8 w-8 border-2 border-card">
-                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                    <AvatarFallback>U1</AvatarFallback>
-                            </Avatar>
-                            <Avatar className="h-8 w-8 border-2 border-card">
-                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                    <AvatarFallback>U2</AvatarFallback>
-                            </Avatar>
-                            <Avatar className="h-8 w-8 border-2 border-card">
-                                    <AvatarImage src="https://placehold.co/32x32.png" data-ai-hint="person face" />
-                                    <AvatarFallback>U3</AvatarFallback>
-                            </Avatar>
-                            <Avatar className="h-8 w-8 border-2 border-card">
-                                <AvatarFallback>+5</AvatarFallback>
-                            </Avatar>
-                            </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
-                        <div>
-                            Due Date: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
-                        </div>
-                    </CardFooter>
-                </Card>
-                ))}
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <Badge variant="outline" className={statusColor[project.status] || ''}>
+                                        {project.status}
+                                    </Badge>
+                                    <Badge variant="outline" className={priorityColor[project.priority]?.badge || ''}>
+                                        {project.priority.toUpperCase()} PRIORITY
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm font-semibold">Progress</span>
+                                        <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
+                                    </div>
+                                    <Progress 
+                                        value={project.progress || 0}
+                                        indicatorClassName={progressColor[project.status]}
+                                        className={cn(project.status === 'In Progress' && 'animated-progress')}
+                                    />
+                                </div>
+                                <div className="flex items-center min-h-[32px]">
+                                    {team && (team.manager || team.members.length > 0) ? (
+                                        <div className="flex items-center gap-1">
+                                            {team.manager && (
+                                                 <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <Avatar className="h-9 w-9 border-2 border-primary/50">
+                                                                <AvatarImage src={team.manager.avatar} data-ai-hint="person manager" />
+                                                                <AvatarFallback>{team.manager.name.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{team.manager.name} (Manager)</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
+                                            <div className="flex -space-x-4 ml-2">
+                                                {team.members.slice(0, 4).map(member => (
+                                                    <TooltipProvider key={member.id}>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <Avatar className="h-8 w-8 border-2 border-card">
+                                                                    <AvatarImage src={member.avatar} data-ai-hint="person face" />
+                                                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{member.name}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                ))}
+                                                {team.members.length > 4 && (
+                                                    <Avatar className="h-8 w-8 border-2 border-card">
+                                                        <AvatarFallback>+{team.members.length - 4}</AvatarFallback>
+                                                    </Avatar>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">No team assigned to this project.</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+                                <div>
+                                    Due Date: {project.endDate ? format(project.endDate.toDate(), 'dd MMM yyyy') : 'N/A'}
+                                </div>
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
             </div>
             )}
         </ScrollArea>
