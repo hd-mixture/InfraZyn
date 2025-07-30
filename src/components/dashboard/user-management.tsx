@@ -321,7 +321,15 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
         if (!deletingUser) return;
         try {
             // First, delete from Firebase Authentication via the Genkit flow
-            await deleteUser({ uid: deletingUser.id });
+            const result = await deleteUser({ uid: deletingUser.id });
+
+            if (!result.success && result.message.includes('not configured')) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Admin SDK Not Configured',
+                    description: 'Skipping deletion from Auth. Check server logs.'
+                });
+            }
 
             // Then, delete from Firestore
             await deleteDoc(doc(db, "users", deletingUser.id));
@@ -353,7 +361,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                             {userRole === 'admin' ? 'Add, edit, and manage all users.' : 'Your assigned developers and QAs across all projects.'}
                         </CardDescription>
                     </div>
-                     { (userRole === 'admin' || userRole === 'manager') && <CreateUserForm userRole={userRole} managerName={managerName} /> }
+                     {(userRole === 'admin' || userRole === 'manager') && <CreateUserForm userRole={userRole} managerName={managerName} /> }
                 </CardHeader>
                 <CardContent>
                     <Table>
