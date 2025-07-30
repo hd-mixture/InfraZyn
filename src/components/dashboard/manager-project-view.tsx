@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -85,30 +86,27 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
         setLoading(false);
         return;
     };
+    
+    setLoading(true);
 
-    const q = query(collection(db, "projects"), where("projectManager", "==", managerName));
-    const unsubscribeProjects = onSnapshot(q, (querySnapshot) => {
-      const projectsData: Project[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        projectsData.push({
-            id: doc.id,
-            ...data
-        } as Project);
-      });
-      setProjects(projectsData);
-      
-      if (projectsData.length > 0) {
-        const projectIds = projectsData.map(p => p.id);
-        const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
-        const unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
-            const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-            setTasks(fetchedTasks);
-        });
-        return () => unsubscribeTasks();
-      } else {
-        setTasks([]);
-      }
+    const projectsQuery = query(collection(db, "projects"), where("projectManager", "==", managerName));
+    const unsubscribeProjects = onSnapshot(projectsQuery, (projectSnapshot) => {
+        const projectsData = projectSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+        setProjects(projectsData);
+
+        if (projectsData.length > 0) {
+            const projectIds = projectsData.map(p => p.id);
+            const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
+            const unsubscribeTasks = onSnapshot(tasksQuery, (taskSnapshot) => {
+                const fetchedTasks = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+                setTasks(fetchedTasks);
+                setLoading(false); 
+            });
+            return unsubscribeTasks;
+        } else {
+            setTasks([]);
+            setLoading(false);
+        }
     }, (error) => {
         console.error("Error fetching projects: ", error);
         setLoading(false);
@@ -119,11 +117,6 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
         const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         setUsers(fetchedUsers);
     });
-
-    // Combined loading state management
-    Promise.all([new Promise(res => onSnapshot(q, res)), new Promise(res => onSnapshot(usersQuery, res))])
-        .then(() => setLoading(false))
-        .catch(() => setLoading(false));
 
     return () => { 
         unsubscribeProjects();
