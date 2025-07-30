@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc, deleteDoc, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +44,7 @@ import { format } from 'date-fns';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { EditUserForm } from './edit-user-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { deleteUser } from '@/ai/flows/delete-user-flow';
 
 
@@ -52,6 +52,7 @@ const userSchema = z.object({
   name: z.string().min(1, 'User name is required.'),
   email: z.string().email('Invalid email address.'),
   role: z.enum(['manager', 'developer', 'qa']),
+  assignedManager: z.string().optional(),
 });
 
 export type User = {
@@ -91,6 +92,7 @@ type CreateUserFormProps = {
 function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [managers, setManagers] = useState<User[]>([]);
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof userSchema>>({
@@ -99,8 +101,23 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
             name: '',
             email: '',
             role: 'developer',
+            assignedManager: '',
         },
     });
+
+    const selectedRole = form.watch('role');
+
+    useEffect(() => {
+        if (open && userRole === 'admin') {
+            const fetchManagers = async () => {
+                const managerQuery = query(collection(db, "users"), where("role", "==", "manager"));
+                const managerSnapshot = await getDocs(managerQuery);
+                setManagers(managerSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as User)));
+            };
+            fetchManagers();
+        }
+    }, [open, userRole]);
+
 
     async function onSubmit(values: z.infer<typeof userSchema>) {
         setLoading(true);
@@ -118,6 +135,8 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
 
             if (userRole === 'manager' && managerName) {
                 userData.addedBy = managerName;
+            } else if (userRole === 'admin' && values.assignedManager) {
+                userData.addedBy = values.assignedManager;
             }
 
             await setDoc(doc(db, "users", user.uid), userData);
@@ -163,7 +182,7 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
             <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
-                Fill in the details to add a new user to the system. The user will be created in Authentication with the default password "DTXH2025".
+                Fill in the details to add a new user. Default password: "DTXH2025".
             </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -216,6 +235,30 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
                         </FormItem>
                     )}
                 />
+                {userRole === 'admin' && (selectedRole === 'developer' || selectedRole === 'qa') && (
+                     <FormField
+                        control={form.control}
+                        name="assignedManager"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Assign to Manager</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a manager" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {managers.map(manager => (
+                                        <SelectItem key={manager.id} value={manager.name}>{manager.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <DialogFooter>
                 <Button type="submit" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -295,7 +338,6 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                 if (!map.has(member.id)) {
                     map.set(member.id, managerName);
                 } else {
-                    // If user is on multiple teams, mark as ambiguous
                     map.set(member.id, 'Multiple');
                 }
             });
@@ -307,10 +349,8 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
         if (userRole === 'manager' && managerName) {
             const teamMemberSet = new Set<string>();
             
-            // Add users assigned to manager's projects
             (managerTeams[managerName]?.members || []).forEach(member => teamMemberSet.add(member.id));
 
-            // Add users created by this manager
             users.forEach(user => {
                 if (user.addedBy === managerName) {
                     teamMemberSet.add(user.id);
@@ -319,7 +359,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
 
             return users.filter(user => teamMemberSet.has(user.id));
         }
-        return users; // For admin
+        return users;
     }, [userRole, managerName, users, managerTeams]);
     
 
@@ -336,7 +376,6 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
     const handleDeleteUser = async () => {
         if (!deletingUser) return;
         try {
-            // First, delete from Firebase Authentication via the Genkit flow
             const result = await deleteUser({ uid: deletingUser.id });
 
             if (!result.success && result.message.includes('not configured')) {
@@ -347,7 +386,6 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                 });
             }
 
-            // Then, delete from Firestore
             await deleteDoc(doc(db, "users", deletingUser.id));
 
             toast({
@@ -439,7 +477,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
                                                                             <Avatar className="h-6 w-6 border-2 border-background">
-                                                                                <AvatarImage src={member.avatar} data-ai-hint="person face" />
+                                                                                <AvatarImage src={member.avatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
                                                                                 <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                                             </Avatar>
                                                                         </TooltipTrigger>
