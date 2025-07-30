@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, Timestamp, orderBy, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -328,7 +328,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
 
             toast({
                 title: "User Deleted!",
-                description: `User ${deletingUser.name} has been removed from Authentication and Firestore.`,
+                description: `User ${deletingUser.name} has been deleted.`,
             });
         } catch (e: any) {
             console.error("Error deleting user: ", e);
