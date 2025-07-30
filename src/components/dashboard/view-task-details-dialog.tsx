@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -84,6 +83,12 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
             setSelectedTask(null);
         }
     }, [isOpen, sortedTasks, selectedTask?.id]);
+
+    React.useEffect(() => {
+        if(isOpen && sortedTasks.length > 0 && !selectedTask) {
+             setSelectedTask(sortedTasks[0]);
+        }
+    }, [isOpen, sortedTasks, selectedTask]);
 
     React.useEffect(() => {
         if(isOpen && selectedTask) {
@@ -251,16 +256,17 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                                             <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Attachments</h3>
                                             <div className="space-y-2 pl-6">
                                                 {attachmentUrls.map((file, index) => (
-                                                    <Link
+                                                    <a
                                                         key={index}
                                                         href={file.url}
+                                                        download
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
                                                     >
                                                         <File className="w-4 h-4" />
                                                         {file.name}
-                                                    </Link>
+                                                    </a>
                                                 ))}
                                             </div>
                                         </div>

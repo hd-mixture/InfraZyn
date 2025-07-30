@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, type ReactNode, useEffect } from 'react';
@@ -38,9 +37,8 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload, Paperclip, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, Timestamp, query, where, or, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './tasks-kanban-view';
 import axios from 'axios';
@@ -55,12 +53,6 @@ const formSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   attachments: z.any().optional(),
 });
-
-type User = {
-    id: string;
-    name: string;
-    role: string;
-};
 
 type Project = {
     id: string;
@@ -101,7 +93,6 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
   useEffect(() => {
     const fetchData = async () => {
         try {
-            // Fetch projects
             const projectRef = collection(db, "projects");
             const projectSnapshot = await getDocs(projectRef);
             const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
@@ -348,10 +339,10 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
                         <div className="space-y-2 rounded-md border p-2">
                            {currentAttachments.map((file, index) => (
                                 <div key={index} className="flex items-center justify-between text-sm">
-                                    <Link href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-500 hover:underline truncate">
+                                    <a href={file.url} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-500 hover:underline truncate">
                                         <Paperclip className="h-4 w-4" />
                                         <span className="truncate">{file.name}</span>
-                                    </Link>
+                                    </a>
                                     <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(file.url)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
@@ -398,5 +389,3 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
     </Dialog>
   );
 }
-
-    
