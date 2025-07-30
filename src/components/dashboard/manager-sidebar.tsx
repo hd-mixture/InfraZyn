@@ -7,11 +7,19 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { CreateTaskForm } from "./create-task-form";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 export function ManagerSidebar() {
   const searchParams = useSearchParams();
   const { toggleSidebar, state } = useSidebar();
   const currentView = searchParams.get('view');
+  const [managerName, setManagerName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setManagerName(localStorage.getItem('userName'));
+    }
+  }, []);
 
   const isActive = (view: string | null) => {
     if (!currentView && (view === 'projects' || view === null)) {
@@ -42,7 +50,7 @@ export function ManagerSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-4 flex flex-col justify-between">
         <div>
-            <CreateTaskForm>
+            <CreateTaskForm userRole="manager" managerName={managerName}>
               <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:self-center group-data-[collapsible=icon]:hover:w-full group-data-[collapsible=icon]:hover:rounded-lg transition-all duration-300 ease-in-out">
                   <PlusCircle />
                   <span className="group-data-[collapsible=icon]:hidden group-data-[collapsible=icon]:hover:inline">Create new task</span>
