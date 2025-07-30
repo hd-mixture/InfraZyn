@@ -45,6 +45,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { EditUserForm } from './edit-user-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { deleteUser } from '@/ai/flows/delete-user-flow';
 
 
 const userSchema = z.object({
@@ -319,17 +320,22 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
     const handleDeleteUser = async () => {
         if (!deletingUser) return;
         try {
+            // First, delete from Firebase Authentication via the Genkit flow
+            await deleteUser({ uid: deletingUser.id });
+
+            // Then, delete from Firestore
             await deleteDoc(doc(db, "users", deletingUser.id));
+
             toast({
                 title: "User Deleted!",
-                description: `User ${deletingUser.name} has been removed from the database.`,
+                description: `User ${deletingUser.name} has been removed from Authentication and Firestore.`,
             });
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error deleting user: ", e);
             toast({
                 variant: "destructive",
                 title: "Uh oh! Something went wrong.",
-                description: "There was a problem deleting the user.",
+                description: e.message || "There was a problem deleting the user.",
             });
         } finally {
             setIsDeleteDialogOpen(false);
@@ -474,13 +480,13 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the user from the database. Deleting from Authentication requires backend implementation.
+                       This action cannot be undone. This will permanently delete the user from Authentication and the Firestore database.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDeletingUser(null)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
-                        Delete from Database
+                        Delete User
                     </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
