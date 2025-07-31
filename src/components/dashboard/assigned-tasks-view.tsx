@@ -3,21 +3,26 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
-import { ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowRight, ArrowDown, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '../ui/button';
+import { ViewDeveloperTaskDialog } from './view-developer-task-dialog';
 
-type Task = {
+export type Task = {
     id: string;
     taskName: string;
     project: string;
     status: 'To Do' | 'In Progress' | 'Done';
     priority: 'High' | 'Medium' | 'Low';
     dueDate: Timestamp;
+    description?: string;
+    attachmentUrls?: { name: string, url: string }[];
 };
 
 type Project = {
@@ -28,13 +33,6 @@ type Project = {
 type AssignedTasksViewProps = {
     developerName: string | null;
     isDashboard?: boolean;
-    view?: 'list' | 'checklist';
-};
-
-const statusColor: { [key: string]: string } = {
-    "Done": "border-green-500 text-green-500",
-    "In Progress": "border-blue-500 text-blue-500",
-    "To Do": "border-yellow-500 text-yellow-500",
 };
 
 const priorityIcons = {
@@ -43,10 +41,12 @@ const priorityIcons = {
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />
 };
 
-export function AssignedTasksView({ developerName, isDashboard = false, view = 'list' }: AssignedTasksViewProps) {
+export function AssignedTasksView({ developerName, isDashboard = false }: AssignedTasksViewProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [viewingTask, setViewingTask] = useState<Task | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!developerName) {
@@ -58,6 +58,9 @@ export function AssignedTasksView({ developerName, isDashboard = false, view = '
         const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             setTasks(fetchedTasks);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error fetching tasks:", err);
             setLoading(false);
         });
 
@@ -73,6 +76,24 @@ export function AssignedTasksView({ developerName, isDashboard = false, view = '
         };
     }, [developerName]);
 
+    const handleStatusChange = async (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
+        try {
+            const taskRef = doc(db, "tasks", taskId);
+            await updateDoc(taskRef, { status: newStatus });
+            toast({
+                title: "Status Updated",
+                description: "The task status has been successfully updated.",
+            });
+        } catch (error) {
+            console.error("Error updating status: ", error);
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "There was a problem updating the task status.",
+            });
+        }
+    };
+
     const getProjectName = (projectId: string) => {
         return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
     };
@@ -85,45 +106,76 @@ export function AssignedTasksView({ developerName, isDashboard = false, view = '
         return <Card><CardContent className="p-6 text-center">Loading tasks...</CardContent></Card>;
     }
 
-    const title = isDashboard ? (view === 'checklist' ? "Today's Tasks" : "Assigned Tasks") : "My Tasks";
-    const description = isDashboard ? (view === 'checklist' ? "Tasks due today." : "All your assigned tasks.") : "A complete list of your tasks across all projects.";
+    const title = isDashboard ? "Assigned Tasks" : "My Tasks";
+    const description = isDashboard ? "All your assigned tasks." : "A complete list of your tasks across all projects.";
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {sortedTasks.length === 0 ? (
-                    <p className="text-muted-foreground">No tasks assigned yet.</p>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Task</TableHead>
-                                {view === 'list' && <TableHead>Project</TableHead>}
-                                <TableHead>Due Date</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Priority</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedTasks.map(task => (
-                                <TableRow key={task.id}>
-                                    <TableCell className="font-medium">{task.taskName}</TableCell>
-                                    {view === 'list' && <TableCell>{getProjectName(task.project)}</TableCell>}
-                                    <TableCell>{format(task.dueDate.toDate(), 'MMM dd, yyyy')}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
-                                    </TableCell>
-                                    <TableCell>{priorityIcons[task.priority]}</TableCell>
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {sortedTasks.length === 0 ? (
+                        <p className="text-muted-foreground">No tasks assigned yet.</p>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Task</TableHead>
+                                    {!isDashboard && <TableHead>Project</TableHead>}
+                                    <TableHead>Due Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Priority</TableHead>
+                                    {!isDashboard && <TableHead className="text-right">Actions</TableHead>}
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-            </CardContent>
-        </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedTasks.map(task => (
+                                    <TableRow key={task.id}>
+                                        <TableCell className="font-medium">{task.taskName}</TableCell>
+                                        {!isDashboard && <TableCell>{getProjectName(task.project)}</TableCell>}
+                                        <TableCell>{format(task.dueDate.toDate(), 'MMM dd, yyyy')}</TableCell>
+                                        <TableCell>
+                                            <Select
+                                                value={task.status}
+                                                onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(task.id, newStatus)}
+                                            >
+                                                <SelectTrigger className="w-[120px] h-8 text-xs">
+                                                    <SelectValue placeholder="Set status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="To Do">To Do</SelectItem>
+                                                    <SelectItem value="In Progress">In Progress</SelectItem>
+                                                    <SelectItem value="Done">Done</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>{priorityIcons[task.priority]}</TableCell>
+                                        {!isDashboard && (
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => setViewingTask(task)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+
+            {viewingTask && (
+                <ViewDeveloperTaskDialog
+                    task={viewingTask}
+                    projectName={getProjectName(viewingTask.project)}
+                    isOpen={!!viewingTask}
+                    onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
+                />
+            )}
+        </>
     );
 }
