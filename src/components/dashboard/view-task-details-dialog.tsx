@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { Progress } from '../ui/progress';
 
 
 type ViewTaskDetailsDialogProps = {
@@ -149,6 +150,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
         techStack,
         testType,
         bugSeverity,
+        progress
     } = taskToDisplay;
 
     return (
@@ -168,36 +170,42 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                                 key={task.id}
                                 onClick={() => setSelectedTask(task)}
                                 className={cn(
-                                    "w-full text-left h-auto rounded-md p-3 group/item relative cursor-pointer flex items-center justify-between",
+                                    "w-full text-left h-auto rounded-md p-3 group/item relative cursor-pointer",
                                     selectedTask?.id === task.id ? "bg-background text-foreground" : "hover:bg-background/50"
                                 )}
                             >
-                                <div className="flex flex-col items-start">
-                                    <span className="font-medium text-sm pr-6">{task.taskName}</span>
+                                <div className="flex flex-col items-start gap-1">
+                                    <div className="flex items-start justify-between w-full">
+                                        <span className="font-medium text-sm pr-6">{task.taskName}</span>
+                                        <div className="relative group/menu h-5 w-5 flex items-center justify-center">
+                                            <div className="transition-opacity duration-200 group-hover/menu:opacity-0">
+                                                {priorityIcons[task.priority]}
+                                            </div>
+                                            <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/menu:opacity-100">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-full w-full">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onClick={() => onEditTask(task)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => openDeleteDialog(task)} className="text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <span className="text-xs text-muted-foreground">{format(task.dueDate.toDate(), 'MMM dd')}</span>
-                                </div>
-
-                                <div className="relative group/menu h-7 w-7 flex items-center justify-center">
-                                    <div className="transition-opacity duration-200 group-hover/menu:opacity-0">
-                                         {priorityIcons[task.priority]}
-                                    </div>
-                                    <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/menu:opacity-100">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-full w-full">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => onEditTask(task)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openDeleteDialog(task)} className="text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                     {(task.status === 'In Progress' || task.status === 'Done') && task.progress !== undefined && (
+                                        <div className="w-full mt-1">
+                                            <Progress value={task.progress} indicatorClassName={task.status === 'Done' ? 'bg-green-500' : 'bg-blue-500'}/>
+                                        </div>
+                                     )}
                                 </div>
                              </div>
                            ))}
