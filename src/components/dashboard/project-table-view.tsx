@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Trash2, Edit, Folders, Users, Code, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, Trash2, Edit, Folders, Users, Code, ShieldCheck, HelpCircle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from "firebase/firestore";
@@ -230,7 +230,7 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
     .filter(project => {
       const searchMatch = searchQuery ? 
             project.projectName.toLowerCase().includes(lowercasedQuery) || 
-            project.projectManager.toLowerCase().includes(lowercasedQuery) 
+            (project.projectManager && project.projectManager.toLowerCase().includes(lowercasedQuery))
             : true;
       const projectMatch = filterProject === ALL_FILTER || project.projectName === filterProject;
       const managerMatch = filterManager === ALL_FILTER || project.projectManager === filterManager;
@@ -248,6 +248,13 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
     const manager = users.find(u => u.name === managerName);
     return manager?.avatar;
   }
+  
+  const stats = useMemo(() => ({
+    totalProjects: projects.length,
+    unassignedProjects: projects.filter(p => !p.projectManager).length,
+    totalDevelopers: users.filter(u => u.role === 'developer').length,
+    totalQAs: users.filter(u => u.role === 'qa').length,
+  }), [projects, users]);
 
   return (
     <>
@@ -259,7 +266,34 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                     <Folders className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{loading ? '...' : projects.length}</div>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.totalProjects}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Unassigned Projects</CardTitle>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.unassignedProjects}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Developers</CardTitle>
+                    <Code className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.totalDevelopers}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total QAs</CardTitle>
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.totalQAs}</div>
                 </CardContent>
             </Card>
         </div>
@@ -336,7 +370,7 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                                             <div className="flex items-center gap-2">
                                                     <Avatar className="h-5 w-5">
                                                         <AvatarImage src={getManagerAvatar(project.projectManager)} data-ai-hint="person face" />
-                                                        <AvatarFallback>{project.projectManager.charAt(0)}</AvatarFallback>
+                                                        <AvatarFallback>{project.projectManager ? project.projectManager.charAt(0) : '?'}</AvatarFallback>
                                                     </Avatar>
                                                     <div className="text-sm text-muted-foreground">{project.projectManager || 'Unassigned'}</div>
                                                 </div>
