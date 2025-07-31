@@ -350,8 +350,8 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                                 <TableHead className="w-[300px]">Project</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Progress</TableHead>
-                                <TableHead className="text-center flex items-center gap-2"><Code className="h-4 w-4"/>Devs</TableHead>
-                                <TableHead className="text-center flex items-center gap-2"><ShieldCheck className="h-4 w-4"/>QAs</TableHead>
+                                <TableHead>Devs</TableHead>
+                                <TableHead>QAs</TableHead>
                                 <TableHead>Due Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -392,10 +392,10 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
                                         <span className="text-sm text-muted-foreground">{project.progress || 0}%</span>
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-center font-medium">
+                                <TableCell className="font-medium">
                                     {projectTeamComposition[project.id]?.developers || 0}
                                 </TableCell>
-                                <TableCell className="text-center font-medium">
+                                <TableCell className="font-medium">
                                     {projectTeamComposition[project.id]?.qas || 0}
                                 </TableCell>
                                 <TableCell>
