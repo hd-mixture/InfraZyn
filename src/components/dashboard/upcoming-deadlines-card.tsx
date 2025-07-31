@@ -53,13 +53,7 @@ export function UpcomingDeadlinesCard({ developerName }: UpcomingDeadlinesCardPr
     }, [developerName]);
 
     const upcomingTasks = useMemo(() => {
-        const today = startOfToday();
         return tasks
-            .filter(task => {
-                const dueDate = task.dueDate.toDate();
-                // isAfter check ensures we only show tasks from today onwards
-                return isAfter(dueDate, today) || format(dueDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-            })
             .sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis())
             .slice(0, 5); // Limit to 5 tasks
     }, [tasks]);
@@ -68,7 +62,7 @@ export function UpcomingDeadlinesCard({ developerName }: UpcomingDeadlinesCardPr
         <Card>
             <CardHeader>
                 <CardTitle>Upcoming Deadlines</CardTitle>
-                <CardDescription>Tasks due soon.</CardDescription>
+                <CardDescription>Tasks due soon or overdue.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loading ? (
