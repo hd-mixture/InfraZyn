@@ -13,8 +13,9 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './assigned-tasks-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, File, Flag, Folder, Info, Paperclip, Tag, User } from 'lucide-react';
+import { Calendar, Clock, File, Flag, Folder, Info, Paperclip, Tag, User, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { Progress } from '../ui/progress';
 
 type ViewDeveloperTaskDialogProps = {
     task: Task;
@@ -55,6 +56,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
         priority,
         dueDate,
         attachmentUrls,
+        progress,
     } = task;
 
     return (
@@ -74,6 +76,19 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
                         <DetailRow icon={<Info size={16}/>} label="Description" value={<p className="whitespace-pre-wrap">{description || 'No description provided.'}</p>} />
                         
+                        {(status === 'In Progress' || status === 'Done') && (
+                            <DetailRow 
+                                icon={<TrendingUp size={16} />} 
+                                label="Progress" 
+                                value={
+                                    <div className="flex items-center gap-2">
+                                        <Progress value={progress || 0} className="w-32" />
+                                        <span>{progress || 0}%</span>
+                                    </div>
+                                } 
+                            />
+                        )}
+
                         {attachmentUrls && attachmentUrls.length > 0 && (
                             <DetailRow 
                                 icon={<Paperclip size={16}/>} 

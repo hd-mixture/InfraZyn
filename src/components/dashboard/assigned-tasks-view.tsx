@@ -13,6 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '../ui/button';
 import { ViewDeveloperTaskDialog } from './view-developer-task-dialog';
+import { Progress } from '../ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Slider } from '../ui/slider';
+import { cn } from '@/lib/utils';
+
 
 export type Task = {
     id: string;
@@ -23,6 +28,7 @@ export type Task = {
     dueDate: Timestamp;
     description?: string;
     attachmentUrls?: { name: string, url: string }[];
+    progress?: number;
 };
 
 type Project = {
@@ -79,7 +85,14 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
     const handleStatusChange = async (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
         try {
             const taskRef = doc(db, "tasks", taskId);
-            await updateDoc(taskRef, { status: newStatus });
+            const updateData: { status: string; progress?: number } = { status: newStatus };
+            if (newStatus === 'Done') {
+                updateData.progress = 100;
+            } else if (newStatus === 'To Do') {
+                updateData.progress = 0;
+            }
+            await updateDoc(taskRef, updateData);
+
             toast({
                 title: "Status Updated",
                 description: "The task status has been successfully updated.",
@@ -93,6 +106,21 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
             });
         }
     };
+    
+    const handleProgressChange = async (taskId: string, newProgress: number) => {
+        try {
+            const taskRef = doc(db, "tasks", taskId);
+            await updateDoc(taskRef, { progress: newProgress });
+        } catch (error) {
+            console.error("Error updating progress: ", error);
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "Could not save progress. Please try again.",
+            });
+        }
+    };
+
 
     const getProjectName = (projectId: string) => {
         return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
@@ -127,6 +155,7 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                     {!isDashboard && <TableHead>Project</TableHead>}
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Status</TableHead>
+                                    {!isDashboard && <TableHead>Progress</TableHead>}
                                     <TableHead>Priority</TableHead>
                                     {!isDashboard && <TableHead className="text-right">Actions</TableHead>}
                                 </TableRow>
@@ -152,6 +181,33 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                                 </SelectContent>
                                             </Select>
                                         </TableCell>
+                                         {!isDashboard && (
+                                            <TableCell>
+                                                {task.status === 'In Progress' && (
+                                                     <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <div className="w-[120px] cursor-pointer group">
+                                                                <Progress value={task.progress || 0} indicatorClassName="bg-blue-500" />
+                                                                <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    {task.progress || 0}%
+                                                                </span>
+                                                            </div>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-48 p-2">
+                                                             <Slider
+                                                                defaultValue={[task.progress || 0]}
+                                                                max={100}
+                                                                step={5}
+                                                                onValueChange={(value) => handleProgressChange(task.id, value[0])}
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                )}
+                                                {task.status === 'Done' && (
+                                                    <Progress value={100} indicatorClassName="bg-green-500" className="w-[120px]" />
+                                                )}
+                                            </TableCell>
+                                        )}
                                         <TableCell>{priorityIcons[task.priority]}</TableCell>
                                         {!isDashboard && (
                                             <TableCell className="text-right">
