@@ -82,7 +82,7 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                         {roleIcons[taskRole]}
                         {taskName}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription asChild>
                          <div className="flex items-center gap-8 text-sm text-muted-foreground pt-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-semibold tracking-wider">STATUS</span>
