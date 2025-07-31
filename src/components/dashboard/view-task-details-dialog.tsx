@@ -84,6 +84,22 @@ const TaskDetailsView = ({ task }: { task: Task }) => {
         progress
     } = task;
 
+    const renderHeader = () => (
+         <CardHeader className="p-0">
+            <h2 className="text-2xl font-bold">{taskName}</h2>
+             <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold tracking-wider">STATUS</span>
+                    <Badge variant="outline" className={cn(statusColor[status], 'rounded-md')}>{status}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                     <span className="text-xs font-semibold tracking-wider">PRIORITY</span>
+                     <Badge variant="outline" className={cn(priorityColor[priority], 'rounded-md')}>{priority}</Badge>
+                </div>
+            </div>
+        </CardHeader>
+    );
+
     const renderCommonDetails = () => (
         <>
             <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
@@ -133,57 +149,68 @@ const TaskDetailsView = ({ task }: { task: Task }) => {
         </>
     );
 
-    return (
-        <Card className="border-none shadow-none bg-transparent">
-            <CardHeader className="p-0">
-                <h2 className="text-2xl font-bold">{taskName}</h2>
-                 <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold tracking-wider">STATUS</span>
-                        <Badge variant="outline" className={cn(statusColor[status], 'rounded-md')}>{status}</Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                         <span className="text-xs font-semibold tracking-wider">PRIORITY</span>
-                         <Badge variant="outline" className={cn(priorityColor[priority], 'rounded-md')}>{priority}</Badge>
-                    </div>
-                </div>
-            </CardHeader>
+    const renderInProgressView = () => (
+         <Card className="border-none shadow-none bg-transparent">
+            {renderHeader()}
             <Separator className="my-6" />
             <CardContent className="p-0 space-y-5">
-                {status === 'In Progress' && (
-                    <>
-                        <DetailRow 
-                            icon={<TrendingUp size={16} />} 
-                            label="Progress" 
-                            value={
-                                <div className="flex items-center gap-2 w-full">
-                                    <Progress value={progress || 0} indicatorClassName="bg-blue-500" className="w-1/2" />
-                                    <span>{progress || 0}%</span>
-                                </div>
-                            } 
-                        />
-                        <Separator className="my-6" />
-                    </>
-                )}
-                 {status === 'Done' && (
-                    <>
-                        <DetailRow 
-                            icon={<CheckCircle size={16} className="text-green-500" />} 
-                            label="Progress" 
-                            value={
-                                <div className="flex items-center gap-2 w-full">
-                                    <Progress value={100} indicatorClassName="bg-green-500" className="w-1/2" />
-                                    <span>100%</span>
-                                </div>
-                            } 
-                        />
-                        <Separator className="my-6" />
-                    </>
-                )}
+                 <DetailRow 
+                    icon={<TrendingUp size={16} />} 
+                    label="Progress" 
+                    value={
+                        <div className="flex items-center gap-2 w-full">
+                            <Progress value={progress || 0} indicatorClassName="bg-blue-500" className="w-1/2" />
+                            <span>{progress || 0}%</span>
+                        </div>
+                    } 
+                />
+                <Separator className="my-6" />
                 {renderCommonDetails()}
             </CardContent>
         </Card>
     );
+
+    const renderDoneView = () => (
+        <Card className="border-none shadow-none bg-transparent">
+            {renderHeader()}
+            <Separator className="my-6" />
+            <CardContent className="p-0 space-y-5">
+                <DetailRow 
+                    icon={<CheckCircle size={16} className="text-green-500" />} 
+                    label="Progress" 
+                    value={
+                        <div className="flex items-center gap-2 w-full">
+                            <Progress value={100} indicatorClassName="bg-green-500" className="w-1/2" />
+                            <span>100%</span>
+                        </div>
+                    } 
+                />
+                <Separator className="my-6" />
+                {renderCommonDetails()}
+            </CardContent>
+        </Card>
+    );
+    
+    const renderToDoView = () => (
+         <Card className="border-none shadow-none bg-transparent">
+            {renderHeader()}
+            <Separator className="my-6" />
+            <CardContent className="p-0 space-y-5">
+                {renderCommonDetails()}
+            </CardContent>
+        </Card>
+    );
+
+
+    switch (status) {
+        case 'In Progress':
+            return renderInProgressView();
+        case 'Done':
+            return renderDoneView();
+        case 'To Do':
+        default:
+            return renderToDoView();
+    }
 }
 
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditTask }: ViewTaskDetailsDialogProps) {
@@ -253,7 +280,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
     };
 
 
-    if (!userTasks || !selectedTask) return null;
+    if (!userTasks) return null;
 
 
     return (
@@ -317,7 +344,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                     
                     <ScrollArea className="md:col-span-3 h-full">
                         <div className="p-6">
-                            <TaskDetailsView task={selectedTask} />
+                            {selectedTask ? <TaskDetailsView task={selectedTask} /> : <div className="text-center text-muted-foreground p-10">Select a task to view details.</div>}
                         </div>
                     </ScrollArea>
                 </div>
