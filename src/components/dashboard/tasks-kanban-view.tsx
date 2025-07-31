@@ -1,12 +1,12 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, MoreHorizontal, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { ScrollArea } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc, orderBy } from 'firebase/firestore';
@@ -18,7 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDialog } from './view-task-dialog';
@@ -180,11 +179,16 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     useEffect(() => {
         setLoading(true);
         const unsubscribeTasks = onSnapshot(taskQuery, (snapshot) => {
-            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            let fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             
-            if (userRole === 'manager') {
-                fetchedTasks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-            }
+            // Sort in code instead of query to avoid composite index requirement
+             fetchedTasks.sort((a, b) => {
+                if (a.createdAt && b.createdAt) {
+                    return b.createdAt.toMillis() - a.createdAt.toMillis();
+                }
+                return 0;
+            });
+
 
             setTasks(fetchedTasks);
             setLoading(false);
@@ -193,7 +197,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             setLoading(false)
         });
         return () => unsubscribeTasks();
-    }, [taskQuery, userRole]);
+    }, [taskQuery]);
 
 
     const projectsWithTasks = useMemo(() => {
@@ -239,7 +243,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     </Button>
                 </CreateTaskForm>
             </div>
-            <ScrollArea className="flex-grow -mx-8 px-8">
+            <ScrollArea className="flex-grow -mx-4 px-4">
                 <div className="space-y-8 pb-4">
                     {projectsWithTasks.length === 0 && (
                         <div className="text-center text-muted-foreground pt-10">No tasks found.</div>
@@ -247,7 +251,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     {projectsWithTasks.map(project => (
                         <div key={project.id}>
                             <h3 className="text-xl font-bold mb-4">{project.projectName}</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {(['To Do', 'In Progress', 'Done'] as const).map(status => (
                                     <div key={status}>
                                         <Card className="bg-muted/50 border-none h-full">
