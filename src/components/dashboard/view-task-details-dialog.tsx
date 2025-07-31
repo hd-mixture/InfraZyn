@@ -12,8 +12,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowRight, ArrowDown, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowRight, ArrowDown, TrendingUp, CheckCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
@@ -63,6 +62,129 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
     </div>
 );
 
+
+const TaskDetailsView = ({ task }: { task: Task }) => {
+    if (!task) return null;
+
+    const {
+        taskName,
+        taskRole,
+        description,
+        status,
+        priority,
+        dueDate,
+        assignedTo,
+        createdAt,
+        attachmentUrls,
+        taskType,
+        estimatedHours,
+        techStack,
+        testType,
+        bugSeverity,
+        progress
+    } = task;
+
+    const renderCommonDetails = () => (
+        <>
+            <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
+            <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
+            <DetailRow icon={<Clock size={16}/>} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
+            <Separator className="my-6" />
+            {taskRole === 'developer' ? (
+                <div className="space-y-5">
+                    {taskType && <DetailRow icon={<Tag size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />}
+                    {estimatedHours && <DetailRow icon={<Clock size={16}/>} label="Estimate" value={`${estimatedHours} hours`} />}
+                    {techStack && <DetailRow icon={<Code size={16}/>} label="Tech Stack" value={techStack} />}
+                </div>
+            ) : (
+                 <div className="space-y-5">
+                    {testType && <DetailRow icon={<Tag size={16}/>} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />}
+                    {bugSeverity && <DetailRow icon={<Flag size={16}/>} label="Bug Severity" value={<Badge variant="outline" className={priorityColor[bugSeverity]}>{bugSeverity}</Badge>} />}
+                 </div>
+            )}
+             <Separator className="my-6" />
+            <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
+                <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
+                    {description || (taskRole === 'qa' && task.testDescription) || 'No description provided.'}
+                </div>
+            </div>
+            
+            {attachmentUrls && attachmentUrls.length > 0 && (
+                <div>
+                    <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Attachments</h3>
+                    <div className="space-y-2 pl-6">
+                        {attachmentUrls.map((file, index) => (
+                            <a
+                                key={index}
+                                href={file.url}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            >
+                                <File className="w-4 h-4" />
+                                {file.name}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </>
+    );
+
+    return (
+        <Card className="border-none shadow-none bg-transparent">
+            <CardHeader className="p-0">
+                <h2 className="text-2xl font-bold">{taskName}</h2>
+                 <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold tracking-wider">STATUS</span>
+                        <Badge variant="outline" className={cn(statusColor[status], 'rounded-md')}>{status}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                         <span className="text-xs font-semibold tracking-wider">PRIORITY</span>
+                         <Badge variant="outline" className={cn(priorityColor[priority], 'rounded-md')}>{priority}</Badge>
+                    </div>
+                </div>
+            </CardHeader>
+            <Separator className="my-6" />
+            <CardContent className="p-0 space-y-5">
+                {status === 'In Progress' && (
+                    <>
+                        <DetailRow 
+                            icon={<TrendingUp size={16} />} 
+                            label="Progress" 
+                            value={
+                                <div className="flex items-center gap-2 w-full">
+                                    <Progress value={progress || 0} indicatorClassName="bg-blue-500" className="w-1/2" />
+                                    <span>{progress || 0}%</span>
+                                </div>
+                            } 
+                        />
+                        <Separator className="my-6" />
+                    </>
+                )}
+                 {status === 'Done' && (
+                    <>
+                        <DetailRow 
+                            icon={<CheckCircle size={16} className="text-green-500" />} 
+                            label="Progress" 
+                            value={
+                                <div className="flex items-center gap-2 w-full">
+                                    <Progress value={100} indicatorClassName="bg-green-500" className="w-1/2" />
+                                    <span>100%</span>
+                                </div>
+                            } 
+                        />
+                        <Separator className="my-6" />
+                    </>
+                )}
+                {renderCommonDetails()}
+            </CardContent>
+        </Card>
+    );
+}
 
 export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditTask }: ViewTaskDetailsDialogProps) {
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
@@ -131,28 +253,8 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
     };
 
 
-    if (!userTasks) return null;
+    if (!userTasks || !selectedTask) return null;
 
-    const taskToDisplay = selectedTask;
-    if (!taskToDisplay) return null;
-
-    const {
-        taskName,
-        taskRole,
-        description,
-        status,
-        priority,
-        dueDate,
-        assignedTo,
-        createdAt,
-        attachmentUrls,
-        taskType,
-        estimatedHours,
-        techStack,
-        testType,
-        bugSeverity,
-        progress
-    } = taskToDisplay;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -215,86 +317,7 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                     
                     <ScrollArea className="md:col-span-3 h-full">
                         <div className="p-6">
-                            <Card className="border-none shadow-none bg-transparent">
-                                <CardHeader className="p-0">
-                                    <h2 className="text-2xl font-bold">{taskName}</h2>
-                                     <div className="flex items-center gap-8 text-sm text-muted-foreground pt-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-semibold tracking-wider">STATUS</span>
-                                            <Badge variant="outline" className={cn(statusColor[status], 'rounded-md')}>{status}</Badge>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                             <span className="text-xs font-semibold tracking-wider">PRIORITY</span>
-                                             <Badge variant="outline" className={cn(priorityColor[priority], 'rounded-md')}>{priority}</Badge>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <Separator className="my-6" />
-                                <CardContent className="p-0 space-y-5">
-                                    
-                                    <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
-                                    <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
-                                    <DetailRow icon={<Clock size={16}/>} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
-                                     {(status === 'In Progress' || status === 'Done') && progress !== undefined && (
-                                        <DetailRow 
-                                            icon={<TrendingUp size={16} />} 
-                                            label="Progress" 
-                                            value={
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <Progress value={progress} indicatorClassName={status === 'Done' ? 'bg-green-500' : 'bg-blue-500'} className="w-1/2" />
-                                                    <span>{progress}%</span>
-                                                </div>
-                                            } 
-                                        />
-                                    )}
-
-                                    <Separator className="my-6" />
-
-                                    {taskRole === 'developer' ? (
-                                        <div className="space-y-5">
-                                            {taskType && <DetailRow icon={<Tag size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />}
-                                            {estimatedHours && <DetailRow icon={<Clock size={16}/>} label="Estimate" value={`${estimatedHours} hours`} />}
-                                            {techStack && <DetailRow icon={<Code size={16}/>} label="Tech Stack" value={techStack} />}
-                                        </div>
-                                    ) : (
-                                         <div className="space-y-5">
-                                            {testType && <DetailRow icon={<Tag size={16}/>} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />}
-                                            {bugSeverity && <DetailRow icon={<Flag size={16}/>} label="Bug Severity" value={<Badge variant="outline" className={priorityColor[bugSeverity]}>{bugSeverity}</Badge>} />}
-                                         </div>
-                                    )}
-
-                                    <Separator className="my-6" />
-                                    
-                                    <div>
-                                        <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Info size={16}/> Description</h3>
-                                        <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6">
-                                            {description || (taskRole === 'qa' && selectedTask?.testDescription) || 'No description provided.'}
-                                        </div>
-                                    </div>
-                                    
-                                    {attachmentUrls && attachmentUrls.length > 0 && (
-                                        <div>
-                                            <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Attachments</h3>
-                                            <div className="space-y-2 pl-6">
-                                                {attachmentUrls.map((file, index) => (
-                                                    <a
-                                                        key={index}
-                                                        href={file.url}
-                                                        download
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                                                    >
-                                                        <File className="w-4 h-4" />
-                                                        {file.name}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                </CardContent>
-                            </Card>
+                            <TaskDetailsView task={selectedTask} />
                         </div>
                     </ScrollArea>
                 </div>
