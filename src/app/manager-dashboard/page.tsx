@@ -55,17 +55,18 @@ function ManagerDashboardContent() {
 
 export default function ManagerDashboardPage() {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     const role = localStorage.getItem('userRole');
-    if (role !== 'manager') {
+    if (role === 'manager') {
+      setIsAuthenticated(true);
+    } else {
       router.push('/login');
     }
   }, [router]);
 
-  if (!isClient) {
+  if (!isAuthenticated) {
     return <div className="flex-1 flex items-center justify-center">Loading...</div>;
   }
 
@@ -82,5 +83,3 @@ export default function ManagerDashboardPage() {
     </SidebarProvider>
   );
 }
-
-    

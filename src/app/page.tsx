@@ -1,5 +1,4 @@
 
-
 'use client';
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
@@ -85,17 +84,18 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const [isClient, setIsClient] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
         const role = localStorage.getItem('userRole');
-        if (role !== 'admin') {
+        if (role === 'admin') {
+            setIsAuthenticated(true);
+        } else {
             router.push('/login');
         }
     }, [router]);
 
-    if (!isClient) {
+    if (!isAuthenticated) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 

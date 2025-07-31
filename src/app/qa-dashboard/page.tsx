@@ -58,17 +58,18 @@ function QADashboardContent() {
 
 export default function QADashboardPage() {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     const role = localStorage.getItem('userRole');
-    if (role !== 'qa') {
+    if (role === 'qa') {
+      setIsAuthenticated(true);
+    } else {
       router.push('/login');
     }
   }, [router]);
 
-  if (!isClient) {
+  if (!isAuthenticated) {
     return <div className="flex-1 flex items-center justify-center">Loading...</div>;
   }
 
