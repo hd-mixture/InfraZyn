@@ -1,5 +1,5 @@
 
-'use client'
+'use client';
 
 import * as React from 'react';
 import {
@@ -163,4 +163,3 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
         </Dialog>
     );
 }
-
