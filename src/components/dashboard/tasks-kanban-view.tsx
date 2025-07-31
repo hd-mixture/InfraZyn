@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Eye } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -159,7 +159,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 return query(collection(db, 'tasks'), where('project', 'in', ['non-existent']));
             }
         }
-        return query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
+        return query(collection(db, 'tasks'));
     }, [userRole, managerName, projects]);
     
     useEffect(() => {
