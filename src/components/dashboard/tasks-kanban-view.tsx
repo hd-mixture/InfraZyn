@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -179,8 +179,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
         const unsubscribeTasks = onSnapshot(taskQuery, (snapshot) => {
             let fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
             
-            // Sort in code instead of query to avoid composite index requirement
-             fetchedTasks.sort((a, b) => {
+            fetchedTasks.sort((a, b) => {
                 if (a.createdAt && b.createdAt) {
                     return b.createdAt.toMillis() - a.createdAt.toMillis();
                 }
@@ -226,6 +225,25 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     }, [projects, tasks, users, searchQuery]);
 
     const userMap = useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+    
+    const handlePinProject = async (projectId: string, pinned: boolean) => {
+        try {
+            const projectRef = doc(db, "projects", projectId);
+            await updateDoc(projectRef, { pinned });
+            toast({
+                title: pinned ? "Project Pinned" : "Project Unpinned",
+                description: `The project has been moved to the ${pinned ? 'top' : 'default position'}.`,
+            });
+        } catch(e) {
+            console.error("Error pinning project: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem pinning the project.",
+            });
+        }
+    };
+
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading tasks...</div>
@@ -247,34 +265,52 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                         <div className="text-center text-muted-foreground pt-10">No tasks found.</div>
                     )}
                     {projectsWithTasks.map(project => (
-                        <div key={project.id}>
-                            <h3 className="text-xl font-bold mb-4">{project.projectName}</h3>
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
-                                {(['To Do', 'In Progress', 'Done'] as const).map(status => (
-                                    <div key={status}>
-                                        <Card className="bg-muted/50 border-none h-full">
-                                            <CardHeader className="p-4">
-                                                <CardTitle className="text-base font-medium">{status}</CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="p-4 pt-0">
-                                                {project.tasks.filter(t => t.status === status).map(task => (
-                                                    <TaskCard 
-                                                        key={task.id} 
-                                                        task={task} 
-                                                        user={userMap.get(task.assignedTo)}
-                                                        onViewTask={setViewingTask}
-                                                        onEditTask={setEditingTask}
-                                                    />
-                                                ))}
-                                                {project.tasks.filter(t => t.status === status).length === 0 && (
-                                                    <div className="text-center text-sm text-muted-foreground py-10">No tasks</div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <Card key={project.id} className="bg-muted/20">
+                            <CardHeader>
+                                <div className="flex items-center gap-2">
+                                     <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="w-8 h-8 flex-shrink-0" onClick={() => handlePinProject(project.id, !project.pinned)}>
+                                                    <Star className={`h-5 w-5 transition-colors ${project.pinned ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground hover:text-yellow-400'}`} />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{project.pinned ? 'Unpin project' : 'Pin project'}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                    <h3 className="text-xl font-bold">{project.projectName}</h3>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+                                    {(['To Do', 'In Progress', 'Done'] as const).map(status => (
+                                        <div key={status}>
+                                            <Card className="bg-muted/50 border-none h-full">
+                                                <CardHeader className="p-4">
+                                                    <CardTitle className="text-base font-medium">{status}</CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="p-4 pt-0">
+                                                    {project.tasks.filter(t => t.status === status).map(task => (
+                                                        <TaskCard 
+                                                            key={task.id} 
+                                                            task={task} 
+                                                            user={userMap.get(task.assignedTo)}
+                                                            onViewTask={setViewingTask}
+                                                            onEditTask={setEditingTask}
+                                                        />
+                                                    ))}
+                                                    {project.tasks.filter(t => t.status === status).length === 0 && (
+                                                        <div className="text-center text-sm text-muted-foreground py-10">No tasks</div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
             </ScrollArea>
