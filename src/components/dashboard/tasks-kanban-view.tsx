@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, MoreHorizontal, Eye } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDialog } from './view-task-dialog';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Progress } from '../ui/progress';
+import { MoreHorizontal } from 'lucide-react';
 
 
 export type Task = {
@@ -259,15 +260,17 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                 <CardTitle className="text-base font-medium">{status}</CardTitle>
                                             </CardHeader>
                                             <CardContent className="p-4 pt-0">
-                                                {project.tasks.filter(t => t.status === status).map(task => (
-                                                    <TaskCard 
-                                                        key={task.id} 
-                                                        task={task} 
-                                                        user={userMap.get(task.assignedTo)}
-                                                        onViewTask={setViewingTask}
-                                                        onEditTask={setEditingTask}
-                                                    />
-                                                ))}
+                                                 <div className="flex flex-col items-start gap-4">
+                                                    {project.tasks.filter(t => t.status === status).map(task => (
+                                                        <TaskCard 
+                                                            key={task.id} 
+                                                            task={task} 
+                                                            user={userMap.get(task.assignedTo)}
+                                                            onViewTask={setViewingTask}
+                                                            onEditTask={setEditingTask}
+                                                        />
+                                                    ))}
+                                                </div>
                                                 {project.tasks.filter(t => t.status === status).length === 0 && (
                                                     <div className="text-center text-sm text-muted-foreground py-10">No tasks</div>
                                                 )}
