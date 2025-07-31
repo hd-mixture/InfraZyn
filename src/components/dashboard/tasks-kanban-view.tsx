@@ -118,7 +118,7 @@ const TaskCard = ({ task, user, onEditTask, onViewTask }: { task: Task, user?: U
                 <Tooltip>
                     <TooltipTrigger asChild>
                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={user?.avatar} />
+                            <AvatarImage src={user?.avatar} data-ai-hint="person face" />
                             <AvatarFallback>{task.assignedTo.charAt(0)}</AvatarFallback>
                         </Avatar>
                     </TooltipTrigger>
@@ -147,20 +147,19 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const { toast } = useToast();
 
     const taskQuery = useMemo(() => {
-        let q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
         if (userRole === 'manager' && managerName) {
             const managerProjectIds = projects
                 .filter(p => p.projectManager === managerName)
                 .map(p => p.id);
             
             if (managerProjectIds.length > 0) {
-                 q = query(collection(db, 'tasks'), where('project', 'in', managerProjectIds), orderBy('createdAt', 'desc'));
+                 return query(collection(db, 'tasks'), where('project', 'in', managerProjectIds));
             } else {
                 // To return an empty query if manager has no projects
-                q = query(collection(db, 'tasks'), where('project', 'in', ['non-existent']));
+                return query(collection(db, 'tasks'), where('project', 'in', ['non-existent']));
             }
         }
-        return q;
+        return query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
     }, [userRole, managerName, projects]);
     
     useEffect(() => {
@@ -181,14 +180,20 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     useEffect(() => {
         setLoading(true);
         const unsubscribeTasks = onSnapshot(taskQuery, (snapshot) => {
-            setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            
+            if (userRole === 'manager') {
+                fetchedTasks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            }
+
+            setTasks(fetchedTasks);
             setLoading(false);
         }, (err) => {
             console.error("Error fetching tasks: ", err);
             setLoading(false)
         });
         return () => unsubscribeTasks();
-    }, [taskQuery]);
+    }, [taskQuery, userRole]);
 
 
     const projectsWithTasks = useMemo(() => {
