@@ -1,6 +1,7 @@
+
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, Edit, Eye, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -240,7 +241,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     </Button>
                 </CreateTaskForm>
             </div>
-            <ScrollArea className="flex-grow -mx-4 px-4">
+            <ScrollArea className="flex-grow -mx-4 px-4 scrollbar-hide">
                 <div className="space-y-8 pb-4">
                     {projectsWithTasks.length === 0 && (
                         <div className="text-center text-muted-foreground pt-10">No tasks found.</div>
@@ -250,7 +251,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                             <h3 className="text-xl font-bold mb-4">{project.projectName}</h3>
                             <div className="flex flex-wrap gap-6">
                                 {(['To Do', 'In Progress', 'Done'] as const).map(status => (
-                                    <div key={status} className="flex-1 min-w-[260px]">
+                                    <div key={status} className="flex-1 min-w-[240px]">
                                         <Card className="bg-muted/50 border-none h-full">
                                             <CardHeader className="p-4">
                                                 <CardTitle className="text-base font-medium">{status}</CardTitle>
