@@ -167,7 +167,7 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
     }
   };
 
-  const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager))), [projects]);
+  const managers = useMemo(() => Array.from(new Set(projects.map(p => p.projectManager).filter(Boolean))), [projects]);
   const statuses = useMemo(() => Array.from(new Set(projects.map(p => p.status))), [projects]);
   const projectNames = useMemo(() => projects.map(p => ({id: p.id, name: p.projectName})), [projects]);
 
@@ -187,7 +187,7 @@ export function ProjectTableView({ searchQuery, onEditProject }: ProjectTableVie
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        return b.createdAt.toMillis() - a.createdAt.toMillis();
+        return b.createdAt.toMillis() - b.createdAt.toMillis();
     });
   }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
   
