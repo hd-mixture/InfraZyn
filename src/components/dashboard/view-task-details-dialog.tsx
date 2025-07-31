@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -11,7 +12,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task, GroupedTask } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowRight, ArrowDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
@@ -234,7 +235,19 @@ export function ViewTaskDetailsDialog({ userTasks, isOpen, onOpenChange, onEditT
                                     <DetailRow icon={<User size={16}/>} label="Assigned To" value={assignedTo} />
                                     <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
                                     <DetailRow icon={<Clock size={16}/>} label="Created At" value={format(createdAt.toDate(), 'PPP p')} />
-                                    
+                                     {(status === 'In Progress' || status === 'Done') && progress !== undefined && (
+                                        <DetailRow 
+                                            icon={<TrendingUp size={16} />} 
+                                            label="Progress" 
+                                            value={
+                                                <div className="flex items-center gap-2 w-full">
+                                                    <Progress value={progress} indicatorClassName={status === 'Done' ? 'bg-green-500' : 'bg-blue-500'} className="w-1/2" />
+                                                    <span>{progress}%</span>
+                                                </div>
+                                            } 
+                                        />
+                                    )}
+
                                     <Separator className="my-6" />
 
                                     {taskRole === 'developer' ? (
