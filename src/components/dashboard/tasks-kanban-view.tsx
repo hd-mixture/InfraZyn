@@ -251,7 +251,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     {projectsWithTasks.map(project => (
                         <div key={project.id}>
                             <h3 className="text-xl font-bold mb-4">{project.projectName}</h3>
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                 {(['To Do', 'In Progress', 'Done'] as const).map(status => (
                                     <div key={status}>
                                         <Card className="bg-muted/50 border-none h-full">
