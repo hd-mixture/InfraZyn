@@ -259,7 +259,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     </Button>
                 </CreateTaskForm>
             </div>
-            <ScrollArea className="flex-grow -mx-4 px-4">
+            <ScrollArea className="flex-grow -mx-4 px-4 scrollbar-hide">
                 <div className="space-y-8 pb-4">
                     {projectsWithTasks.length === 0 && (
                         <div className="text-center text-muted-foreground pt-10">No tasks found.</div>
