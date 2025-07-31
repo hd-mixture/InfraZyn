@@ -37,12 +37,12 @@ export function UpcomingDeadlinesCard({ developerName }: UpcomingDeadlinesCardPr
 
         const tasksQuery = query(
             collection(db, "tasks"), 
-            where("assignedTo", "==", developerName),
-            where("status", "!=", "Done")
+            where("assignedTo", "==", developerName)
         );
         const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-            setTasks(fetchedTasks);
+            const activeTasks = fetchedTasks.filter(task => task.status !== 'Done');
+            setTasks(activeTasks);
             setLoading(false);
         }, (error) => {
             console.error("Firebase Error in UpcomingDeadlinesCard: ", error);
