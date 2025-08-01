@@ -130,8 +130,8 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         Details for the task.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] p-1">
-                    <div className="space-y-4 pr-4">
+                <ScrollArea className="max-h-[60vh] p-4">
+                    <div className="space-y-4">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                         <DetailRow icon={<Badge size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
                         <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
