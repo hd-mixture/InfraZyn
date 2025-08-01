@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -71,7 +71,7 @@ const priorityIcons: { [key: string]: React.ReactNode } = {
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />
 };
 
-const TaskCard = ({ task, user, onEditTask, onViewTask }: { task: Task, user?: User, onEditTask: (task: Task) => void, onViewTask: (task: Task) => void }) => (
+const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask }: { task: Task, user?: User, onEditTask: (task: Task) => void, onViewTask: (task: Task) => void, onDeleteTask: (task: Task) => void }) => (
     <Card className="mb-4 bg-card hover:shadow-md transition-shadow">
         <CardHeader className="p-3">
             <div className="flex justify-between items-start">
@@ -83,8 +83,8 @@ const TaskCard = ({ task, user, onEditTask, onViewTask }: { task: Task, user?: U
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => onViewTask(task)}><Eye className="mr-2 h-4 w-4" />View</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEditTask(task)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDeleteTask(task)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                  </DropdownMenu>
             </div>
@@ -110,7 +110,7 @@ const TaskCard = ({ task, user, onEditTask, onViewTask }: { task: Task, user?: U
                  {priorityIcons[task.priority]}
             </div>
         </CardContent>
-        <CardFooter className="p-3 pt-0">
+        <CardFooter className="p-3 pt-0 flex justify-between items-center">
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -124,6 +124,9 @@ const TaskCard = ({ task, user, onEditTask, onViewTask }: { task: Task, user?: U
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onViewTask(task)}>
+                <Eye className="h-4 w-4 text-muted-foreground" />
+             </Button>
         </CardFooter>
     </Card>
 );
@@ -141,6 +144,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [loading, setLoading] = useState(true);
     const [viewingTask, setViewingTask] = useState<Task | null>(null);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [deletingTask, setDeletingTask] = useState<Task | null>(null);
     const { toast } = useToast();
 
     const taskQuery = useMemo(() => {
@@ -243,6 +247,26 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             });
         }
     };
+    
+    const handleDeleteTask = async () => {
+        if (!deletingTask) return;
+        try {
+            await deleteDoc(doc(db, "tasks", deletingTask.id));
+            toast({
+                title: "Task Deleted!",
+                description: "The task has been successfully deleted.",
+            });
+        } catch (e) {
+            console.error("Error deleting task: ", e);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: "There was a problem deleting the task.",
+            });
+        } finally {
+            setDeletingTask(null);
+        }
+    };
 
 
     if (loading) {
@@ -284,7 +308,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex flex-col md:flex-row gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     {(['To Do', 'In Progress', 'Done'] as const).map(status => (
                                         <div key={status} className="flex-1 min-w-0">
                                             <Card className="bg-muted/50 border-none h-full">
@@ -299,6 +323,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                             user={userMap.get(task.assignedTo)}
                                                             onViewTask={setViewingTask}
                                                             onEditTask={setEditingTask}
+                                                            onDeleteTask={setDeletingTask}
                                                         />
                                                     ))}
                                                     {project.tasks.filter(t => t.status === status).length === 0 && (
@@ -327,6 +352,13 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     isOpen={!!editingTask}
                     onOpenChange={() => setEditingTask(null)}
                 />
+            )}
+            {deletingTask && (
+                 <DropdownMenu open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={handleDeleteTask}>Confirm Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
             )}
         </div>
     );
