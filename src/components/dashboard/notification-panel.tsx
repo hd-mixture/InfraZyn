@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup } from 'firebase/firestore';
 import { Bell, Check, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,7 +61,7 @@ export function NotificationPanel() {
         }
 
         const q = query(
-            collection(db, 'notifications'),
+            collectionGroup(db, 'notifications'),
             where('recipientId', '==', userId),
             orderBy('createdAt', 'desc')
         );
@@ -88,13 +88,18 @@ export function NotificationPanel() {
         }
         
         if (!notification.read) {
-            await updateDoc(doc(db, 'notifications', notification.id), { read: true });
+            const notificationRef = doc(db, 'tasks', notification.taskId, 'notifications', notification.id);
+            await updateDoc(notificationRef, { read: true });
         }
     };
     
     const markAllAsRead = async () => {
-        const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-        const promises = unreadIds.map(id => updateDoc(doc(db, 'notifications', id), { read: true }));
+        const promises = notifications
+            .filter(n => !n.read)
+            .map(n => {
+                const notificationRef = doc(db, 'tasks', n.taskId, 'notifications', n.id);
+                return updateDoc(notificationRef, { read: true });
+            });
         await Promise.all(promises);
     };
 

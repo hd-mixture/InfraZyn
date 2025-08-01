@@ -110,11 +110,9 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             // Create notification
             let recipientId = null;
             if (currentUser.role === 'developer') {
-                // Find the manager
-                const projectsQuery = query(collection(db, 'projects'), where('projectName', '==', task.project));
-                const projectsSnap = await getDocs(projectsQuery);
-                if (!projectsSnap.empty) {
-                    const projectData = projectsSnap.docs[0].data();
+                const projectDoc = await getDoc(doc(db, 'projects', task.project));
+                if (projectDoc.exists()) {
+                    const projectData = projectDoc.data();
                     const managerName = projectData.projectManager;
                     const usersQuery = query(collection(db, 'users'), where('name', '==', managerName));
                     const usersSnap = await getDocs(usersQuery);
@@ -123,7 +121,6 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                     }
                 }
             } else if (currentUser.role === 'manager') {
-                // Find the developer
                 const usersQuery = query(collection(db, 'users'), where('name', '==', task.assignedTo));
                 const usersSnap = await getDocs(usersQuery);
                 if (!usersSnap.empty) {
@@ -131,8 +128,8 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 }
             }
 
-            if (recipientId) {
-                await addDoc(collection(db, 'notifications'), {
+            if (recipientId && recipientId !== doc(db, 'users', recipientId).id) {
+                await addDoc(collection(db, 'tasks', task.id, 'notifications'), {
                     recipientId,
                     senderName: currentUser.name,
                     senderAvatar: currentUser.avatar || null,
