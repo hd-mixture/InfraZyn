@@ -3,14 +3,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, updateDoc, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Paperclip, File as FileIcon, Upload } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
+import { Input } from '../ui/input';
+import Link from 'next/link';
 
 type Comment = {
     id: string;
@@ -19,6 +23,7 @@ type Comment = {
     authorRole: 'manager' | 'developer' | 'qa' | 'admin';
     authorAvatar?: string;
     createdAt: Timestamp;
+    attachments?: { name: string, url: string }[];
 };
 
 type TaskCommentsProps = {
@@ -33,8 +38,11 @@ type TaskCommentsProps = {
 export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
     const [loading, setLoading] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         const commentsQuery = query(
@@ -66,20 +74,50 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
 
     const handleSubmitComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (newComment.trim() === '' || !currentUser.name || !currentUser.role) return;
+        if ((newComment.trim() === '' && !filesToUpload) || !currentUser.name || !currentUser.role) return;
 
         setLoading(true);
         try {
-            await addDoc(collection(db, 'tasks', taskId, 'comments'), {
+            let attachmentUrls: { name: string, url: string }[] = [];
+            if (filesToUpload) {
+                for (const file of Array.from(filesToUpload)) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+                    
+                    const response = await axios.post(
+                        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/raw/upload`,
+                        formData
+                    );
+                    attachmentUrls.push({ name: file.name, url: response.data.secure_url });
+                }
+            }
+
+            const commentData: any = {
                 text: newComment,
                 authorName: currentUser.name,
                 authorRole: currentUser.role,
                 authorAvatar: currentUser.avatar || null,
                 createdAt: Timestamp.now(),
-            });
+            };
+
+            if (attachmentUrls.length > 0) {
+                commentData.attachments = attachmentUrls;
+            }
+
+            await addDoc(collection(db, 'tasks', taskId, 'comments'), commentData);
+
             setNewComment('');
+            setFilesToUpload(null);
+            if(fileInputRef.current) fileInputRef.current.value = '';
+
         } catch (error) {
             console.error('Error adding comment: ', error);
+             toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: "There was a problem submitting your message.",
+            });
         } finally {
             setLoading(false);
         }
@@ -94,8 +132,8 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
                     {comments.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center pt-16">No comments yet. Start the conversation!</p>
                     ) : (
-                        comments.map((comment, index) => (
-                            <div key={index} className={cn(
+                        comments.map((comment) => (
+                            <div key={comment.id} className={cn(
                                 "flex items-start gap-3",
                                 comment.authorName === currentUser.name ? "flex-row-reverse" : ""
                             )}>
@@ -109,7 +147,20 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
                                     ? "bg-primary text-primary-foreground" 
                                     : "bg-muted"
                                 )}>
-                                    <p className="text-sm">{comment.text}</p>
+                                    {comment.text && <p className="text-sm whitespace-pre-wrap">{comment.text}</p>}
+                                    {comment.attachments && (
+                                        <div className={cn("space-y-2", comment.text && "mt-2")}>
+                                            {comment.attachments.map((file, index) => (
+                                                 <Link key={index} href={file.url} target="_blank" rel="noopener noreferrer" className={cn(
+                                                     "flex items-center gap-2 p-2 rounded-md",
+                                                     comment.authorName === currentUser.name ? "bg-primary/80 hover:bg-primary/70" : "bg-background/50 hover:bg-background/80"
+                                                 )}>
+                                                    <FileIcon className="h-5 w-5" />
+                                                    <span className="text-sm truncate">{file.name}</span>
+                                                 </Link>
+                                            ))}
+                                        </div>
+                                    )}
                                     <p className={cn(
                                         "text-xs mt-1 opacity-70",
                                         comment.authorName === currentUser.name ? "text-right" : "text-left"
@@ -122,17 +173,28 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
                     )}
                     </div>
                 </ScrollArea>
-                <form onSubmit={handleSubmitComment} className="flex items-center gap-2">
-                    <Textarea
-                        placeholder="Type your message..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        rows={1}
-                        className="resize-none"
-                    />
-                    <Button type="submit" disabled={loading || newComment.trim() === ''} size="icon">
-                        {loading ? <Loader2 className="animate-spin" /> : <Send />}
-                    </Button>
+                <form onSubmit={handleSubmitComment} className="space-y-2">
+                    <div className="flex items-start gap-2">
+                        <Textarea
+                            placeholder="Type your message..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            rows={1}
+                            className="resize-none"
+                        />
+                         <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                            <Paperclip />
+                        </Button>
+                        <Button type="submit" disabled={loading || (newComment.trim() === '' && !filesToUpload)} size="icon">
+                            {loading ? <Loader2 className="animate-spin" /> : <Send />}
+                        </Button>
+                    </div>
+                    <Input id="comment-attachment" type="file" multiple className="hidden" ref={fileInputRef} onChange={(e) => setFilesToUpload(e.target.files)} />
+                     {filesToUpload && Array.from(filesToUpload).length > 0 && (
+                        <div className="text-xs text-muted-foreground pt-1">
+                            Selected {Array.from(filesToUpload).length} file(s) for upload.
+                        </div>
+                    )}
                 </form>
             </div>
         </div>
