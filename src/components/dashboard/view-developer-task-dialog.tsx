@@ -130,14 +130,14 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         Details for the task.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] p-4">
-                    <div className="space-y-4">
+                <ScrollArea className="max-h-[60vh]">
+                    <div className="space-y-4 pr-4">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                         <DetailRow icon={<Badge size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
                         <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
                         <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
                         {(status === 'In Progress' || status === 'Done') && (
-                            <DetailRow icon={<TrendingUp size={16}/>} label="Progress" value={<div className="flex items-center gap-2"><Progress value={progress || 0} className="w-32" /><span>{progress || 0}%</span></div>} />
+                            <DetailRow icon={<TrendingUp size={16} />} label="Progress" value={<div className="flex items-center gap-2"><Progress value={progress || 0} className="w-32" /><span>{progress || 0}%</span></div>} />
                         )}
                         <DetailRow icon={<Info size={16}/>} label="Description" value={<p className="whitespace-pre-wrap">{description || 'No description provided.'}</p>} />
 
