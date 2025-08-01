@@ -14,7 +14,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './assigned-tasks-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, File, Flag, Folder, Info, Paperclip, Send, Upload, MessageSquare, Loader2, TrendingUp } from 'lucide-react';
+import { Calendar, File, Flag, Folder, Info, Paperclip, Send, Upload, MessageSquare, Loader2, TrendingUp, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -130,10 +130,10 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         Details for the task.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
+                <ScrollArea className="max-h-[60vh] -mx-6 px-6">
                     <div className="space-y-4 pr-4">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
-                        <DetailRow icon={<Badge size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
+                        <DetailRow icon={<CheckCircle size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
                         <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
                         <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
                         {(status === 'In Progress' || status === 'Done') && (
