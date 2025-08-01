@@ -55,7 +55,7 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 );
 
 export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogProps) {
-    const [currentUser, setCurrentUser] = React.useState({ name: null, role: null, avatar: null });
+    const [currentUser, setCurrentUser] = React.useState<{name: string | null, role: string | null, avatar: string | null}>({ name: null, role: null, avatar: null });
 
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -181,7 +181,7 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                         {status === 'In Progress' && (
                             <>
                                 <Separator />
-                                <TaskComments taskId={id} currentUser={currentUser} />
+                                <TaskComments task={task} currentUser={currentUser} />
                             </>
                         )}
 

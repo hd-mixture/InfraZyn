@@ -50,7 +50,7 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 );
 
 export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChange }: ViewDeveloperTaskDialogProps) {
-    const [currentUser, setCurrentUser] = React.useState({ name: null, role: null, avatar: null });
+    const [currentUser, setCurrentUser] = React.useState<{name: string | null, role: string | null, avatar: string | null}>({ name: null, role: null, avatar: null });
 
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -88,7 +88,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh]">
-                    <div className="space-y-4 px-4">
+                    <div className="space-y-4 pr-4">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                         <DetailRow icon={<CheckCircle size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
                         <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
@@ -125,7 +125,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         {(status === 'In Progress' || status === 'Done') && <Separator />}
 
                         {status === 'In Progress' && (
-                             <TaskComments taskId={id} currentUser={currentUser} />
+                             <TaskComments task={task} currentUser={currentUser} />
                         )}
                         
                         {status === 'Done' && (
