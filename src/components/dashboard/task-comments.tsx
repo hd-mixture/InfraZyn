@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, updateDoc, doc, where, getDocs } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, updateDoc, doc, where, getDocs, getDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -108,19 +108,22 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
 
             // Create notification
-            let recipientId = null;
+            let recipientId: string | null = null;
+            
             if (currentUser.role === 'developer') {
                 const projectDoc = await getDoc(doc(db, 'projects', task.project));
                 if (projectDoc.exists()) {
                     const projectData = projectDoc.data();
                     const managerName = projectData.projectManager;
-                    const usersQuery = query(collection(db, 'users'), where('name', '==', managerName));
-                    const usersSnap = await getDocs(usersQuery);
-                    if (!usersSnap.empty) {
-                        recipientId = usersSnap.docs[0].id;
+                    if(managerName) {
+                        const usersQuery = query(collection(db, 'users'), where('name', '==', managerName));
+                        const usersSnap = await getDocs(usersQuery);
+                        if (!usersSnap.empty) {
+                            recipientId = usersSnap.docs[0].id;
+                        }
                     }
                 }
-            } else if (currentUser.role === 'manager') {
+            } else if (currentUser.role === 'manager' || currentUser.role === 'admin') {
                 const usersQuery = query(collection(db, 'users'), where('name', '==', task.assignedTo));
                 const usersSnap = await getDocs(usersQuery);
                 if (!usersSnap.empty) {
@@ -128,7 +131,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 }
             }
 
-            if (recipientId && recipientId !== doc(db, 'users', recipientId).id) {
+            if (recipientId && recipientId !== auth.currentUser?.uid) {
                 await addDoc(collection(db, 'tasks', task.id, 'notifications'), {
                     recipientId,
                     senderName: currentUser.name,
