@@ -35,6 +35,8 @@ export type Task = {
     assignedTo: string;
     description?: string;
     attachmentUrls?: { name: string, url: string }[];
+    developerNotes?: string;
+    developerAttachments?: { name: string, url: string }[];
     createdAt: Timestamp;
     taskRole: 'developer' | 'qa';
     taskType?: 'Feature' | 'Bug Fix' | 'Enhancement';
@@ -283,7 +285,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     </Button>
                 </CreateTaskForm>
             </div>
-            <ScrollArea className="flex-grow -mx-4 px-4">
+            <ScrollArea className="flex-grow -mx-4 px-4 scrollbar-hide">
                 <div className="space-y-8 pb-4">
                     {projectsWithTasks.length === 0 && (
                         <div className="text-center text-muted-foreground pt-10">No tasks found.</div>

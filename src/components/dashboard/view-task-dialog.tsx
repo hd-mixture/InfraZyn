@@ -13,7 +13,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle, MessageSquare } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
@@ -65,6 +65,8 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
         assignedTo,
         createdAt,
         attachmentUrls,
+        developerNotes,
+        developerAttachments,
         taskType,
         estimatedHours,
         techStack,
@@ -139,9 +141,41 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                         
                         {attachmentUrls && attachmentUrls.length > 0 && (
                              <div>
-                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Attachments</h3>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Manager's Attachments</h3>
                                 <div className="space-y-2 pl-6">
                                     {attachmentUrls.map((file, index) => (
+                                        <a
+                                            key={index}
+                                            href={file.url}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                                        >
+                                            <File className="w-4 h-4" />
+                                            {file.name}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {(developerNotes || (developerAttachments && developerAttachments.length > 0)) && <Separator />}
+
+                        {developerNotes && (
+                             <div>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><MessageSquare size={16}/> Developer Notes</h3>
+                                <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6 bg-muted/50 p-3 rounded-md">
+                                    {developerNotes}
+                                </div>
+                            </div>
+                        )}
+
+                        {developerAttachments && developerAttachments.length > 0 && (
+                             <div>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Developer Attachments</h3>
+                                <div className="space-y-2 pl-6">
+                                    {developerAttachments.map((file, index) => (
                                         <a
                                             key={index}
                                             href={file.url}

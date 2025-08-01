@@ -28,6 +28,8 @@ export type Task = {
     dueDate: Timestamp;
     description?: string;
     attachmentUrls?: { name: string, url: string }[];
+    developerNotes?: string;
+    developerAttachments?: { name: string, url: string }[];
     progress?: number;
 };
 
@@ -172,7 +174,7 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                                 onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(task.id, newStatus)}
                                                 disabled={isDashboard}
                                             >
-                                                <SelectTrigger className="w-[120px] h-8 text-xs">
+                                                <SelectTrigger className="w-[120px] h-8 text-xs" disabled={isDashboard}>
                                                     <SelectValue placeholder="Set status" />
                                                 </SelectTrigger>
                                                 <SelectContent>
