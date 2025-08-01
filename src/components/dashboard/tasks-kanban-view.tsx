@@ -49,6 +49,9 @@ export type Task = {
     testType?: 'Manual' | 'Automation' | 'Regression' | 'Smoke';
     bugSeverity?: 'Low' | 'Medium' | 'High' | 'Critical';
     progress?: number;
+    completedAt?: Timestamp;
+    completionNotes?: string;
+    completionAttachments?: { name: string, url: string }[];
 };
 
 

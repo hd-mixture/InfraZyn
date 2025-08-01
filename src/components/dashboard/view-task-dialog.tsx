@@ -13,11 +13,12 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle, MessageSquare, ThumbsUp, Check } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 import { TaskComments } from './task-comments';
+import Link from 'next/link';
 
 type ViewTaskDialogProps = {
     task: Task | null;
@@ -87,7 +88,10 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
         testType,
         bugSeverity,
         progress,
-        testDescription
+        testDescription,
+        completedAt,
+        completionNotes,
+        completionAttachments,
     } = task;
 
     return (
@@ -174,43 +178,44 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                             </div>
                         )}
                         
-                        {(developerNotes || (developerAttachments && developerAttachments.length > 0)) && <Separator />}
-
-                        {developerNotes && (
-                             <div>
-                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><MessageSquare size={16}/> Developer Notes</h3>
-                                <div className="text-sm text-muted-foreground whitespace-pre-wrap pl-6 bg-muted/50 p-3 rounded-md">
-                                    {developerNotes}
-                                </div>
-                            </div>
-                        )}
-
-                        {developerAttachments && developerAttachments.length > 0 && (
-                             <div>
-                                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Paperclip size={16}/> Developer Attachments</h3>
-                                <div className="space-y-2 pl-6">
-                                    {developerAttachments.map((file, index) => (
-                                        <a
-                                            key={index}
-                                            href={file.url}
-                                            download
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                                        >
-                                            <File className="w-4 h-4" />
-                                            {file.name}
-                                        </a>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        
                         {status === 'In Progress' && (
                             <>
                                 <Separator />
                                 <TaskComments taskId={id} currentUser={currentUser} />
                             </>
+                        )}
+
+                        {status === 'Done' && (
+                             <div className="space-y-4 rounded-lg bg-muted/50 p-4 mt-4">
+                                <h3 className="font-semibold text-base flex items-center gap-2 text-green-600">
+                                    <ThumbsUp size={18} />
+                                    Task Completed
+                                </h3>
+                                {completedAt && <DetailRow icon={<Check size={16} />} label="Completion Date" value={format(completedAt.toDate(), 'PPP p')} />}
+                                {completionNotes && <DetailRow icon={<MessageSquare size={16} />} label="Completion Notes" value={<p className="whitespace-pre-wrap">{completionNotes}</p>} />}
+                                {completionAttachments && completionAttachments.length > 0 && (
+                                    <DetailRow
+                                        icon={<Paperclip size={16} />}
+                                        label="Final Attachments"
+                                        value={
+                                            <div className="space-y-2">
+                                                {completionAttachments.map((file, index) => (
+                                                    <Link
+                                                        key={index}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        <File className="w-4 h-4" />
+                                                        {file.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        }
+                                    />
+                                )}
+                            </div>
                         )}
                     </div>
                 </ScrollArea>
