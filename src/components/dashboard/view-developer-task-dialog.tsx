@@ -13,10 +13,12 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './assigned-tasks-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, File, Flag, Folder, Info, Paperclip, TrendingUp, CheckCircle } from 'lucide-react';
+import { Calendar, File, Flag, Folder, Info, Paperclip, TrendingUp, CheckCircle, MessageSquare, Check, ThumbsUp } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Progress } from '../ui/progress';
 import { TaskComments } from './task-comments';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type ViewDeveloperTaskDialogProps = {
     task: Task;
@@ -70,7 +72,10 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
         priority,
         dueDate,
         attachmentUrls,
-        progress
+        progress,
+        completedAt,
+        completionNotes,
+        completionAttachments,
     } = task;
 
     return (
@@ -82,7 +87,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         Details for the task.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] pr-1">
+                <ScrollArea className="max-h-[60vh]">
                     <div className="space-y-4 px-4">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                         <DetailRow icon={<CheckCircle size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
@@ -117,12 +122,45 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                             />
                         )}
 
-                        {(status === 'In Progress' || status === 'Done') && (
-                            <>
-                                <Separator />
-                                <TaskComments taskId={id} currentUser={currentUser} />
-                            </>
+                        {(status === 'In Progress' || status === 'Done') && <Separator />}
+
+                        {status === 'In Progress' && (
+                             <TaskComments taskId={id} currentUser={currentUser} />
                         )}
+                        
+                        {status === 'Done' && (
+                             <div className="space-y-4 rounded-lg bg-muted/50 p-4">
+                                <h3 className="font-semibold text-base flex items-center gap-2 text-green-600">
+                                    <ThumbsUp size={18} />
+                                    Task Completed
+                                </h3>
+                                {completedAt && <DetailRow icon={<Check size={16} />} label="Completion Date" value={format(completedAt.toDate(), 'PPP p')} />}
+                                {completionNotes && <DetailRow icon={<MessageSquare size={16} />} label="Completion Notes" value={<p className="whitespace-pre-wrap">{completionNotes}</p>} />}
+                                {completionAttachments && completionAttachments.length > 0 && (
+                                    <DetailRow
+                                        icon={<Paperclip size={16} />}
+                                        label="Final Attachments"
+                                        value={
+                                            <div className="space-y-2">
+                                                {completionAttachments.map((file, index) => (
+                                                    <Link
+                                                        key={index}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        <File className="w-4 h-4" />
+                                                        {file.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        }
+                                    />
+                                )}
+                            </div>
+                        )}
+
                     </div>
                 </ScrollArea>
             </DialogContent>

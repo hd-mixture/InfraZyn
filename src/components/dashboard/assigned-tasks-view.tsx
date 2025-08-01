@@ -17,6 +17,7 @@ import { Progress } from '../ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Slider } from '../ui/slider';
 import { cn } from '@/lib/utils';
+import { CompleteTaskDialog } from './complete-task-dialog';
 
 
 export type Task = {
@@ -31,6 +32,9 @@ export type Task = {
     developerNotes?: string;
     developerAttachments?: { name: string, url: string }[];
     progress?: number;
+    completedAt?: Timestamp;
+    completionNotes?: string;
+    completionAttachments?: { name: string, url: string }[];
 };
 
 type Project = {
@@ -54,6 +58,7 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewingTask, setViewingTask] = useState<Task | null>(null);
+    const [completingTask, setCompletingTask] = useState<Task | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -84,13 +89,16 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
         };
     }, [developerName]);
 
-    const handleStatusChange = async (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => {
+    const handleStatusChange = async (task: Task, newStatus: 'To Do' | 'In Progress' | 'Done') => {
+        if (newStatus === 'Done') {
+            setCompletingTask(task);
+            return;
+        }
+
         try {
-            const taskRef = doc(db, "tasks", taskId);
+            const taskRef = doc(db, "tasks", task.id);
             const updateData: { status: string; progress?: number } = { status: newStatus };
-            if (newStatus === 'Done') {
-                updateData.progress = 100;
-            } else if (newStatus === 'To Do') {
+            if (newStatus === 'To Do') {
                 updateData.progress = 0;
             }
             await updateDoc(taskRef, updateData);
@@ -171,7 +179,7 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                         <TableCell>
                                             <Select
                                                 value={task.status}
-                                                onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(task.id, newStatus)}
+                                                onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(task, newStatus)}
                                                 disabled={isDashboard}
                                             >
                                                 <SelectTrigger className="w-[120px] h-8 text-xs" disabled={isDashboard}>
@@ -233,6 +241,18 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                     projectName={getProjectName(viewingTask.project)}
                     isOpen={!!viewingTask}
                     onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
+                />
+            )}
+            
+            {completingTask && (
+                <CompleteTaskDialog
+                    task={completingTask}
+                    isOpen={!!completingTask}
+                    onOpenChange={(isOpen) => {
+                        if (!isOpen) {
+                            setCompletingTask(null);
+                        }
+                    }}
                 />
             )}
         </>
