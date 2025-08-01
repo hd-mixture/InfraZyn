@@ -71,7 +71,6 @@ export function NotificationPanel() {
                 ...doc.data(),
             } as Notification));
             
-            // Sort notifications on the client side
             fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             
             setNotifications(fetchedNotifications);
@@ -192,7 +191,7 @@ export function NotificationPanel() {
             {viewingTask && userRole === 'developer' && (
                 <ViewDeveloperTaskDialog
                     task={viewingTask}
-                    projectName="Loading..." // This could be improved if needed
+                    projectName="Loading..."
                     isOpen={!!viewingTask}
                     onOpenChange={handleDialogClose}
                 />
