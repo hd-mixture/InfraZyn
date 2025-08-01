@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, updateDoc, doc, where, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Send, Paperclip, File as FileIcon, Upload } from 'lucide-react';
+import { Loader2, Send, Paperclip, File as FileIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { Input } from '../ui/input';
 import Link from 'next/link';
+import type { Task } from './tasks-kanban-view';
 
 type Comment = {
     id: string;
@@ -27,7 +28,7 @@ type Comment = {
 };
 
 type TaskCommentsProps = {
-    taskId: string;
+    task: Task;
     currentUser: {
         name: string | null;
         role: string | null;
@@ -35,7 +36,7 @@ type TaskCommentsProps = {
     };
 };
 
-export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
+export function TaskComments({ task, currentUser }: TaskCommentsProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
@@ -46,7 +47,7 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
 
     useEffect(() => {
         const commentsQuery = query(
-            collection(db, 'tasks', taskId, 'comments'),
+            collection(db, 'tasks', task.id, 'comments'),
             orderBy('createdAt', 'asc')
         );
 
@@ -59,10 +60,9 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
         });
 
         return () => unsubscribe();
-    }, [taskId]);
+    }, [task.id]);
 
     useEffect(() => {
-        // Auto-scroll to bottom
         if (scrollAreaRef.current) {
             const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
             if (viewport) {
@@ -105,7 +105,44 @@ export function TaskComments({ taskId, currentUser }: TaskCommentsProps) {
                 commentData.attachments = attachmentUrls;
             }
 
-            await addDoc(collection(db, 'tasks', taskId, 'comments'), commentData);
+            await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
+
+            // Create notification
+            let recipientId = null;
+            if (currentUser.role === 'developer') {
+                // Find the manager
+                const projectsQuery = query(collection(db, 'projects'), where('projectName', '==', task.project));
+                const projectsSnap = await getDocs(projectsQuery);
+                if (!projectsSnap.empty) {
+                    const projectData = projectsSnap.docs[0].data();
+                    const managerName = projectData.projectManager;
+                    const usersQuery = query(collection(db, 'users'), where('name', '==', managerName));
+                    const usersSnap = await getDocs(usersQuery);
+                    if (!usersSnap.empty) {
+                        recipientId = usersSnap.docs[0].id;
+                    }
+                }
+            } else if (currentUser.role === 'manager') {
+                // Find the developer
+                const usersQuery = query(collection(db, 'users'), where('name', '==', task.assignedTo));
+                const usersSnap = await getDocs(usersQuery);
+                if (!usersSnap.empty) {
+                    recipientId = usersSnap.docs[0].id;
+                }
+            }
+
+            if (recipientId) {
+                await addDoc(collection(db, 'notifications'), {
+                    recipientId,
+                    senderName: currentUser.name,
+                    senderAvatar: currentUser.avatar || null,
+                    taskId: task.id,
+                    taskName: task.taskName,
+                    messageSnippet: newComment.substring(0, 50),
+                    read: false,
+                    createdAt: Timestamp.now(),
+                });
+            }
 
             setNewComment('');
             setFilesToUpload(null);

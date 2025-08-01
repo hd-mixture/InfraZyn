@@ -11,6 +11,7 @@ import { SidebarTrigger, useSidebar } from "../ui/sidebar";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { NotificationPanel } from "./notification-panel";
 
 type DashboardHeaderProps = {
     searchQuery: string;
@@ -109,14 +110,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
             )}
             <div className={cn("flex items-center gap-2", isMobile && showSearchInput && "hidden")}>
                 {role === 'admin' && <DelayPredictor />}
-                <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                >
-                    <Bell className="h-4 w-4" />
-                    <span className="sr-only">Toggle notifications</span>
-                </Button>
+                <NotificationPanel />
                 <UserNav />
             </div>
         </div>
