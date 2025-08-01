@@ -24,6 +24,7 @@ import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import axios from 'axios';
 import { Progress } from '../ui/progress';
+import { TaskComments } from './task-comments';
 
 type ViewDeveloperTaskDialogProps = {
     task: Task;
@@ -60,6 +61,17 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
     const [filesToUpload, setFilesToUpload] = React.useState<FileList | null>(null);
     const [loading, setLoading] = React.useState(false);
     const attachmentInputRef = React.useRef<HTMLInputElement>(null);
+    const [currentUser, setCurrentUser] = React.useState({ name: null, role: null, avatar: null });
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setCurrentUser({
+                name: localStorage.getItem('userName'),
+                role: localStorage.getItem('userRole'),
+                avatar: localStorage.getItem('userAvatar'),
+            });
+        }
+    }, []);
 
     React.useEffect(() => {
         if (task) {
@@ -112,6 +124,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
     }
 
     const {
+        id,
         taskName,
         description,
         status,
@@ -130,8 +143,8 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                         Details for the task.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] -mx-6 px-6">
-                    <div className="space-y-4 pr-4">
+                <ScrollArea className="max-h-[60vh]">
+                    <div className="space-y-4 pr-2">
                         <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                         <DetailRow icon={<CheckCircle size={16}/>} label="Status" value={<Badge variant="outline" className={statusColor[status]}>{status}</Badge>} />
                         <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority]}>{priority}</Badge>} />
@@ -198,6 +211,12 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
                             )}
                         </div>
 
+                        {status === 'In Progress' && (
+                            <>
+                                <Separator />
+                                <TaskComments taskId={id} currentUser={currentUser} />
+                            </>
+                        )}
                     </div>
                 </ScrollArea>
                  <DialogFooter>

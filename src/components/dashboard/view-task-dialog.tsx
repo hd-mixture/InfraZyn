@@ -17,6 +17,7 @@ import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, U
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
+import { TaskComments } from './task-comments';
 
 type ViewTaskDialogProps = {
     task: Task | null;
@@ -53,9 +54,22 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 );
 
 export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogProps) {
+    const [currentUser, setCurrentUser] = React.useState({ name: null, role: null, avatar: null });
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setCurrentUser({
+                name: localStorage.getItem('userName'),
+                role: localStorage.getItem('userRole'),
+                avatar: localStorage.getItem('userAvatar'),
+            });
+        }
+    }, []);
+
     if (!task) return null;
 
     const {
+        id,
         taskName,
         taskRole,
         description,
@@ -97,8 +111,8 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                         </div>
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] p-1 -mx-1">
-                    <div className="space-y-5 pr-6">
+                <ScrollArea className="max-h-[60vh]">
+                    <div className="space-y-5 pr-2">
                         {(status === 'In Progress' || status === 'Done') && (
                             <DetailRow 
                                 icon={<TrendingUp size={16} />} 
@@ -190,6 +204,13 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                                     ))}
                                 </div>
                             </div>
+                        )}
+                        
+                        {status === 'In Progress' && (
+                            <>
+                                <Separator />
+                                <TaskComments taskId={id} currentUser={currentUser} />
+                            </>
                         )}
                     </div>
                 </ScrollArea>
