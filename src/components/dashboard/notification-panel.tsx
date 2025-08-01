@@ -62,7 +62,8 @@ export function NotificationPanel() {
 
         const q = query(
             collectionGroup(db, 'notifications'),
-            where('recipientId', '==', userId)
+            where('recipientId', '==', userId),
+            orderBy('createdAt', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, snapshot => {
@@ -70,8 +71,6 @@ export function NotificationPanel() {
                 id: doc.id,
                 ...doc.data(),
             } as Notification));
-            // Sort on the client-side
-            fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setNotifications(fetchedNotifications);
         }, (error) => {
             console.error("Error fetching notifications: ", error);
