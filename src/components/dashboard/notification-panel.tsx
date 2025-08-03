@@ -190,9 +190,14 @@ export function NotificationPanel() {
         if (replyContent.trim() === '' || !notification.taskId) return;
         
         setIsSubmittingReply(true);
-        setSentReplies(prev => [...prev, { id: notification.id, content: replyContent, status: 'sending' }]);
+
+        const tempReplyContent = replyContent;
         setReplyContent('');
         setReplyingTo(null);
+
+        // Immediately show "sending" which will be rendered as "Reply sent!"
+        setSentReplies(prev => [...prev, { id: notification.id, content: tempReplyContent, status: 'sending' }]);
+
 
         try {
             const currentUser = auth.currentUser;
@@ -204,7 +209,7 @@ export function NotificationPanel() {
             const taskData = taskDoc.data() as Task;
             
             await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
-                text: replyContent,
+                text: tempReplyContent,
                 authorName: localStorage.getItem('userName'),
                 authorRole: localStorage.getItem('userRole'),
                 authorAvatar: localStorage.getItem('userAvatar') || null,
@@ -222,19 +227,18 @@ export function NotificationPanel() {
                     senderAvatar: localStorage.getItem('userAvatar') || null,
                     taskId: notification.taskId,
                     taskName: taskData.taskName,
-                    messageSnippet: replyContent.substring(0, 50),
+                    messageSnippet: tempReplyContent.substring(0, 50),
                     read: false,
                     createdAt: Timestamp.now(),
                 });
             }
             
             markAsRead(notification);
-
-            setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
-
+            
+            // After 1 second, transition to "confirmed" to show the reply content
             setTimeout(() => {
                 setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
-            }, 500);
+            }, 1000);
             
         } catch (error: any) {
             console.error("Error sending reply: ", error);
@@ -352,7 +356,7 @@ export function NotificationPanel() {
                                                     </form>
                                                 ) : repliedInfo ? (
                                                      <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 animate-in fade-in">
-                                                        {repliedInfo.status === 'sent' ? (
+                                                        {repliedInfo.status === 'sending' ? (
                                                             <>
                                                                 <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
                                                                 <span>Reply sent!</span>
