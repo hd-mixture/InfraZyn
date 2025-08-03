@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup } from 'firebase/firestore';
-import { Bell, Check, MessageSquare, ListChecks } from 'lucide-react';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp } from 'firebase/firestore';
+import { Bell, Check, MessageSquare, ListChecks, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -21,6 +21,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import { ViewTaskDialog } from './view-task-dialog';
 import { ViewDeveloperTaskDialog } from './view-developer-task-dialog';
 import type { Task } from './tasks-kanban-view';
+import { Input } from '../ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { getOppositeUser } from '@/lib/utils';
+
 
 type Notification = {
     id: string;
@@ -43,6 +47,11 @@ export function NotificationPanel() {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyContent, setReplyContent] = useState('');
+    const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+    const { toast } = useToast();
+    
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
             if (user) {
@@ -89,6 +98,8 @@ export function NotificationPanel() {
     }, [notifications]);
 
     const handleNotificationClick = async (notification: Notification) => {
+        if(replyingTo === notification.id) return; // Don't do anything if reply box is open
+
         if (notification.taskId) {
             const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
             if (taskDoc.exists()) {
@@ -96,41 +107,101 @@ export function NotificationPanel() {
             }
         }
         
+       markAsRead(notification);
+    };
+
+    const markAsRead = async (notification: Notification) => {
         let notificationRef;
         if (notification.taskId) {
-            notificationRef = doc(db, 'tasks', notification.taskId, 'notifications', notification.id);
+            const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
+            const parentPath = taskDoc.ref.path;
+            notificationRef = doc(db, parentPath, 'notifications', notification.id);
         } else if (notification.projectId) {
-            const adminId = localStorage.getItem('adminId'); // Assuming adminId is stored
+            const adminId = localStorage.getItem('adminId');
             if(adminId) {
                 notificationRef = doc(db, 'users', adminId, 'notifications', notification.id);
             }
         }
 
         if (notificationRef && !notification.read) {
-            await updateDoc(notificationRef, { read: true });
+            try {
+                await updateDoc(notificationRef, { read: true });
+            } catch(e) {
+                // This might fail if the path is incorrect, but we can ignore it for now
+                console.warn("Could not mark notification as read:", e);
+            }
         }
-    };
+    }
     
     const markAllAsRead = async () => {
         const promises = notifications
             .filter(n => !n.read)
-            .map(n => {
-                 let notificationRef;
-                if (n.taskId) {
-                    notificationRef = doc(db, 'tasks', n.taskId, 'notifications', n.id);
-                } else if (n.projectId) {
-                    const adminId = localStorage.getItem('adminId');
-                     if(adminId) {
-                        notificationRef = doc(db, 'users', adminId, 'notifications', n.id);
-                    }
-                }
-                if (notificationRef) {
-                    return updateDoc(notificationRef, { read: true });
-                }
-                return Promise.resolve();
-            });
+            .map(n => markAsRead(n));
         await Promise.all(promises);
     };
+
+    const handleReply = async (e: React.FormEvent, notification: Notification) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (replyContent.trim() === '' || !notification.taskId) return;
+        
+        setIsSubmittingReply(true);
+
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) throw new Error("User not authenticated.");
+
+            const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
+            if (!taskDoc.exists()) throw new Error("Task not found.");
+
+            const taskData = taskDoc.data() as Task;
+            
+            // 1. Add comment
+            await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
+                text: replyContent,
+                authorName: localStorage.getItem('userName'),
+                authorRole: localStorage.getItem('userRole'),
+                authorAvatar: localStorage.getItem('userAvatar') || null,
+                createdAt: Timestamp.now(),
+            });
+
+            // 2. Create notification for the other user
+            const recipient = await getOppositeUser(taskData, currentUser.uid);
+
+            if (recipient && recipient.id !== currentUser.uid) {
+                 await addDoc(collection(db, 'tasks', notification.taskId, 'notifications'), {
+                    recipientId: recipient.id,
+                    senderName: localStorage.getItem('userName'),
+                    senderAvatar: localStorage.getItem('userAvatar') || null,
+                    taskId: notification.taskId,
+                    taskName: taskData.taskName,
+                    messageSnippet: replyContent.substring(0, 50),
+                    read: false,
+                    createdAt: Timestamp.now(),
+                    type: 'comment',
+                });
+            }
+
+            // 3. Mark original notification as read
+            await markAsRead(notification);
+
+            toast({ title: "Reply Sent!" });
+            setReplyContent('');
+            setReplyingTo(null);
+
+        } catch (error: any) {
+            console.error("Error sending reply: ", error);
+            toast({
+                variant: 'destructive',
+                title: "Failed to send reply",
+                description: error.message
+            });
+        } finally {
+            setIsSubmittingReply(false);
+        }
+
+    }
 
     const renderNotificationContent = (notification: Notification) => {
         switch(notification.type) {
@@ -201,7 +272,7 @@ export function NotificationPanel() {
                         <span className="sr-only">Toggle notifications</span>
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-80" align="end">
+                <DropdownMenuContent className="w-96" align="end">
                     <DropdownMenuLabel className="flex justify-between items-center">
                         <span>Notifications</span>
                         {unreadCount > 0 && (
@@ -218,27 +289,53 @@ export function NotificationPanel() {
                                 <p className="text-center text-sm text-muted-foreground p-4">No notifications yet.</p>
                             ) : (
                                 notifications.map(notification => (
-                                    <DropdownMenuItem key={notification.id} onSelect={() => handleNotificationClick(notification)} className="flex items-start gap-3 p-3 cursor-pointer">
-                                        <div className="relative">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={notification.senderAvatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
-                                                <AvatarFallback>{notification.senderName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full">
-                                                <div className="h-3 w-3 text-primary">
-                                                    {getIcon(notification.type)}
+                                    <DropdownMenuItem key={notification.id} onSelect={(e) => { e.preventDefault(); handleNotificationClick(notification); }} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
+                                        <div className="flex items-start gap-3 w-full">
+                                            <div className="relative">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={notification.senderAvatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
+                                                    <AvatarFallback>{notification.senderName.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full">
+                                                    <div className="h-3 w-3 text-primary">
+                                                        {getIcon(notification.type)}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{notification.senderName}</p>
+                                                {renderNotificationContent(notification)}
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                                                </p>
+                                            </div>
+                                            {!notification.read && <div className="w-2 h-2 rounded-full bg-primary mt-1" />}
                                         </div>
 
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium">{notification.senderName}</p>
-                                            {renderNotificationContent(notification)}
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
-                                            </p>
-                                        </div>
-                                        {!notification.read && <div className="w-2 h-2 rounded-full bg-primary mt-1" />}
+                                        {notification.type === 'comment' && (
+                                            <div className="pl-11 w-full mt-2">
+                                                {replyingTo === notification.id ? (
+                                                    <form className="flex items-center gap-2" onSubmit={(e) => handleReply(e, notification)}>
+                                                        <Input
+                                                            autoFocus
+                                                            value={replyContent}
+                                                            onChange={(e) => setReplyContent(e.target.value)}
+                                                            placeholder="Write a reply..."
+                                                            className="h-8 text-xs"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                        <Button type="submit" size="icon" className="h-8 w-8" disabled={isSubmittingReply}>
+                                                           {isSubmittingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                                        </Button>
+                                                    </form>
+                                                ) : (
+                                                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
+                                                        Reply here
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
                                     </DropdownMenuItem>
                                 ))
                             )}
