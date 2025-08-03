@@ -47,6 +47,8 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
     const { toast } = useToast();
 
     useEffect(() => {
+        if (!task.id) return; // <-- GUARD CLAUSE TO PREVENT CRASH
+
         const commentsQuery = query(
             collection(db, 'tasks', task.id, 'comments'),
             orderBy('createdAt', 'asc')
@@ -93,6 +95,17 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                     attachmentUrls.push({ name: file.name, url: response.data.secure_url });
                 }
             }
+            
+            if (!auth.currentUser) {
+                console.error("User not authenticated, cannot send comment or notification.");
+                toast({
+                    variant: "destructive",
+                    title: "Authentication Error",
+                    description: "You must be logged in to comment.",
+                });
+                setLoading(false);
+                return;
+            }
 
             const commentData: any = {
                 text: newComment,
@@ -108,15 +121,11 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
 
             const commentRef = await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
-            if (!auth.currentUser) {
-                console.error("User not authenticated, cannot send notification.");
-                return;
-            }
-
             const recipient = await getOppositeUser(task, auth.currentUser.uid);
 
             if (recipient && recipient.id !== auth.currentUser?.uid) {
-                await addDoc(collection(db, 'tasks', task.id, 'notifications'), {
+                 const notificationPath = recipient.role === 'admin' ? `users/${recipient.id}` : `tasks/${task.id}`;
+                 await addDoc(collection(db, notificationPath, 'notifications'), {
                     type: 'comment',
                     recipientId: recipient.id,
                     senderName: currentUser.name,

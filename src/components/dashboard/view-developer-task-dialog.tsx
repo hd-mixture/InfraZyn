@@ -124,7 +124,7 @@ export function ViewDeveloperTaskDialog({ task, projectName, isOpen, onOpenChang
 
                         {(status === 'In Progress' || status === 'Done') && <Separator />}
 
-                        {status === 'In Progress' && (
+                        {task && status === 'In Progress' && (
                              <TaskComments task={task} currentUser={currentUser} />
                         )}
                         
