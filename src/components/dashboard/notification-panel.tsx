@@ -44,6 +44,12 @@ type Notification = {
     createdAt: any;
 };
 
+type ReplyInfo = {
+    id: string;
+    content: string;
+    status: 'sending' | 'sent' | 'confirmed';
+};
+
 export function NotificationPanel() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [userId, setUserId] = useState<string | null>(null);
@@ -53,13 +59,27 @@ export function NotificationPanel() {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-    const [sentReplies, setSentReplies] = useState<Array<{ id: string; content: string }>>([]);
+    const [sentReplies, setSentReplies] = useState<ReplyInfo[]>(() => {
+        if (typeof window === 'undefined') return [];
+        const saved = localStorage.getItem('sentReplies');
+        try {
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
     const [animateBell, setAnimateBell] = useState(false);
     const previousUnreadCountRef = useRef(0);
     const audioRef = useRef<HTMLAudioElement>(null);
     const { toast } = useToast();
     const router = useRouter();
     
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('sentReplies', JSON.stringify(sentReplies.filter(r => r.status === 'confirmed')));
+        }
+    }, [sentReplies]);
+
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
             if (user) {
@@ -170,6 +190,9 @@ export function NotificationPanel() {
         if (replyContent.trim() === '' || !notification.taskId) return;
         
         setIsSubmittingReply(true);
+        setSentReplies(prev => [...prev, { id: notification.id, content: replyContent, status: 'sending' }]);
+        setReplyContent('');
+        setReplyingTo(null);
 
         try {
             const currentUser = auth.currentUser;
@@ -191,11 +214,7 @@ export function NotificationPanel() {
             const recipient = await getOppositeUser(taskData, currentUser.uid);
 
             if (recipient && recipient.id !== currentUser.uid) {
-                let notificationPath = `tasks/${notification.taskId}`;
-                if (recipient.role === 'admin') {
-                   notificationPath = `users/${recipient.id}`;
-                }
-
+                 const notificationPath = recipient.role === 'admin' ? `users/${recipient.id}` : `tasks/${notification.taskId}`;
                  await addDoc(collection(db, notificationPath, 'notifications'), {
                     type: 'comment',
                     recipientId: recipient.id,
@@ -209,12 +228,14 @@ export function NotificationPanel() {
                 });
             }
             
-            // Optimistically update UI
             markAsRead(notification);
-            setSentReplies(prev => [...prev, { id: notification.id, content: replyContent }]);
-            setReplyContent('');
-            setReplyingTo(null);
 
+            setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
+
+            setTimeout(() => {
+                setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
+            }, 500);
+            
         } catch (error: any) {
             console.error("Error sending reply: ", error);
             toast({
@@ -222,6 +243,8 @@ export function NotificationPanel() {
                 title: "Failed to send reply",
                 description: error.message
             });
+            // Remove the reply attempt on failure
+            setSentReplies(prev => prev.filter(r => r.id !== notification.id));
         } finally {
             setIsSubmittingReply(false);
         }
@@ -328,8 +351,15 @@ export function NotificationPanel() {
                                                         </Button>
                                                     </form>
                                                 ) : repliedInfo ? (
-                                                    <div className="text-xs text-muted-foreground italic">
-                                                        Replied: - "{repliedInfo.content}"
+                                                     <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 animate-in fade-in">
+                                                        {repliedInfo.status === 'sent' ? (
+                                                            <>
+                                                                <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
+                                                                <span>Reply sent!</span>
+                                                            </>
+                                                        ) : (
+                                                            <span>Replied: - "{repliedInfo.content}"</span>
+                                                        )}
                                                     </div>
                                                 ) : !notification.read ? (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
