@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs } from 'firebase/firestore';
 import { Bell, Check, MessageSquare, ListChecks, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -122,24 +122,14 @@ export function NotificationPanel() {
                 return doc(db, parentPath, 'notifications', notification.id);
             }
         } else if (notification.projectId) {
-            const senderId = await getUserIdByName(notification.senderName);
-            if(senderId) {
-                return doc(db, 'users', senderId, 'notifications', notification.id);
+            const adminUID = (await getDocs(query(collection(db, "users"), where("role", "==", "admin")))).docs[0]?.id;
+            if(adminUID) {
+                return doc(db, 'users', adminUID, 'notifications', notification.id);
             }
         }
         return null;
     }
     
-    const getUserIdByName = async (name: string): Promise<string | null> => {
-        const userQuery = query(collection(db, "users"), where("name", "==", name));
-        const userSnap = await getDocs(userQuery);
-        if (!userSnap.empty) {
-            return userSnap.docs[0].id;
-        }
-        return null;
-    }
-
-
     const markAsRead = async (notification: Notification) => {
         if (notification.read) return;
         const notificationRef = await getNotificationRef(notification);
@@ -153,10 +143,10 @@ export function NotificationPanel() {
     }
     
     const markAllAsRead = async () => {
-        const promises = notifications
-            .filter(n => !n.read)
-            .map(n => markAsRead(n));
-        await Promise.all(promises);
+        const unreadNotifications = notifications.filter(n => !n.read);
+        for (const notification of unreadNotifications) {
+            await markAsRead(notification);
+        }
     };
 
     const handleReply = async (e: React.FormEvent, notification: Notification) => {
@@ -306,7 +296,7 @@ export function NotificationPanel() {
                             ) : (
                                 notifications.map(notification => (
                                     <DropdownMenuItem key={notification.id} onSelect={(e) => { e.preventDefault(); handleNotificationClick(notification); }} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
-                                        <div className="flex items-start gap-3 w-full">
+                                        <div className="flex items-start gap-3 w-full" onClick={() => handleNotificationClick(notification)}>
                                             <div className="relative">
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={notification.senderAvatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
