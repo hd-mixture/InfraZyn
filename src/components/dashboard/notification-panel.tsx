@@ -56,6 +56,7 @@ export function NotificationPanel() {
     const [replySent, setReplySent] = useState<string[]>([]);
     const [animateBell, setAnimateBell] = useState(false);
     const previousUnreadCountRef = useRef(0);
+    const audioRef = useRef<HTMLAudioElement>(null);
     const { toast } = useToast();
     const router = useRouter();
     
@@ -80,6 +81,7 @@ export function NotificationPanel() {
     useEffect(() => {
         if (unreadCount > previousUnreadCountRef.current) {
             setAnimateBell(true);
+            audioRef.current?.play().catch(e => console.error("Error playing sound:", e));
             const timer = setTimeout(() => setAnimateBell(false), 800); // Duration of animation
             return () => clearTimeout(timer);
         }
@@ -98,7 +100,8 @@ export function NotificationPanel() {
 
         const q = query(
             collectionGroup(db, 'notifications'),
-            where('recipientId', '==', userId)
+            where('recipientId', '==', userId),
+            orderBy('createdAt', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, snapshot => {
@@ -112,8 +115,6 @@ export function NotificationPanel() {
                     ...doc.data(),
                 } as Notification
             });
-            
-            fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - b.createdAt.toMillis());
             
             setNotifications(fetchedNotifications);
         }, (error) => {
@@ -256,6 +257,7 @@ export function NotificationPanel() {
 
     return (
         <>
+            <audio ref={audioRef} src="https://firebasestudio.com/sounds/bing.mp3" preload="auto" />
             <DropdownMenu onOpenChange={(open) => { if(!open) setReplySent([]) }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
