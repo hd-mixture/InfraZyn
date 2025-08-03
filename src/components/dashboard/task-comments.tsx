@@ -124,8 +124,11 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             const recipient = await getOppositeUser(task, auth.currentUser.uid);
 
             if (recipient && recipient.id !== auth.currentUser?.uid) {
-                 const notificationPath = recipient.role === 'manager' ? `users/${recipient.id}` : `tasks/${task.id}`;
-                 await addDoc(collection(db, notificationPath, 'notifications'), {
+                const notificationCollectionPath = recipient.role === 'manager' 
+                    ? `users/${recipient.id}/notifications` 
+                    : `tasks/${task.id}/notifications`;
+
+                 await addDoc(collection(db, notificationCollectionPath), {
                     type: 'comment',
                     recipientId: recipient.id,
                     senderName: currentUser.name,
@@ -231,3 +234,4 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
         </div>
     );
 }
+

@@ -153,12 +153,9 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
 
         const newProjectRef = await addDoc(collection(db, "projects"), dataToSave);
         
-        const adminUid = auth.currentUser?.uid;
-
         // Send notification to assigned manager
-        if (managerId && adminUid) {
-            const notificationRef = doc(collection(db, "users", adminUid, "notifications"));
-            await setDoc(notificationRef, {
+        if (managerId) {
+            await addDoc(collection(db, `users/${managerId}/notifications`), {
                 type: 'project_assignment',
                 recipientId: managerId,
                 senderName: localStorage.getItem('adminName') || 'Admin',
@@ -501,3 +498,4 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
     </Dialog>
   );
 }
+

@@ -42,7 +42,21 @@ export async function getOppositeUser(task: Task, currentUserId: string): Promis
             name: recipientDoc.data().name, 
             role: recipientDoc.data().role 
         };
+    } else if (recipientRole === 'manager') {
+        // Fallback for admin user who is not in the 'users' collection
+        const adminUsersQuery = query(collection(db, 'users'), where('name', '==', recipientName));
+        const adminUsersSnap = await getDocs(adminUsersQuery);
+        if (!adminUsersSnap.empty) {
+            const recipientDoc = adminUsersSnap.docs[0];
+            return {
+                id: recipientDoc.id,
+                name: recipientDoc.data().name,
+                role: recipientDoc.data().role
+            };
+        }
     }
+
 
     return null;
 }
+
