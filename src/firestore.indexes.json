@@ -8,6 +8,10 @@
         {
           "fieldPath": "recipientId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }
