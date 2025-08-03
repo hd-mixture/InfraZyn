@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 
 type Notification = {
     id: string;
-    parentPath?: string; // e.g. users/{uid}/notifications or tasks/{tid}/notifications
+    parentPath: string;
     type: 'comment' | 'new_task_assignment' | 'project_assignment';
     recipientId: string;
     senderName: string;
@@ -85,13 +85,9 @@ export function NotificationPanel() {
             const timer = setTimeout(() => setAnimateBell(false), 800); // Duration of animation
             return () => clearTimeout(timer);
         }
-    }, [unreadCount]);
-    
-    useEffect(() => {
         previousUnreadCountRef.current = unreadCount;
     }, [unreadCount]);
-
-
+    
     useEffect(() => {
         if (!userId) {
             setNotifications([]);
@@ -133,8 +129,12 @@ export function NotificationPanel() {
             if (taskDoc.exists()) {
                 setViewingTask({ id: taskDoc.id, ...taskDoc.data() } as Task);
             }
-        } else if (notification.projectId && userRole === 'manager') {
-            router.push(`/manager-dashboard?view=projects`);
+        } else if (notification.projectId) {
+            if (userRole === 'manager') {
+                router.push(`/manager-dashboard?view=projects`);
+            } else if (userRole === 'admin') {
+                router.push(`/?view=projects`);
+            }
         }
         
        markAsRead(notification);
@@ -142,11 +142,17 @@ export function NotificationPanel() {
     
     const markAsRead = async (notification: Notification) => {
         if (notification.read || !notification.parentPath) return;
+
+        // Optimistic UI update
+        setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, read: true} : n));
+        
         const notificationRef = doc(db, notification.parentPath, notification.id);
         try {
             await updateDoc(notificationRef, { read: true });
         } catch(e) {
             console.warn("Could not mark notification as read:", e);
+            // Revert optimistic update on failure
+            setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, read: false} : n));
         }
     }
     
@@ -185,7 +191,13 @@ export function NotificationPanel() {
             const recipient = await getOppositeUser(taskData, currentUser.uid);
 
             if (recipient && recipient.id !== currentUser.uid) {
-                 await addDoc(collection(db, 'tasks', notification.taskId, 'notifications'), {
+                let notificationPath = `tasks/${notification.taskId}`;
+                if (recipient.role === 'admin') {
+                   notificationPath = `users/${recipient.id}`;
+                }
+
+                 await addDoc(collection(db, notificationPath, 'notifications'), {
+                    type: 'comment',
                     recipientId: recipient.id,
                     senderName: localStorage.getItem('userName'),
                     senderAvatar: localStorage.getItem('userAvatar') || null,
@@ -194,10 +206,9 @@ export function NotificationPanel() {
                     messageSnippet: replyContent.substring(0, 50),
                     read: false,
                     createdAt: Timestamp.now(),
-                    type: 'comment',
                 });
             }
-
+            
             await markAsRead(notification);
 
             toast({ title: "Reply Sent!" });
@@ -215,31 +226,6 @@ export function NotificationPanel() {
         } finally {
             setIsSubmittingReply(false);
         }
-
-    }
-
-    const renderNotificationContent = (notification: Notification) => {
-         return (
-            <div className="flex-1">
-                <p className="text-sm">
-                    <span className="font-medium">{notification.senderName}</span>
-                    <span className="text-muted-foreground">
-                        {notification.type === 'comment' ? ' commented on ' : ' assigned you to '}
-                    </span>
-                    <span className="font-medium text-primary">
-                        {notification.taskName || notification.projectName}
-                    </span>
-                </p>
-                {notification.type === 'comment' && (
-                     <p className="text-sm text-muted-foreground italic truncate pt-1">
-                        "{notification.messageSnippet}"
-                    </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                    {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
-                </p>
-            </div>
-        );
     }
 
     const getIcon = (type: Notification['type']) => {
@@ -301,7 +287,25 @@ export function NotificationPanel() {
                                                 </div>
                                             </div>
 
-                                            {renderNotificationContent(notification)}
+                                            <div className="flex-1">
+                                                <p className="text-sm">
+                                                    <span className="font-medium">{notification.senderName}</span>
+                                                    <span className="text-muted-foreground">
+                                                        {notification.type === 'comment' ? ' commented on ' : ' assigned you to '}
+                                                    </span>
+                                                    <span className="font-medium text-primary">
+                                                        {notification.taskName || notification.projectName}
+                                                    </span>
+                                                </p>
+                                                {notification.type === 'comment' && (
+                                                    <p className="text-sm text-muted-foreground italic truncate pt-1">
+                                                        "{notification.messageSnippet}"
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                                                </p>
+                                            </div>
 
                                             {!notification.read && <div className="w-2 h-2 rounded-full bg-primary mt-1" />}
                                         </div>
@@ -327,11 +331,11 @@ export function NotificationPanel() {
                                                         <ThumbsUp className="h-3.5 w-3.5" />
                                                         <span>Reply sent!</span>
                                                     </div>
-                                                ) : (
+                                                ) : !notification.read ? (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
                                                         Reply here
                                                     </Button>
-                                                )}
+                                                ) : null}
                                             </div>
                                         )}
                                     </DropdownMenuItem>
