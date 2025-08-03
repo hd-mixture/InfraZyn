@@ -194,10 +194,8 @@ export function NotificationPanel() {
         const tempReplyContent = replyContent;
         setReplyContent('');
         setReplyingTo(null);
-
-        // Immediately show "sending" which will be rendered as "Reply sent!"
-        setSentReplies(prev => [...prev, { id: notification.id, content: tempReplyContent, status: 'sending' }]);
-
+        
+        setSentReplies(prev => [...prev.filter(r => r.id !== notification.id), { id: notification.id, content: tempReplyContent, status: 'sending' }]);
 
         try {
             const currentUser = auth.currentUser;
@@ -269,7 +267,7 @@ export function NotificationPanel() {
 
     return (
         <>
-            <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2022/10/13/audio_a10b81b047.mp3" preload="auto" />
+            <audio ref={audioRef} src="https://res.cloudinary.com/dtdgxqt6p/video/upload/v1754223850/new-notification-021-370045_ejdegd.mp3" preload="auto" />
             <DropdownMenu onOpenChange={(open) => { if(!open) setReplyingTo(null) }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
