@@ -24,6 +24,7 @@ import type { Task } from './tasks-kanban-view';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getOppositeUser } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 
 type Notification = {
@@ -51,6 +52,7 @@ export function NotificationPanel() {
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
     
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
@@ -98,36 +100,53 @@ export function NotificationPanel() {
     }, [notifications]);
 
     const handleNotificationClick = async (notification: Notification) => {
-        if(replyingTo === notification.id) return; // Don't do anything if reply box is open
+        if(replyingTo === notification.id) return;
 
         if (notification.taskId) {
             const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
             if (taskDoc.exists()) {
                 setViewingTask({ id: taskDoc.id, ...taskDoc.data() } as Task);
             }
+        } else if (notification.projectId && userRole === 'manager') {
+            router.push(`/manager-dashboard?view=projects`);
         }
         
        markAsRead(notification);
     };
 
-    const markAsRead = async (notification: Notification) => {
-        let notificationRef;
+    const getNotificationRef = async (notification: Notification) => {
         if (notification.taskId) {
             const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
-            const parentPath = taskDoc.ref.path;
-            notificationRef = doc(db, parentPath, 'notifications', notification.id);
+            if (taskDoc.exists()) {
+                const parentPath = taskDoc.ref.path;
+                return doc(db, parentPath, 'notifications', notification.id);
+            }
         } else if (notification.projectId) {
-            const adminId = localStorage.getItem('adminId');
-            if(adminId) {
-                notificationRef = doc(db, 'users', adminId, 'notifications', notification.id);
+            const senderId = await getUserIdByName(notification.senderName);
+            if(senderId) {
+                return doc(db, 'users', senderId, 'notifications', notification.id);
             }
         }
+        return null;
+    }
+    
+    const getUserIdByName = async (name: string): Promise<string | null> => {
+        const userQuery = query(collection(db, "users"), where("name", "==", name));
+        const userSnap = await getDocs(userQuery);
+        if (!userSnap.empty) {
+            return userSnap.docs[0].id;
+        }
+        return null;
+    }
 
-        if (notificationRef && !notification.read) {
+
+    const markAsRead = async (notification: Notification) => {
+        if (notification.read) return;
+        const notificationRef = await getNotificationRef(notification);
+        if (notificationRef) {
             try {
                 await updateDoc(notificationRef, { read: true });
             } catch(e) {
-                // This might fail if the path is incorrect, but we can ignore it for now
                 console.warn("Could not mark notification as read:", e);
             }
         }
@@ -157,7 +176,6 @@ export function NotificationPanel() {
 
             const taskData = taskDoc.data() as Task;
             
-            // 1. Add comment
             await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
                 text: replyContent,
                 authorName: localStorage.getItem('userName'),
@@ -166,7 +184,6 @@ export function NotificationPanel() {
                 createdAt: Timestamp.now(),
             });
 
-            // 2. Create notification for the other user
             const recipient = await getOppositeUser(taskData, currentUser.uid);
 
             if (recipient && recipient.id !== currentUser.uid) {
@@ -183,7 +200,6 @@ export function NotificationPanel() {
                 });
             }
 
-            // 3. Mark original notification as read
             await markAsRead(notification);
 
             toast({ title: "Reply Sent!" });
