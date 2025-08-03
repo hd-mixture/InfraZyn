@@ -130,6 +130,11 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                     recipientId = usersSnap.docs[0].id;
                 }
             }
+            
+            if (!auth.currentUser) {
+                console.error("User not authenticated, cannot send notification.");
+                return;
+            }
 
             if (recipientId && recipientId !== auth.currentUser?.uid) {
                 await addDoc(collection(db, 'tasks', task.id, 'notifications'), {
