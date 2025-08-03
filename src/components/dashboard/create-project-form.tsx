@@ -155,7 +155,7 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
         
         // Send notification to assigned manager
         if (managerId) {
-            await addDoc(collection(db, `users/${managerId}/notifications`), {
+            await addDoc(collection(db, 'users', managerId, 'notifications'), {
                 type: 'project_assignment',
                 recipientId: managerId,
                 senderName: localStorage.getItem('adminName') || 'Admin',
