@@ -97,14 +97,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             }
             
             if (!auth.currentUser) {
-                console.error("User not authenticated, cannot send comment or notification.");
-                toast({
-                    variant: "destructive",
-                    title: "Authentication Error",
-                    description: "You must be logged in to comment.",
-                });
-                setLoading(false);
-                return;
+                throw new Error("User not authenticated.");
             }
 
             const commentData: any = {
@@ -119,9 +112,9 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 commentData.attachments = attachmentUrls;
             }
 
-            const commentRef = await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
+            await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
-            const recipient = await getOppositeUser(task, auth.currentUser.uid);
+            const recipient = await getOppositeUser(task, currentUser.name);
 
             if (recipient && recipient.id !== auth.currentUser?.uid) {
                 let notificationCollection;
@@ -130,6 +123,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 } else {
                     notificationCollection = collection(db, 'tasks', task.id, 'notifications');
                 }
+                
                 await addDoc(notificationCollection, {
                     type: 'comment',
                     recipientId: recipient.id,

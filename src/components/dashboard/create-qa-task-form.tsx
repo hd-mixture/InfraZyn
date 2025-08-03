@@ -100,30 +100,11 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
                     return;
                 }
                 
-                // Fetch tasks for those projects to find team members
-                const projectIds = managerProjects.map(p => p.id);
-                const teamMemberNames = new Set<string>();
-
-                if (projectIds.length > 0) {
-                    const tasksQuery = query(collection(db, "tasks"), where("project", "in", projectIds));
-                    const tasksSnapshot = await getDocs(tasksQuery);
-                    tasksSnapshot.forEach(doc => teamMemberNames.add(doc.data().assignedTo));
-                }
-                
                 // Fetch users added by this manager
                 const addedByQuery = query(collection(db, "users"), where("addedBy", "==", managerName), where("role", "==", "qa"));
                 const addedBySnapshot = await getDocs(addedByQuery);
-                addedBySnapshot.forEach(doc => teamMemberNames.add(doc.data().name));
-                
-                // Fetch full user details for the team members
-                 if (teamMemberNames.size > 0) {
-                    const usersQuery = query(collection(db, "users"), where("name", "in", Array.from(teamMemberNames)), where("role", "==", "qa"));
-                    const userSnapshot = await getDocs(usersQuery);
-                    const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
-                    setUsers(fetchedUsers);
-                } else {
-                    setUsers([]);
-                }
+                const fetchedUsers = addedBySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
+                setUsers(fetchedUsers);
             } else { // Admin role
                 const usersRef = collection(db, "users");
                 const userQuery = query(usersRef, where("role", "==", "qa"));
@@ -185,7 +166,6 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
             attachmentUrls,
         };
 
-        // Remove optional fields if they are empty
         if (!dataToSave.testDescription) delete dataToSave.testDescription;
         if (!dataToSave.bugSeverity) delete dataToSave.bugSeverity;
         if (!dataToSave.expectedResult) delete dataToSave.expectedResult;
@@ -196,7 +176,8 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
 
         // Create notification for the assigned user
         if (auth.currentUser && auth.currentUser.uid !== assignee.id) {
-             await addDoc(collection(db, 'tasks', newDocRef.id, 'notifications'), {
+             const notificationPath = collection(db, 'tasks', newDocRef.id, 'notifications');
+             await addDoc(notificationPath, {
                 type: 'new_task_assignment',
                 recipientId: assignee.id,
                 senderName: localStorage.getItem('userName') || 'Admin',

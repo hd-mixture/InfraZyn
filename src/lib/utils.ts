@@ -8,52 +8,46 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function getOppositeUser(task: Task, currentUserId: string): Promise<{id: string, name: string, role: string} | null> {
+export async function getOppositeUser(task: Task, currentUserName: string): Promise<{id: string, name: string, role: string} | null> {
     const { assignedTo, project, taskRole } = task;
 
     let recipientName: string | null = null;
     let recipientRole: string | null = null;
-    
-    // If current user is the assignee, notify the manager.
-    if (localStorage.getItem('userName') === assignedTo) {
+
+    if (currentUserName === assignedTo) {
+        // Current user is the assignee, so notify the manager.
         const projectDoc = await getDoc(doc(db, 'projects', project));
-        if (projectDoc.exists()) {
+        if (projectDoc.exists() && projectDoc.data().projectManager) {
             recipientName = projectDoc.data().projectManager;
             recipientRole = 'manager';
+        } else {
+            // Fallback to notify admin if no manager is assigned
+            recipientName = 'Admin';
+            recipientRole = 'admin';
         }
-    } else { // If current user is the assigner (manager/admin), notify the assignee.
+    } else {
+        // Current user is the assigner (manager/admin), so notify the assignee.
         recipientName = assignedTo;
         recipientRole = taskRole;
     }
 
-    if (!recipientName || !recipientRole) return null;
-
-    // The name of the admin user is not consistent, so if the recipient is a manager
-    // let's try a few things. First, check local storage for 'adminName'
-    if (recipientRole === 'manager') {
-        const adminName = localStorage.getItem('adminName');
-        if (recipientName === adminName) {
-            // This is the admin. We need their user document.
-            // Let's assume there's an admin user in 'users' with role 'admin' for notifications
-            const q = query(collection(db, 'users'), where('role', '==', 'admin'));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                const doc = snap.docs[0];
-                return { id: doc.id, name: doc.data().name, role: doc.data().role };
-            }
-             // Fallback if no admin in users collection
-            return { id: 'admin_user', name: adminName, role: 'admin' };
-        }
+    if (!recipientName || !recipientRole) {
+        console.error("Could not determine recipient.");
+        return null;
     }
 
-    // For managers, developers, and QAs in the users collection
-    const q = query(collection(db, 'users'), where('name', '==', recipientName), where('role', '==', recipientRole));
-    const snap = await getDocs(q);
+    // Find the user document to get the ID
+    const userQuery = query(collection(db, 'users'), where('name', '==', recipientName), where('role', '==', recipientRole));
+    const userSnapshot = await getDocs(userQuery);
 
-    if (!snap.empty) {
-        const doc = snap.docs[0];
-        return { id: doc.id, name: doc.data().name, role: doc.data().role };
+    if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        return { id: userDoc.id, name: userDoc.data().name, role: userDoc.data().role };
+    } else if (recipientRole === 'admin') {
+        // Special handling for admin if not in users collection
+        return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
-
+    
+    console.error(`Could not find user: ${recipientName} with role: ${recipientRole}`);
     return null;
 }

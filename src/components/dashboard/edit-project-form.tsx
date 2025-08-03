@@ -200,7 +200,8 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         
         // Send notification if manager has changed to a new one
         if (newManagerId && managerName !== project.projectManager) {
-            await addDoc(collection(db, 'users', newManagerId, 'notifications'), {
+            const notificationRef = collection(db, 'users', newManagerId, 'notifications');
+            await addDoc(notificationRef, {
                 type: 'project_assignment',
                 recipientId: newManagerId,
                 senderName: localStorage.getItem('adminName') || 'Admin',
