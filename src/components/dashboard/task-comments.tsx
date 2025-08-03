@@ -106,7 +106,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 commentData.attachments = attachmentUrls;
             }
 
-            await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
+            const commentRef = await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
             if (!auth.currentUser) {
                 console.error("User not authenticated, cannot send notification.");

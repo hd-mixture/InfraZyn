@@ -40,8 +40,8 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, getDocs, Timestamp, query, where, doc, updateDoc, addDoc, setDoc } from 'firebase/firestore';
 import type { Project } from './project-summary';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -117,7 +117,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         form.reset({
             ...project,
             projectManager: manager ? manager.id : ASSIGN_LATER_VALUE,
-            revenue: project.revenue,
+            revenue: project.revenue ?? '',
             progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
             endDate: project.endDate.toDate(),
@@ -128,7 +128,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
          form.reset({
             ...project,
             projectManager: ASSIGN_LATER_VALUE,
-            revenue: project.revenue,
+            revenue: project.revenue ?? '',
             progress: project.progress ?? 0,
             startDate: project.startDate.toDate(),
             endDate: project.endDate.toDate(),
@@ -168,10 +168,13 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         const projectRef = doc(db, "projects", project.id);
         
         let managerName = '';
+        let newManagerId: string | undefined;
+
         if (values.projectManager && values.projectManager !== ASSIGN_LATER_VALUE) {
             const manager = managers.find(m => m.id === values.projectManager);
             if (manager) {
                 managerName = manager.name;
+                newManagerId = manager.id;
             }
         }
         
@@ -194,6 +197,25 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
         }
 
         await updateDoc(projectRef, dataToUpdate);
+        
+        const adminUid = auth.currentUser?.uid;
+
+        // Send notification if manager has changed to a new one
+        if (newManagerId && managerName !== project.projectManager && adminUid) {
+            const notificationRef = doc(collection(db, "users", adminUid, "notifications"));
+             await setDoc(notificationRef, {
+                type: 'project_assignment',
+                recipientId: newManagerId,
+                senderName: localStorage.getItem('adminName') || 'Admin',
+                senderAvatar: localStorage.getItem('adminAvatar') || null,
+                projectId: project.id,
+                projectName: values.projectName,
+                messageSnippet: `You have been assigned to project: ${values.projectName}`,
+                read: false,
+                createdAt: Timestamp.now(),
+            });
+        }
+
 
         await addDoc(collection(db, "activities"), {
             type: 'project_update',

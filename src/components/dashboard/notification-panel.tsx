@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs } from 'firebase/firestore';
-import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp } from 'lucide-react';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs, setDoc } from 'firebase/firestore';
+import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 
 type Notification = {
     id: string;
+    parentPath?: string; // e.g. users/{uid}/notifications or tasks/{tid}/notifications
     type: 'comment' | 'new_task_assignment' | 'project_assignment';
     recipientId: string;
     senderName: string;
@@ -83,6 +84,7 @@ export function NotificationPanel() {
         const unsubscribe = onSnapshot(q, snapshot => {
             const fetchedNotifications = snapshot.docs.map(doc => ({
                 id: doc.id,
+                parentPath: doc.ref.parent.path,
                 ...doc.data(),
             } as Notification));
             
@@ -114,31 +116,14 @@ export function NotificationPanel() {
         
        markAsRead(notification);
     };
-
-    const getNotificationRef = async (notification: Notification) => {
-        if (notification.taskId) {
-            const parentDoc = (await getDocs(query(collectionGroup(db, 'notifications'), where('__name__', '==', notification.id)))).docs[0];
-            if(parentDoc) {
-                return parentDoc.ref;
-            }
-        } else {
-             const parentDoc = (await getDocs(query(collectionGroup(db, 'notifications'), where('__name__', '==', notification.id)))).docs[0];
-             if(parentDoc) {
-                return parentDoc.ref;
-             }
-        }
-        return null;
-    }
     
     const markAsRead = async (notification: Notification) => {
-        if (notification.read) return;
-        const notificationRef = await getNotificationRef(notification);
-        if (notificationRef) {
-            try {
-                await updateDoc(notificationRef, { read: true });
-            } catch(e) {
-                console.warn("Could not mark notification as read:", e);
-            }
+        if (notification.read || !notification.parentPath) return;
+        const notificationRef = doc(db, notification.parentPath, notification.id);
+        try {
+            await updateDoc(notificationRef, { read: true });
+        } catch(e) {
+            console.warn("Could not mark notification as read:", e);
         }
     }
     
@@ -215,55 +200,37 @@ export function NotificationPanel() {
     }
 
     const renderNotificationContent = (notification: Notification) => {
-        switch(notification.type) {
-            case 'new_task_assignment':
-                return (
-                    <p className="text-sm text-muted-foreground">
-                        Assigned you to: <span className="font-semibold">{notification.taskName}</span>
+         return (
+            <div className="flex-1">
+                <p className="text-sm">
+                    <span className="font-medium">{notification.senderName}</span>
+                    <span className="text-muted-foreground">
+                        {notification.type === 'comment' ? ' commented on ' : ' assigned you to '}
+                    </span>
+                    <span className="font-medium text-primary">
+                        {notification.taskName || notification.projectName}
+                    </span>
+                </p>
+                {notification.type === 'comment' && (
+                     <p className="text-sm text-muted-foreground italic truncate pt-1">
+                        "{notification.messageSnippet}"
                     </p>
-                );
-            case 'project_assignment':
-                 return (
-                    <p className="text-sm text-muted-foreground">
-                        Assigned you to project: <span className="font-semibold">{notification.projectName}</span>
-                    </p>
-                );
-            case 'comment':
-            default:
-                return (
-                    <>
-                        <p className="text-sm text-muted-foreground">
-                            Commented on: <span className="font-semibold">{notification.taskName}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground italic truncate">
-                            "{notification.messageSnippet}"
-                        </p>
-                    </>
-                );
-        }
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                    {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                </p>
+            </div>
+        );
     }
 
     const getIcon = (type: Notification['type']) => {
         switch(type) {
             case 'new_task_assignment': return <ListChecks className="h-full w-full" />;
-            case 'project_assignment': return <ListChecks className="h-full w-full" />;
+            case 'project_assignment': return <Folder className="h-full w-full" />;
             case 'comment': return <MessageSquare className="h-full w-full" />;
             default: return <MessageSquare className="h-full w-full" />;
         }
     }
-
-
-    const getProjectNameForTask = async (taskId: string): Promise<string> => {
-        const taskDoc = await getDoc(doc(db, 'tasks', taskId));
-        if (taskDoc.exists()) {
-            const projectId = taskDoc.data().project;
-            const projectDoc = await getDoc(doc(db, 'projects', projectId));
-            if (projectDoc.exists()) {
-                return projectDoc.data().projectName;
-            }
-        }
-        return 'Unknown Project';
-    };
     
     const handleDialogClose = () => {
         setViewingTask(null);
@@ -314,13 +281,8 @@ export function NotificationPanel() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium">{notification.senderName}</p>
-                                                {renderNotificationContent(notification)}
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
-                                                </p>
-                                            </div>
+                                            {renderNotificationContent(notification)}
+
                                             {!notification.read && <div className="w-2 h-2 rounded-full bg-primary mt-1" />}
                                         </div>
 

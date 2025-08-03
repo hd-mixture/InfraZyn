@@ -39,8 +39,8 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, addDoc, getDocs, Timestamp, query, where, doc, setDoc } from 'firebase/firestore';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import axios from 'axios';
@@ -129,14 +129,15 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
         const { logo, ...projectData } = values;
 
         let managerName = '';
+        let managerId: string | undefined;
         if (projectData.projectManager && projectData.projectManager !== ASSIGN_LATER_VALUE) {
             const manager = managers.find(m => m.id === projectData.projectManager);
             if(manager) {
                 managerName = manager.name;
+                managerId = manager.id;
             }
         }
         
-
         const dataToSave: any = {
             ...projectData,
             projectManager: managerName,
@@ -150,7 +151,26 @@ export function CreateProjectForm({ children }: { children: ReactNode }) {
             delete dataToSave.revenue;
         }
 
-        await addDoc(collection(db, "projects"), dataToSave);
+        const newProjectRef = await addDoc(collection(db, "projects"), dataToSave);
+        
+        const adminUid = auth.currentUser?.uid;
+
+        // Send notification to assigned manager
+        if (managerId && adminUid) {
+            const notificationRef = doc(collection(db, "users", adminUid, "notifications"));
+            await setDoc(notificationRef, {
+                type: 'project_assignment',
+                recipientId: managerId,
+                senderName: localStorage.getItem('adminName') || 'Admin',
+                senderAvatar: localStorage.getItem('adminAvatar') || null,
+                projectId: newProjectRef.id,
+                projectName: values.projectName,
+                messageSnippet: `You have been assigned to project: ${values.projectName}`,
+                read: false,
+                createdAt: Timestamp.now(),
+            });
+        }
+
 
         await addDoc(collection(db, "activities"), {
             type: 'new_project',
