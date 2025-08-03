@@ -82,11 +82,17 @@ export function NotificationPanel() {
         );
 
         const unsubscribe = onSnapshot(q, snapshot => {
-            const fetchedNotifications = snapshot.docs.map(doc => ({
-                id: doc.id,
-                parentPath: doc.ref.parent.path,
-                ...doc.data(),
-            } as Notification));
+            const fetchedNotifications = snapshot.docs.map(doc => {
+                // HACK: Figure out the parent path. This is brittle and depends on the path structure.
+                const pathSegments = doc.ref.path.split('/');
+                const parentPath = pathSegments.slice(0, -1).join('/');
+
+                return {
+                    id: doc.id,
+                    parentPath: parentPath,
+                    ...doc.data(),
+                } as Notification
+            });
             
             fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             
@@ -181,10 +187,6 @@ export function NotificationPanel() {
             setReplyContent('');
             setReplyingTo(null);
             setReplySent(prev => [...prev, notification.id]);
-
-            // Open the task dialog to show the new comment
-            setViewingTask(taskData);
-
 
         } catch (error: any) {
             console.error("Error sending reply: ", error);
