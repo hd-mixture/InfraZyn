@@ -15,7 +15,7 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
     let recipientRole: string | null = null;
 
     if (currentUserName === assignedTo) {
-        // Current user is the assignee, so notify the manager or admin.
+        // Current user is the assignee (dev/qa), so notify the manager or admin.
         const projectDoc = await getDoc(doc(db, 'projects', project));
         if (projectDoc.exists() && projectDoc.data().projectManager) {
             recipientName = projectDoc.data().projectManager;
@@ -38,6 +38,7 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
 
     if (recipientRole === 'admin') {
          // Special handling for admin if not in users collection
+         // Assuming admin doesn't have a doc in 'users' collection
         return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
 
