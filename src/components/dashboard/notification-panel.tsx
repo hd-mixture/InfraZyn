@@ -257,7 +257,7 @@ export function NotificationPanel() {
 
     return (
         <>
-            <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2024/02/09/audio_d929b71a27.mp3" preload="auto" />
+            <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2022/10/13/audio_a10b81b047.mp3" preload="auto" />
             <DropdownMenu onOpenChange={(open) => { if(!open) setReplySent([]) }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
