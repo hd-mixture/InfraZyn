@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, getDocs, collectionGroup, addDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +53,7 @@ export function NotificationPanel() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [userId, setUserId] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string | null>(null);
     const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -85,9 +85,11 @@ export function NotificationPanel() {
             if (user) {
                 setUserId(user.uid);
                 setUserRole(localStorage.getItem('userRole'));
+                setUserName(localStorage.getItem('userName'));
             } else {
                 setUserId(null);
                 setUserRole(null);
+                setUserName(null);
             }
         });
 
@@ -109,36 +111,67 @@ export function NotificationPanel() {
     }, [unreadCount]);
     
     useEffect(() => {
-        if (!userId) {
+        if (!userId || !userRole) {
             setNotifications([]);
             return;
         }
 
-        const q = query(
-            collectionGroup(db, 'notifications'),
-            where('recipientId', '==', userId),
-            orderBy('createdAt', 'desc')
-        );
+        let unsubscribe: () => void;
 
-        const unsubscribe = onSnapshot(q, snapshot => {
-            const fetchedNotifications = snapshot.docs.map(doc => {
-                const pathSegments = doc.ref.path.split('/');
-                const parentPath = pathSegments.slice(0, -1).join('/');
-
-                return {
-                    id: doc.id,
-                    parentPath: parentPath,
-                    ...doc.data(),
-                } as Notification
+        if (userRole === 'admin' || userRole === 'manager') {
+            const q = query(
+                collection(db, 'users', userId, 'notifications'),
+                orderBy('createdAt', 'desc')
+            );
+            unsubscribe = onSnapshot(q, snapshot => {
+                const fetchedNotifications = snapshot.docs.map(doc => {
+                    return {
+                        id: doc.id,
+                        parentPath: doc.ref.path,
+                        ...doc.data(),
+                    } as Notification
+                });
+                setNotifications(fetchedNotifications);
+            }, (error) => {
+                console.error("Error fetching user notifications: ", error);
             });
-            
-            setNotifications(fetchedNotifications);
-        }, (error) => {
-            console.error("Error fetching notifications: ", error);
-        });
+        } else { // Developer or QA
+            const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
+            unsubscribe = onSnapshot(tasksQuery, async (tasksSnapshot) => {
+                const taskIds = tasksSnapshot.docs.map(doc => doc.id);
+                if (taskIds.length === 0) {
+                    setNotifications([]);
+                    return;
+                }
 
-        return () => unsubscribe();
-    }, [userId]);
+                const notificationsQuery = query(
+                    collectionGroup(db, 'notifications'),
+                    where('taskId', 'in', taskIds),
+                    where('recipientId', '==', userId),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const notificationsSnapshot = await getDocs(notificationsQuery);
+                const fetchedNotifications = notificationsSnapshot.docs.map(doc => {
+                     const pathSegments = doc.ref.path.split('/');
+                     const parentPath = pathSegments.slice(0, -1).join('/');
+                    return {
+                        id: doc.id,
+                        parentPath: parentPath,
+                        ...doc.data(),
+                    } as Notification;
+                });
+                setNotifications(fetchedNotifications);
+
+            }, (error) => {
+                console.error("Error fetching task-based notifications: ", error);
+            });
+        }
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [userId, userRole, userName]);
 
 
     const handleNotificationClick = async (notification: Notification) => {
@@ -166,8 +199,8 @@ export function NotificationPanel() {
         // Optimistic UI update
         setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, read: true} : n));
         
-        const notificationRef = doc(db, notification.parentPath, notification.id);
         try {
+            const notificationRef = doc(db, notification.parentPath);
             await updateDoc(notificationRef, { read: true });
         } catch(e) {
             console.warn("Could not mark notification as read:", e);
@@ -190,8 +223,8 @@ export function NotificationPanel() {
         if (replyContent.trim() === '' || !notification.taskId) return;
         
         setIsSubmittingReply(true);
-
         const tempReplyContent = replyContent;
+        
         setReplyContent('');
         setReplyingTo(null);
         
@@ -214,11 +247,16 @@ export function NotificationPanel() {
                 createdAt: Timestamp.now(),
             });
 
-            const recipient = await getOppositeUser(taskData, currentUser.uid);
+            const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
 
             if (recipient && recipient.id !== currentUser.uid) {
-                 const notificationPath = recipient.role === 'admin' ? `users/${recipient.id}` : `tasks/${notification.taskId}`;
-                 await addDoc(collection(db, notificationPath, 'notifications'), {
+                let notificationCollection;
+                if (recipient.role === 'manager' || recipient.role === 'admin') {
+                     notificationCollection = collection(db, 'users', recipient.id, 'notifications');
+                } else {
+                     notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
+                }
+                 await addDoc(notificationCollection, {
                     type: 'comment',
                     recipientId: recipient.id,
                     senderName: localStorage.getItem('userName'),
@@ -233,10 +271,12 @@ export function NotificationPanel() {
             
             markAsRead(notification);
             
-            // After 1 second, transition to "confirmed" to show the reply content
             setTimeout(() => {
-                setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
-            }, 1000);
+                setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
+                setTimeout(() => {
+                    setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
+                }, 1000);
+            }, 100);
             
         } catch (error: any) {
             console.error("Error sending reply: ", error);
@@ -354,14 +394,10 @@ export function NotificationPanel() {
                                                     </form>
                                                 ) : repliedInfo ? (
                                                      <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 animate-in fade-in">
-                                                        {repliedInfo.status === 'sending' ? (
-                                                            <>
-                                                                <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
-                                                                <span>Reply sent!</span>
-                                                            </>
-                                                        ) : (
-                                                            <span>Replied: - "{repliedInfo.content}"</span>
-                                                        )}
+                                                        {repliedInfo.status === 'sending' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                                                        {repliedInfo.status === 'sent' ? <ThumbsUp className="h-3.5 w-3.5 text-green-500" /> : null}
+                                                        {repliedInfo.status === 'sent' ? <span>Reply sent!</span> : null}
+                                                        {repliedInfo.status === 'confirmed' ? <span>Replied: - "{repliedInfo.content}"</span> : null}
                                                     </div>
                                                 ) : !notification.read ? (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>

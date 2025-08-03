@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -374,7 +373,15 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
     };
 
     const handleDeleteUser = async () => {
-        if (!deletingUser) return;
+        if (!deletingUser || userRole !== 'admin') {
+            toast({
+                variant: 'destructive',
+                title: 'Permission Denied',
+                description: 'Only administrators can delete users from authentication.',
+            });
+            return;
+        }
+
         try {
             const result = await deleteUser({ uid: deletingUser.id });
 
@@ -524,7 +531,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Edit</span>
                                                         </DropdownMenuItem>
-                                                        {user.role !== 'manager' && (
+                                                        {userRole === 'admin' && user.role !== 'admin' && (
                                                             <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 <span>Delete</span>

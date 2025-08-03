@@ -8,14 +8,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function getOppositeUser(task: Task, currentUserName: string): Promise<{id: string, name: string, role: string} | null> {
+export async function getOppositeUser(task: Task, currentUserId: string, currentUserName: string): Promise<{id: string, name: string, role: string} | null> {
     const { assignedTo, project, taskRole } = task;
 
     let recipientName: string | null = null;
     let recipientRole: string | null = null;
 
     if (currentUserName === assignedTo) {
-        // Current user is the assignee, so notify the manager.
+        // Current user is the assignee, so notify the manager or admin.
         const projectDoc = await getDoc(doc(db, 'projects', project));
         if (projectDoc.exists() && projectDoc.data().projectManager) {
             recipientName = projectDoc.data().projectManager;
@@ -36,6 +36,11 @@ export async function getOppositeUser(task: Task, currentUserName: string): Prom
         return null;
     }
 
+    if (recipientRole === 'admin') {
+         // Special handling for admin if not in users collection
+        return { id: 'admin_user', name: 'Admin', role: 'admin' };
+    }
+
     // Find the user document to get the ID
     const userQuery = query(collection(db, 'users'), where('name', '==', recipientName), where('role', '==', recipientRole));
     const userSnapshot = await getDocs(userQuery);
@@ -43,9 +48,6 @@ export async function getOppositeUser(task: Task, currentUserName: string): Prom
     if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
         return { id: userDoc.id, name: userDoc.data().name, role: userDoc.data().role };
-    } else if (recipientRole === 'admin') {
-        // Special handling for admin if not in users collection
-        return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
     
     console.error(`Could not find user: ${recipientName} with role: ${recipientRole}`);

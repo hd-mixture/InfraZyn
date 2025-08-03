@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
 import axios from 'axios';
 import type { Project } from './project-summary';
@@ -175,20 +174,18 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
         const newDocRef = await addDoc(collection(db, "tasks"), dataToSave);
 
         // Create notification for the assigned user
-        if (auth.currentUser && auth.currentUser.uid !== assignee.id) {
-             const notificationPath = collection(db, 'tasks', newDocRef.id, 'notifications');
-             await addDoc(notificationPath, {
-                type: 'new_task_assignment',
-                recipientId: assignee.id,
-                senderName: localStorage.getItem('userName') || 'Admin',
-                senderAvatar: localStorage.getItem('userAvatar') || null,
-                taskId: newDocRef.id,
-                taskName: values.testCaseTitle,
-                messageSnippet: `You have been assigned a new QA task: ${values.testCaseTitle}`,
-                read: false,
-                createdAt: Timestamp.now(),
-            });
-        }
+        const notificationPath = collection(db, 'tasks', newDocRef.id, 'notifications');
+        await addDoc(notificationPath, {
+            type: 'new_task_assignment',
+            recipientId: assignee.id,
+            senderName: localStorage.getItem('userName') || 'Admin',
+            senderAvatar: localStorage.getItem('userAvatar') || null,
+            taskId: newDocRef.id,
+            taskName: values.testCaseTitle,
+            messageSnippet: `You have been assigned a new QA task: ${values.testCaseTitle}`,
+            read: false,
+            createdAt: Timestamp.now(),
+        });
         
         toast({
             title: "QA Task Created!",

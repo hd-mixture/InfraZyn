@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -96,7 +95,8 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
                 }
             }
             
-            if (!auth.currentUser) {
+            const user = auth.currentUser;
+            if (!user) {
                 throw new Error("User not authenticated.");
             }
 
@@ -114,14 +114,14 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
 
             await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
-            const recipient = await getOppositeUser(task, currentUser.name);
+            const recipient = await getOppositeUser(task, user.uid, currentUser.name);
 
-            if (recipient && recipient.id !== auth.currentUser?.uid) {
+            if (recipient && recipient.id !== user.uid) {
                 let notificationCollection;
                 if (recipient.role === 'manager' || recipient.role === 'admin') {
-                    notificationCollection = collection(db, 'users', recipient.id, 'notifications');
+                     notificationCollection = collection(db, 'users', recipient.id, 'notifications');
                 } else {
-                    notificationCollection = collection(db, 'tasks', task.id, 'notifications');
+                     notificationCollection = collection(db, 'tasks', task.id, 'notifications');
                 }
                 
                 await addDoc(notificationCollection, {
