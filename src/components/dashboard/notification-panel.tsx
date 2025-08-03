@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs } from 'firebase/firestore';
-import { Bell, Check, MessageSquare, ListChecks, Send, Loader2 } from 'lucide-react';
+import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,6 +51,7 @@ export function NotificationPanel() {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+    const [replySent, setReplySent] = useState<string[]>([]);
     const { toast } = useToast();
     const router = useRouter();
     
@@ -122,9 +123,9 @@ export function NotificationPanel() {
                 return doc(db, parentPath, 'notifications', notification.id);
             }
         } else if (notification.projectId) {
-            const adminUID = (await getDocs(query(collection(db, "users"), where("role", "==", "admin")))).docs[0]?.id;
-            if(adminUID) {
-                return doc(db, 'users', adminUID, 'notifications', notification.id);
+            const adminDoc = (await getDocs(query(collection(db, "users"), where("email", "==", "admin@devtexhhub.com")))).docs[0];
+            if(adminDoc) {
+                return doc(db, 'users', adminDoc.id, 'notifications', notification.id);
             }
         }
         return null;
@@ -195,6 +196,7 @@ export function NotificationPanel() {
             toast({ title: "Reply Sent!" });
             setReplyContent('');
             setReplyingTo(null);
+            setReplySent(prev => [...prev, notification.id]);
 
         } catch (error: any) {
             console.error("Error sending reply: ", error);
@@ -266,7 +268,7 @@ export function NotificationPanel() {
 
     return (
         <>
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={() => setReplySent([])}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="h-9 w-9 relative">
                         <Bell className="h-4 w-4" />
@@ -295,7 +297,7 @@ export function NotificationPanel() {
                                 <p className="text-center text-sm text-muted-foreground p-4">No notifications yet.</p>
                             ) : (
                                 notifications.map(notification => (
-                                    <DropdownMenuItem key={notification.id} onSelect={(e) => { e.preventDefault(); handleNotificationClick(notification); }} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
+                                    <DropdownMenuItem key={notification.id} onSelect={(e) => e.preventDefault()} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
                                         <div className="flex items-start gap-3 w-full" onClick={() => handleNotificationClick(notification)}>
                                             <div className="relative">
                                                 <Avatar className="h-8 w-8">
@@ -335,6 +337,11 @@ export function NotificationPanel() {
                                                            {isSubmittingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                                         </Button>
                                                     </form>
+                                                ) : replySent.includes(notification.id) ? (
+                                                    <div className="flex items-center gap-2 text-xs text-green-600">
+                                                        <ThumbsUp className="h-3.5 w-3.5" />
+                                                        <span>Reply sent!</span>
+                                                    </div>
                                                 ) : (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
                                                         Reply here
