@@ -16,6 +16,7 @@ import axios from 'axios';
 import { Input } from '../ui/input';
 import Link from 'next/link';
 import type { Task } from './tasks-kanban-view';
+import { getOppositeUser } from '@/lib/utils';
 
 type Comment = {
     id: string;
@@ -106,39 +107,18 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             }
 
             await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
-
-            // Create notification
-            let recipientId: string | null = null;
-            
-            if (currentUser.role === 'developer') {
-                const projectDoc = await getDoc(doc(db, 'projects', task.project));
-                if (projectDoc.exists()) {
-                    const projectData = projectDoc.data();
-                    const managerName = projectData.projectManager;
-                    if(managerName) {
-                        const usersQuery = query(collection(db, 'users'), where('name', '==', managerName));
-                        const usersSnap = await getDocs(usersQuery);
-                        if (!usersSnap.empty) {
-                            recipientId = usersSnap.docs[0].id;
-                        }
-                    }
-                }
-            } else if (currentUser.role === 'manager' || currentUser.role === 'admin') {
-                const usersQuery = query(collection(db, 'users'), where('name', '==', task.assignedTo));
-                const usersSnap = await getDocs(usersQuery);
-                if (!usersSnap.empty) {
-                    recipientId = usersSnap.docs[0].id;
-                }
-            }
             
             if (!auth.currentUser) {
                 console.error("User not authenticated, cannot send notification.");
                 return;
             }
 
-            if (recipientId && recipientId !== auth.currentUser?.uid) {
+            const recipient = await getOppositeUser(task, auth.currentUser.uid);
+
+            if (recipient && recipient.id !== auth.currentUser?.uid) {
                 await addDoc(collection(db, 'tasks', task.id, 'notifications'), {
-                    recipientId,
+                    type: 'comment',
+                    recipientId: recipient.id,
                     senderName: currentUser.name,
                     senderAvatar: currentUser.avatar || null,
                     taskId: task.id,
