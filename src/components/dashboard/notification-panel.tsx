@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup } from 'firebase/firestore';
-import { Bell, Check, MessageSquare } from 'lucide-react';
+import { Bell, Check, MessageSquare, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,11 +24,14 @@ import type { Task } from './tasks-kanban-view';
 
 type Notification = {
     id: string;
+    type: 'comment' | 'new_task_assignment' | 'project_assignment';
     recipientId: string;
     senderName: string;
     senderAvatar: string | null;
-    taskId: string;
-    taskName: string;
+    taskId?: string;
+    projectId?: string;
+    taskName?: string;
+    projectName?: string;
     messageSnippet: string;
     read: boolean;
     createdAt: any;
@@ -86,13 +89,24 @@ export function NotificationPanel() {
     }, [notifications]);
 
     const handleNotificationClick = async (notification: Notification) => {
-        const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
-        if (taskDoc.exists()) {
-            setViewingTask({ id: taskDoc.id, ...taskDoc.data() } as Task);
+        if (notification.taskId) {
+            const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
+            if (taskDoc.exists()) {
+                setViewingTask({ id: taskDoc.id, ...taskDoc.data() } as Task);
+            }
         }
         
-        if (!notification.read) {
-            const notificationRef = doc(db, 'tasks', notification.taskId, 'notifications', notification.id);
+        let notificationRef;
+        if (notification.taskId) {
+            notificationRef = doc(db, 'tasks', notification.taskId, 'notifications', notification.id);
+        } else if (notification.projectId) {
+            const adminId = localStorage.getItem('adminId'); // Assuming adminId is stored
+            if(adminId) {
+                notificationRef = doc(db, 'users', adminId, 'notifications', notification.id);
+            }
+        }
+
+        if (notificationRef && !notification.read) {
             await updateDoc(notificationRef, { read: true });
         }
     };
@@ -101,11 +115,60 @@ export function NotificationPanel() {
         const promises = notifications
             .filter(n => !n.read)
             .map(n => {
-                const notificationRef = doc(db, 'tasks', n.taskId, 'notifications', n.id);
-                return updateDoc(notificationRef, { read: true });
+                 let notificationRef;
+                if (n.taskId) {
+                    notificationRef = doc(db, 'tasks', n.taskId, 'notifications', n.id);
+                } else if (n.projectId) {
+                    const adminId = localStorage.getItem('adminId');
+                     if(adminId) {
+                        notificationRef = doc(db, 'users', adminId, 'notifications', n.id);
+                    }
+                }
+                if (notificationRef) {
+                    return updateDoc(notificationRef, { read: true });
+                }
+                return Promise.resolve();
             });
         await Promise.all(promises);
     };
+
+    const renderNotificationContent = (notification: Notification) => {
+        switch(notification.type) {
+            case 'new_task_assignment':
+                return (
+                    <p className="text-sm text-muted-foreground">
+                        Assigned you to: <span className="font-semibold">{notification.taskName}</span>
+                    </p>
+                );
+            case 'project_assignment':
+                 return (
+                    <p className="text-sm text-muted-foreground">
+                        Assigned you to project: <span className="font-semibold">{notification.projectName}</span>
+                    </p>
+                );
+            case 'comment':
+            default:
+                return (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            Commented on: <span className="font-semibold">{notification.taskName}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground italic truncate">
+                            "{notification.messageSnippet}"
+                        </p>
+                    </>
+                );
+        }
+    }
+
+    const getIcon = (type: Notification['type']) => {
+        switch(type) {
+            case 'new_task_assignment': return <ListChecks className="h-full w-full" />;
+            case 'project_assignment': return <ListChecks className="h-full w-full" />;
+            case 'comment': return <MessageSquare className="h-full w-full" />;
+            default: return <MessageSquare className="h-full w-full" />;
+        }
+    }
 
 
     const getProjectNameForTask = async (taskId: string): Promise<string> => {
@@ -156,18 +219,21 @@ export function NotificationPanel() {
                             ) : (
                                 notifications.map(notification => (
                                     <DropdownMenuItem key={notification.id} onSelect={() => handleNotificationClick(notification)} className="flex items-start gap-3 p-3 cursor-pointer">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={notification.senderAvatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
-                                            <AvatarFallback>{notification.senderName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <div className="relative">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={notification.senderAvatar || `https://placehold.co/32x32.png`} data-ai-hint="person face" />
+                                                <AvatarFallback>{notification.senderName.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full">
+                                                <div className="h-3 w-3 text-primary">
+                                                    {getIcon(notification.type)}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="flex-1">
                                             <p className="text-sm font-medium">{notification.senderName}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Commented on: <span className="font-semibold">{notification.taskName}</span>
-                                            </p>
-                                            <p className="text-xs text-muted-foreground italic truncate">
-                                                "{notification.messageSnippet}"
-                                            </p>
+                                            {renderNotificationContent(notification)}
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
                                             </p>
@@ -181,7 +247,7 @@ export function NotificationPanel() {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {viewingTask && userRole === 'manager' && (
+            {viewingTask && (userRole === 'manager' || userRole === 'admin') && (
                 <ViewTaskDialog
                     task={viewingTask}
                     isOpen={!!viewingTask}
