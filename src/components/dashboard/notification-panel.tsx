@@ -117,16 +117,15 @@ export function NotificationPanel() {
 
     const getNotificationRef = async (notification: Notification) => {
         if (notification.taskId) {
-            const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
-            if (taskDoc.exists()) {
-                const parentPath = taskDoc.ref.path;
-                return doc(db, parentPath, 'notifications', notification.id);
+            const parentDoc = (await getDocs(query(collectionGroup(db, 'notifications'), where('__name__', '==', notification.id)))).docs[0];
+            if(parentDoc) {
+                return parentDoc.ref;
             }
-        } else if (notification.projectId) {
-            const adminDoc = (await getDocs(query(collection(db, "users"), where("email", "==", "admin@devtexhhub.com")))).docs[0];
-            if(adminDoc) {
-                return doc(db, 'users', adminDoc.id, 'notifications', notification.id);
-            }
+        } else {
+             const parentDoc = (await getDocs(query(collectionGroup(db, 'notifications'), where('__name__', '==', notification.id)))).docs[0];
+             if(parentDoc) {
+                return parentDoc.ref;
+             }
         }
         return null;
     }
@@ -198,6 +197,10 @@ export function NotificationPanel() {
             setReplyingTo(null);
             setReplySent(prev => [...prev, notification.id]);
 
+            // Open the task dialog to show the new comment
+            setViewingTask(taskData);
+
+
         } catch (error: any) {
             console.error("Error sending reply: ", error);
             toast({
@@ -268,7 +271,7 @@ export function NotificationPanel() {
 
     return (
         <>
-            <DropdownMenu onOpenChange={() => setReplySent([])}>
+            <DropdownMenu onOpenChange={(open) => { if(!open) setReplySent([]) }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="h-9 w-9 relative">
                         <Bell className="h-4 w-4" />
@@ -368,6 +371,13 @@ export function NotificationPanel() {
                 <ViewDeveloperTaskDialog
                     task={viewingTask}
                     projectName="Loading..."
+                    isOpen={!!viewingTask}
+                    onOpenChange={handleDialogClose}
+                />
+            )}
+            {viewingTask && userRole === 'qa' && (
+                 <ViewTaskDialog
+                    task={viewingTask}
                     isOpen={!!viewingTask}
                     onOpenChange={handleDialogClose}
                 />
