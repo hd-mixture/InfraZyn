@@ -18,6 +18,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDialog } from './view-task-dialog';
@@ -358,13 +368,22 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     onOpenChange={() => setEditingTask(null)}
                 />
             )}
-            {deletingTask && (
-                 <DropdownMenu open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={handleDeleteTask}>Confirm Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
-            )}
+            <AlertDialog open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the task.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTask} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
