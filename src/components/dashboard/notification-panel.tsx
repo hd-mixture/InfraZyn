@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, orderBy, doc, updateDoc, getDoc, collectionGroup, addDoc, Timestamp, getDocs, setDoc } from 'firebase/firestore';
 import { Bell, Check, MessageSquare, ListChecks, Send, Loader2, ThumbsUp, Folder } from 'lucide-react';
@@ -25,6 +25,7 @@ import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getOppositeUser } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 
 type Notification = {
@@ -53,6 +54,8 @@ export function NotificationPanel() {
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
     const [replySent, setReplySent] = useState<string[]>([]);
+    const [animateBell, setAnimateBell] = useState(false);
+    const previousUnreadCountRef = useRef(0);
     const { toast } = useToast();
     const router = useRouter();
     
@@ -69,6 +72,23 @@ export function NotificationPanel() {
 
         return () => unsubscribeAuth();
     }, []);
+    
+    const unreadCount = useMemo(() => {
+        return notifications.filter(n => !n.read).length;
+    }, [notifications]);
+
+    useEffect(() => {
+        if (unreadCount > previousUnreadCountRef.current) {
+            setAnimateBell(true);
+            const timer = setTimeout(() => setAnimateBell(false), 800); // Duration of animation
+            return () => clearTimeout(timer);
+        }
+    }, [unreadCount]);
+    
+    useEffect(() => {
+        previousUnreadCountRef.current = unreadCount;
+    }, [unreadCount]);
+
 
     useEffect(() => {
         if (!userId) {
@@ -83,7 +103,6 @@ export function NotificationPanel() {
 
         const unsubscribe = onSnapshot(q, snapshot => {
             const fetchedNotifications = snapshot.docs.map(doc => {
-                // HACK: Figure out the parent path. This is brittle and depends on the path structure.
                 const pathSegments = doc.ref.path.split('/');
                 const parentPath = pathSegments.slice(0, -1).join('/');
 
@@ -94,7 +113,7 @@ export function NotificationPanel() {
                 } as Notification
             });
             
-            fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            fetchedNotifications.sort((a, b) => b.createdAt.toMillis() - b.createdAt.toMillis());
             
             setNotifications(fetchedNotifications);
         }, (error) => {
@@ -104,9 +123,6 @@ export function NotificationPanel() {
         return () => unsubscribe();
     }, [userId]);
 
-    const unreadCount = useMemo(() => {
-        return notifications.filter(n => !n.read).length;
-    }, [notifications]);
 
     const handleNotificationClick = async (notification: Notification) => {
         if(replyingTo === notification.id) return;
@@ -242,7 +258,7 @@ export function NotificationPanel() {
         <>
             <DropdownMenu onOpenChange={(open) => { if(!open) setReplySent([]) }}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9 relative">
+                    <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
                         <Bell className="h-4 w-4" />
                         {unreadCount > 0 && (
                              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs">

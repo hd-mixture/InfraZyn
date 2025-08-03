@@ -124,6 +124,10 @@ body {
     .animate-slide-out-down-fade {
         animation: slideOutDownFade 0.5s ease-in forwards;
     }
+
+    .animate-ring {
+        animation: ring 0.8s ease-in-out;
+    }
 }
 
 @keyframes progress-animation {
@@ -155,4 +159,10 @@ body {
         opacity: 0;
         transform: translateY(-20px);
     }
+}
+
+@keyframes ring {
+  0%, 100% { transform: rotate(0); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+  20%, 40%, 60%, 80% { transform: rotate(10deg); }
 }
