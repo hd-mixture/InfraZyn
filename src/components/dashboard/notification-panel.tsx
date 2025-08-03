@@ -53,7 +53,7 @@ export function NotificationPanel() {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-    const [replySent, setReplySent] = useState<string[]>([]);
+    const [sentReplies, setSentReplies] = useState<Array<{ id: string; content: string }>>([]);
     const [animateBell, setAnimateBell] = useState(false);
     const previousUnreadCountRef = useRef(0);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -209,12 +209,11 @@ export function NotificationPanel() {
                 });
             }
             
-            await markAsRead(notification);
-
-            toast({ title: "Reply Sent!" });
+            // Optimistically update UI
+            markAsRead(notification);
+            setSentReplies(prev => [...prev, { id: notification.id, content: replyContent }]);
             setReplyContent('');
             setReplyingTo(null);
-            setReplySent(prev => [...prev, notification.id]);
 
         } catch (error: any) {
             console.error("Error sending reply: ", error);
@@ -244,7 +243,7 @@ export function NotificationPanel() {
     return (
         <>
             <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2022/10/13/audio_a10b81b047.mp3" preload="auto" />
-            <DropdownMenu onOpenChange={(open) => { if(!open) setReplySent([]) }}>
+            <DropdownMenu onOpenChange={(open) => { if(!open) setReplyingTo(null) }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
                         <Bell className="h-4 w-4" />
@@ -272,7 +271,9 @@ export function NotificationPanel() {
                             {notifications.length === 0 ? (
                                 <p className="text-center text-sm text-muted-foreground p-4">No notifications yet.</p>
                             ) : (
-                                notifications.map(notification => (
+                                notifications.map(notification => {
+                                    const repliedInfo = sentReplies.find(r => r.id === notification.id);
+                                    return (
                                     <DropdownMenuItem key={notification.id} onSelect={(e) => e.preventDefault()} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
                                         <div className="flex items-start gap-3 w-full" onClick={() => handleNotificationClick(notification)}>
                                             <div className="relative">
@@ -326,10 +327,9 @@ export function NotificationPanel() {
                                                            {isSubmittingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                                         </Button>
                                                     </form>
-                                                ) : replySent.includes(notification.id) ? (
-                                                    <div className="flex items-center gap-2 text-xs text-green-600">
-                                                        <ThumbsUp className="h-3.5 w-3.5" />
-                                                        <span>Reply sent!</span>
+                                                ) : repliedInfo ? (
+                                                    <div className="text-xs text-muted-foreground italic">
+                                                        Replied: - "{repliedInfo.content}"
                                                     </div>
                                                 ) : !notification.read ? (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
@@ -339,7 +339,7 @@ export function NotificationPanel() {
                                             </div>
                                         )}
                                     </DropdownMenuItem>
-                                ))
+                                )})
                             )}
                         </DropdownMenuGroup>
                     </ScrollArea>
