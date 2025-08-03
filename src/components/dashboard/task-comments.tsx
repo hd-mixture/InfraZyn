@@ -47,7 +47,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (!task.id) return; // <-- GUARD CLAUSE TO PREVENT CRASH
+        if (!task || !task.id) return;
 
         const commentsQuery = query(
             collection(db, 'tasks', task.id, 'comments'),
@@ -63,7 +63,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
         });
 
         return () => unsubscribe();
-    }, [task.id]);
+    }, [task]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -124,7 +124,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
             const recipient = await getOppositeUser(task, auth.currentUser.uid);
 
             if (recipient && recipient.id !== auth.currentUser?.uid) {
-                 const notificationPath = recipient.role === 'admin' ? `users/${recipient.id}` : `tasks/${task.id}`;
+                 const notificationPath = recipient.role === 'manager' ? `users/${recipient.id}` : `tasks/${task.id}`;
                  await addDoc(collection(db, notificationPath, 'notifications'), {
                     type: 'comment',
                     recipientId: recipient.id,
