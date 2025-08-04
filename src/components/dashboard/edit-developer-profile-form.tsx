@@ -183,10 +183,10 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                 render={() => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2"><Tag className="h-4 w-4" /> Skills</FormLabel>
-                     <Popover open={isPopoverOpen && !!skillInput} onOpenChange={setIsPopoverOpen}>
+                     <Popover open={isPopoverOpen && !!skillInput && filteredSkills.length > 0} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
                            <FormControl>
-                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 items-center cursor-text" onClick={() => inputRef.current?.focus()}>
+                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-12 items-center cursor-text" onClick={() => inputRef.current?.focus()}>
                               {fields.map((field, index) => (
                                 <Badge key={field.id} variant="secondary">
                                   {field.value}
@@ -198,7 +198,6 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                                   value={skillInput}
                                   onChange={(e) => {
                                       setSkillInput(e.target.value);
-                                      if (!isPopoverOpen) setIsPopoverOpen(true);
                                   }}
                                   onKeyDown={handleKeyDown}
                                   placeholder={skillsValue.length === 0 ? "Add a skill and press Enter" : ""}
@@ -208,8 +207,7 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                            </FormControl>
                         </PopoverTrigger>
                          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                           {filteredSkills.length > 0 ? (
-                            <ul className="py-1">
+                           <ul className="py-1">
                               {filteredSkills.map(skill => (
                                 <li 
                                   key={skill}
@@ -220,9 +218,6 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                                 </li>
                               ))}
                             </ul>
-                           ) : skillInput ? (
-                             <div className="p-4 text-center text-sm text-muted-foreground">No matching skill found.</div>
-                           ) : null}
                          </PopoverContent>
                       </Popover>
                     <FormMessage />
@@ -252,4 +247,3 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
     </Dialog>
   );
 }
-
