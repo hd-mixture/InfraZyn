@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -41,7 +42,7 @@ const formSchema = z.object({
   assignedTo: z.string().min(1, 'Please assign the task to a QA.'),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   deadline: z.date({ required_error: 'A deadline is required.' }),
-  testType: z.enum(['Manual', 'Automation', 'Regression', 'Smoke']),
+  testType: z.enum(['Test Case Creation', 'Manual Testing', 'Bug Reporting', 'Regression Testing', 'Automation Testing', 'Performance Testing', 'Compatibility Testing', 'UAT (User Acceptance Testing)']),
   bugSeverity: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   expectedResult: z.string().optional(),
   testData: z.string().optional(),
@@ -74,7 +75,7 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
       testDescription: '',
       assignedTo: '',
       priority: 'Medium',
-      testType: 'Manual',
+      testType: 'Manual Testing',
       expectedResult: '',
       testData: '',
       attachments: undefined,
@@ -368,10 +369,14 @@ export function CreateQATaskForm({ onSuccess, userRole, managerName }: CreateQAT
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="Manual">Manual</SelectItem>
-                            <SelectItem value="Automation">Automation</SelectItem>
-                            <SelectItem value="Regression">Regression</SelectItem>
-                            <SelectItem value="Smoke">Smoke</SelectItem>
+                            <SelectItem value="Test Case Creation">Test Case Creation</SelectItem>
+                            <SelectItem value="Manual Testing">Manual Testing</SelectItem>
+                            <SelectItem value="Bug Reporting">Bug Reporting</SelectItem>
+                            <SelectItem value="Regression Testing">Regression Testing</SelectItem>
+                            <SelectItem value="Automation Testing">Automation Testing</SelectItem>
+                            <SelectItem value="Performance Testing">Performance Testing</SelectItem>
+                            <SelectItem value="Compatibility Testing">Compatibility Testing</SelectItem>
+                            <SelectItem value="UAT (User Acceptance Testing)">UAT (User Acceptance Testing)</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />

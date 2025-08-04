@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,7 +37,7 @@ import type { Project } from './project-summary';
 
 const formSchema = z.object({
   taskName: z.string().min(1, 'Task name is required.'),
-  taskType: z.enum(['Feature', 'Bug Fix', 'Enhancement']),
+  taskType: z.enum(['Feature Development', 'Bug Fixing', 'Code Review', 'Refactoring', 'API Integration', 'Database Design/Update', 'Unit Testing / Integration Testing', 'DevOps Tasks']),
   project: z.string().min(1, 'Please select a project.'),
   assignedTo: z.string().min(1, 'Please assign the task to a developer.'),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
@@ -70,7 +71,7 @@ export function CreateDeveloperTaskForm({ onSuccess, userRole, managerName }: Cr
     defaultValues: {
       taskName: '',
       priority: 'Medium',
-      taskType: 'Feature',
+      taskType: 'Feature Development',
       project: '',
       assignedTo: '',
       estimatedHours: undefined,
@@ -257,9 +258,14 @@ export function CreateDeveloperTaskForm({ onSuccess, userRole, managerName }: Cr
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="Feature">Feature</SelectItem>
-                        <SelectItem value="Bug Fix">Bug Fix</SelectItem>
-                        <SelectItem value="Enhancement">Enhancement</SelectItem>
+                        <SelectItem value="Feature Development">Feature Development</SelectItem>
+                        <SelectItem value="Bug Fixing">Bug Fixing</SelectItem>
+                        <SelectItem value="Code Review">Code Review</SelectItem>
+                        <SelectItem value="Refactoring">Refactoring</SelectItem>
+                        <SelectItem value="API Integration">API Integration</SelectItem>
+                        <SelectItem value="Database Design/Update">Database Design/Update</SelectItem>
+                        <SelectItem value="Unit Testing / Integration Testing">Unit Testing / Integration Testing</SelectItem>
+                        <SelectItem value="DevOps Tasks">DevOps Tasks</SelectItem>
                     </SelectContent>
                 </Select>
                 <FormMessage />
