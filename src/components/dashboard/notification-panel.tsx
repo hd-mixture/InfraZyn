@@ -140,12 +140,13 @@ export function NotificationPanel() {
             const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
             
             const taskListeners: (() => void)[] = [];
-            const notificationsByTask: Record<string, Notification[]> = {};
+            let notificationsByTask: Record<string, Notification[]> = {};
 
             unsubscribe = onSnapshot(tasksQuery, (tasksSnapshot) => {
                 // Clean up old listeners
                 taskListeners.forEach(unsub => unsub());
                 taskListeners.length = 0;
+                notificationsByTask = {};
 
                 const taskIds = tasksSnapshot.docs.map(doc => doc.id);
                 if (taskIds.length === 0) {
@@ -157,7 +158,8 @@ export function NotificationPanel() {
                     const taskId = taskDoc.id;
                     const notificationsQuery = query(
                         collection(db, 'tasks', taskId, 'notifications'),
-                        where('recipientId', '==', userId)
+                        where('recipientId', '==', userId),
+                        orderBy('createdAt', 'desc')
                     );
 
                     const listener = onSnapshot(notificationsQuery, (notificationsSnapshot) => {
@@ -185,7 +187,9 @@ export function NotificationPanel() {
             // Add listeners cleanup to the main unsubscribe function
             const originalUnsubscribe = unsubscribe;
             unsubscribe = () => {
-                originalUnsubscribe();
+                if (typeof originalUnsubscribe === 'function') {
+                    originalUnsubscribe();
+                }
                 taskListeners.forEach(unsub => unsub());
             };
         }
@@ -193,7 +197,7 @@ export function NotificationPanel() {
         return () => {
             if (Array.isArray(unsubscribe)) {
                 unsubscribe.forEach(unsub => unsub());
-            } else {
+            } else if (typeof unsubscribe === 'function') {
                 unsubscribe();
             }
         };
@@ -258,8 +262,6 @@ export function NotificationPanel() {
         setSentReplies(prev => [...prev.filter(r => r.id !== notification.id), { id: notification.id, content: tempReplyContent, status: 'sending' }]);
         
         markAsRead(notification);
-
-        setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sending' } : r));
 
         setTimeout(() => {
             setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
