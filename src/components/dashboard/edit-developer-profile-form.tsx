@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, KeyboardEvent, useRef } from 'react';
+import { useState, useEffect, KeyboardEvent, useRef, startTransition } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -197,7 +197,9 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                                   ref={inputRef}
                                   value={skillInput}
                                   onChange={(e) => {
-                                      setSkillInput(e.target.value);
+                                      startTransition(() => {
+                                          setSkillInput(e.target.value);
+                                      });
                                   }}
                                   onKeyDown={handleKeyDown}
                                   placeholder={skillsValue.length === 0 ? "Add a skill and press Enter" : ""}
