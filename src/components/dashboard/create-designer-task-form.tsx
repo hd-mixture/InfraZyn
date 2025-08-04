@@ -1,0 +1,411 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from '@/lib/utils';
+import { CalendarIcon, Loader2, Upload } from 'lucide-react';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, Timestamp, query, where } from 'firebase/firestore';
+import axios from 'axios';
+import type { Project } from './project-summary';
+
+const formSchema = z.object({
+  taskName: z.string().min(1, 'Task name is required.'),
+  project: z.string().min(1, 'Please select a project.'),
+  assignedTo: z.string().min(1, 'Please assign the task to a designer.'),
+  priority: z.enum(['Low', 'Medium', 'High']),
+  dueDate: z.date({ required_error: 'A due date is required.' }),
+  taskType: z.enum(['UI Design', 'UX Research', 'Wireframing', 'Prototyping', 'Design Review', 'Design Handoff', 'Graphic Design', 'Responsive Design']),
+  description: z.string().optional(),
+  attachments: z.any().optional(),
+});
+
+type User = {
+    id: string;
+    name: string;
+};
+
+type CreateDesignerTaskFormProps = {
+    onSuccess: () => void;
+    userRole: 'admin' | 'manager';
+    managerName?: string | null;
+}
+
+export function CreateDesignerTaskForm({ onSuccess, userRole, managerName }: CreateDesignerTaskFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isDueDatePickerOpen, setIsDueDatePickerOpen] = useState(false);
+  const { toast } = useToast();
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      taskName: '',
+      priority: 'Medium',
+      taskType: 'UI Design',
+      project: '',
+      assignedTo: '',
+      description: '',
+      attachments: undefined
+    },
+  });
+  
+  const attachmentsRef = form.register('attachments');
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const baseUsersQuery = query(collection(db, "users"), where("role", "==", "designer"));
+            const usersQuery = userRole === 'manager' && managerName 
+                ? query(baseUsersQuery, where("addedBy", "==", managerName))
+                : baseUsersQuery;
+            
+            const baseProjectsQuery = collection(db, "projects");
+            const projectsQuery = userRole === 'manager' && managerName
+                ? query(baseProjectsQuery, where("projectManager", "==", managerName))
+                : baseProjectsQuery;
+
+            const [userSnapshot, projectSnapshot] = await Promise.all([
+                getDocs(usersQuery),
+                getDocs(projectsQuery)
+            ]);
+
+            const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as User));
+            setUsers(fetchedUsers);
+
+            const fetchedProjects = projectSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+            setProjects(fetchedProjects);
+
+        } catch(e) {
+            console.error("Error fetching data: ", e);
+             toast({
+                variant: "destructive",
+                title: "Could not fetch data.",
+                description: "There was a problem fetching users and projects.",
+            });
+        }
+    }
+    fetchData();
+  }, [toast, userRole, managerName]);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+    try {
+        let attachmentUrls: { name: string, url: string }[] = [];
+        if (values.attachments && values.attachments.length > 0) {
+            for (const file of Array.from(values.attachments as FileList)) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+                
+                const response = await axios.post(
+                `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                formData
+                );
+                attachmentUrls.push({ name: file.name, url: response.data.secure_url });
+            }
+        }
+
+        const { attachments, ...taskData } = values;
+        
+        const assignee = users.find(u => u.id === taskData.assignedTo);
+        if (!assignee) {
+            throw new Error('Selected designer not found');
+        }
+        
+        const dataToSave: any = {
+            ...taskData,
+            assignedTo: assignee.name,
+            taskRole: 'designer',
+            status: 'To Do',
+            dueDate: Timestamp.fromDate(values.dueDate),
+            createdAt: Timestamp.now(),
+            attachmentUrls,
+        };
+
+        if (!dataToSave.description) {
+            delete dataToSave.description;
+        }
+
+        const newDocRef = await addDoc(collection(db, "tasks"), dataToSave);
+
+        const notificationPath = collection(db, 'tasks', newDocRef.id, 'notifications');
+        await addDoc(notificationPath, {
+            type: 'new_task_assignment',
+            recipientId: assignee.id,
+            senderName: localStorage.getItem('userName') || 'Admin',
+            senderAvatar: localStorage.getItem('userAvatar') || null,
+            taskId: newDocRef.id,
+            taskName: values.taskName,
+            messageSnippet: `You have been assigned a new design task: ${values.taskName}`,
+            read: false,
+            createdAt: Timestamp.now(),
+        });
+        
+        toast({
+            title: "Designer Task Created!",
+            description: "The new design task has been successfully created.",
+        });
+        onSuccess();
+        form.reset();
+    } catch(e) {
+        console.error("Error adding document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem with your request.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }
+
+  return (
+    <Form {...form}>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 border-t pt-6">
+        <FormField
+            control={form.control}
+            name="project"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Project</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {projects.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        <FormField
+            control={form.control}
+            name="taskName"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Task Title</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g., Design a new landing page" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+         <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Task Description (Optional)</FormLabel>
+                <FormControl>
+                    <Textarea
+                    placeholder="Describe the goals and requirements for this design task..."
+                    className="resize-none"
+                    rows={3}
+                    {...field}
+                    />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        <FormField
+            control={form.control}
+            name="taskType"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Task Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a task type" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="UI Design">UI Design</SelectItem>
+                        <SelectItem value="UX Research">UX Research</SelectItem>
+                        <SelectItem value="Wireframing">Wireframing</SelectItem>
+                        <SelectItem value="Prototyping">Prototyping</SelectItem>
+                        <SelectItem value="Design Review">Design Review</SelectItem>
+                        <SelectItem value="Design Handoff">Design Handoff</SelectItem>
+                        <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+                        <SelectItem value="Responsive Design">Responsive Design</SelectItem>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="assignedTo"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Assigned To</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} disabled={users.length === 0}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder={users.length === 0 ? "No designers available" : "Select a designer"} />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {users.map(user => (
+                            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+
+        <div className="grid grid-cols-1">
+             <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Due Date</FormLabel>
+                    <Popover open={isDueDatePickerOpen} onOpenChange={setIsDueDatePickerOpen}>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={'outline'}
+                            className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, 'PPP')
+                            ) : (
+                                <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                                if (date) {
+                                    field.onChange(date);
+                                    setIsDueDatePickerOpen(false);
+                                }
+                            }}
+                            disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+
+        <FormField
+            control={form.control}
+            name="attachments"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Attachments (e.g. Brief, References)</FormLabel>
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <label
+                                htmlFor="attachments-upload-designer"
+                                className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md cursor-pointer hover:bg-secondary/80 w-full justify-center"
+                            >
+                                <Upload className="h-4 w-4" />
+                                <span>Upload Files</span>
+                            </label>
+                            <Input
+                                id="attachments-upload-designer"
+                                type="file"
+                                multiple
+                                className="hidden"
+                                {...attachmentsRef}
+                            />
+                        </div>
+                    </FormControl>
+                    {form.watch('attachments') && Array.from(form.watch('attachments') as FileList).length > 0 && (
+                        <div className="text-xs text-muted-foreground pt-1">
+                            Selected {Array.from(form.watch('attachments') as FileList).length} file(s)
+                        </div>
+                    )}
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+        
+        <DialogFooter className="pt-4">
+        <Button type="submit" disabled={loading} className="w-full">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create Designer Task
+        </Button>
+        </DialogFooter>
+    </form>
+    </Form>
+  );
+}

@@ -39,7 +39,7 @@ import type { User } from './user-management';
 const formSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email(),
-  role: z.enum(['manager', 'developer', 'qa']),
+  role: z.enum(['manager', 'developer', 'qa', 'designer']),
 });
 
 type EditUserFormProps = {
@@ -148,6 +148,7 @@ export function EditUserForm({ user, isOpen, onOpenChange, userRole }: EditUserF
                             {userRole === 'admin' && <SelectItem value="manager">Manager</SelectItem>}
                             <SelectItem value="developer">Developer</SelectItem>
                             <SelectItem value="qa">QA</SelectItem>
+                            <SelectItem value="designer">Designer</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />

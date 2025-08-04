@@ -59,6 +59,13 @@ export function UserNav() {
         setProfileLink('/developer-dashboard?view=profile');
         setSettingsLink('/developer-dashboard?view=settings');
         setAvatar(userAvatar);
+    } else if (role === 'designer' && name) {
+        setUserName(name);
+        setUserEmail(email || `${name.toLowerCase().replace(' ', '.')}@example.com`);
+        setUserRole('designer');
+        setProfileLink('/designer-dashboard?view=profile');
+        setSettingsLink('/designer-dashboard?view=settings');
+        setAvatar(userAvatar);
     } else {
         // Default to admin if no role is set (e.g., initial state)
         setUserName('Admin');

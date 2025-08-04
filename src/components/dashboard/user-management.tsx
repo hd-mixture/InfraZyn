@@ -51,7 +51,7 @@ import { deleteUser } from '@/ai/flows/delete-user-flow';
 const userSchema = z.object({
   name: z.string().min(1, 'User name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['manager', 'developer', 'qa']),
+  role: z.enum(['manager', 'developer', 'qa', 'designer']),
   assignedManager: z.string().optional(),
 });
 
@@ -59,7 +59,7 @@ export type User = {
     id: string;
     name: string;
     email: string;
-    role: 'manager' | 'developer' | 'qa';
+    role: 'manager' | 'developer' | 'qa' | 'designer';
     createdAt: Timestamp;
     status: 'Active' | 'Inactive';
     avatar?: string;
@@ -81,7 +81,8 @@ type Task = {
 const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
     "manager": "default",
     "developer": "secondary",
-    "qa": "outline"
+    "qa": "outline",
+    "designer": "default"
 }
 
 type CreateUserFormProps = {
@@ -229,13 +230,14 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
                                 {userRole === 'admin' && <SelectItem value="manager">Manager</SelectItem>}
                                 <SelectItem value="developer">Developer</SelectItem>
                                 <SelectItem value="qa">QA</SelectItem>
+                                <SelectItem value="designer">Designer</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
-                {userRole === 'admin' && (selectedRole === 'developer' || selectedRole === 'qa') && (
+                {userRole === 'admin' && (selectedRole === 'developer' || selectedRole === 'qa' || selectedRole === 'designer') && (
                      <FormField
                         control={form.control}
                         name="assignedManager"

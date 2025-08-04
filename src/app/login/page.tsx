@@ -82,6 +82,9 @@ export default function LoginPage() {
                 } else if (user.role === 'developer') {
                     router.push('/developer-dashboard');
                     toast({ title: "Developer login successful!" });
+                } else if (user.role === 'designer') {
+                    router.push('/designer-dashboard');
+                    toast({ title: "Designer login successful!" });
                 } else {
                      router.push('/'); // Fallback for other roles if any
                 }
