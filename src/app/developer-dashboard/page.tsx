@@ -9,6 +9,7 @@ import { DeveloperDashboardView } from "@/components/dashboard/developer-dashboa
 import { AssignedTasksView } from "@/components/dashboard/assigned-tasks-view";
 import { CompletedProjectsView } from "@/components/dashboard/completed-projects-view";
 import { DeveloperProfileView } from "@/components/dashboard/developer-profile-view";
+import { DeveloperSettingsView } from "@/components/dashboard/developer-settings-view";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
 
 function DeveloperDashboardContent() {
@@ -30,7 +31,7 @@ function DeveloperDashboardContent() {
       case 'profile':
         return <DeveloperProfileView />;
       case 'settings':
-        return <ComingSoon />;
+        return <DeveloperSettingsView />;
       case 'dashboard':
       default:
         return <DeveloperDashboardView developerName={developerName} />;
