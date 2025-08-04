@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
@@ -20,7 +21,7 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
         const projectDoc = await getDoc(doc(db, 'projects', project));
         if (projectDoc.exists() && projectDoc.data().projectManager) {
             recipientName = projectDoc.data().projectManager;
-            recipientRole = 'manager';
+            recipientRole = 'manager'; // Assume manager, but handle admin case below
         } else {
             // Fallback to notify admin if no manager is assigned
             recipientName = 'Admin';
@@ -37,7 +38,8 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
         return null;
     }
 
-    if (recipientRole === 'admin') {
+    // Special handling for the Admin user, who might be the project manager but isn't in the 'users' collection with role 'manager'.
+    if (recipientName === 'Admin') {
          // The admin user is not in the 'users' collection, so we return a hardcoded object.
         return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
