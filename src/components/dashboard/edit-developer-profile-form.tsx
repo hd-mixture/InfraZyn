@@ -188,8 +188,8 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                            <FormControl>
                             <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-12 items-center cursor-text" onClick={() => inputRef.current?.focus()}>
                               {fields.map((field, index) => (
-                                <Badge key={field.id} variant="secondary">
-                                  {field.value}
+                                <Badge key={field.id} variant="secondary" className="text-sm">
+                                  {skillsValue[index]}
                                   <button type="button" onClick={() => remove(index)} className="ml-1.5 rounded-full p-0.5 hover:bg-destructive/20"><X className="h-3 w-3" /></button>
                                 </Badge>
                               ))}
