@@ -8,19 +8,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Moon, Sun, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Moon, Sun, CheckCircle, XCircle, Monitor, Smartphone } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword, onAuthStateChanged } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { collection, query, where, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
 
-const mockLoginHistory = [
-    { date: 'Aug 22, 2024', time: '10:30 AM', ip: '192.168.1.101', device: 'Chrome on macOS' },
-    { date: 'Aug 21, 2024', time: '02:15 PM', ip: '203.0.113.25', device: 'Safari on iPhone' },
-    { date: 'Aug 20, 2024', time: '09:00 AM', ip: '198.51.100.12', device: 'Chrome on Windows' },
-    { date: 'Aug 19, 2024', time: '05:45 PM', ip: '192.168.1.101', device: 'Chrome on macOS' },
-];
+
+type ActivityLog = {
+    id: string;
+    timestamp: Timestamp;
+    device: string;
+};
+
+const getDeviceIcon = (userAgent: string) => {
+    if (/iphone|ipad|ipod/i.test(userAgent)) return <Smartphone className="h-4 w-4" />;
+    if (/android/i.test(userAgent)) return <Smartphone className="h-4 w-4" />;
+    return <Monitor className="h-4 w-4" />;
+};
+
+const parseDevice = (userAgent: string) => {
+    // This is a very basic parser, a more robust library could be used for production
+    const ua = userAgent.toLowerCase();
+    let browser = 'Unknown Browser';
+    let os = 'Unknown OS';
+
+    // OS detection
+    if (ua.includes('windows')) os = 'Windows';
+    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS';
+    else if (ua.includes('linux')) os = 'Linux';
+    else if (ua.includes('android')) os = 'Android';
+    else if (ua.includes('iphone')) os = 'iOS';
+
+    // Browser detection
+    if (ua.includes('firefox')) browser = 'Firefox';
+    else if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+    else if (ua.includes('edg')) browser = 'Edge';
+
+    return `${browser} on ${os}`;
+}
+
 
 export function ManagerSettingsView() {
     const { toast } = useToast();
@@ -32,8 +63,36 @@ export function ManagerSettingsView() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+    const [loadingActivity, setLoadingActivity] = useState(true);
     
     const isPasswordValid = newPassword.length >= 6 && newPassword === confirmPassword && currentPassword.length > 0;
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const q = query(
+                    collection(db, "activityLogs"),
+                    where("userId", "==", user.uid),
+                    orderBy("timestamp", "desc"),
+                    limit(5)
+                );
+                const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
+                    setActivityLog(logs);
+                    setLoadingActivity(false);
+                }, (error) => {
+                    console.error("Error fetching activity logs:", error);
+                    setLoadingActivity(false);
+                });
+                return () => unsubscribeSnapshot();
+            } else {
+                setLoadingActivity(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,62 +210,68 @@ export function ManagerSettingsView() {
                             </form>
                         </CardContent>
                     </Card>
-                    <Card>
+                     <Card>
                         <CardHeader>
-                            <CardTitle>Login History</CardTitle>
-                            <CardDescription>Recent sign-in activity on your account.
-                            <br/><span className="text-xs italic text-muted-foreground/80">(This is sample data. A full implementation requires backend services.)</span>
-                            </CardDescription>
+                            <CardTitle>UI Preferences</CardTitle>
+                            <CardDescription>Customize the look and feel of the application.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="border rounded-md">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Date & Time</TableHead>
-                                            <TableHead>IP Address</TableHead>
-                                            <TableHead>Device</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {mockLoginHistory.map((entry, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>
-                                                    <div>{entry.date}</div>
-                                                    <div className="text-xs text-muted-foreground">{entry.time}</div>
-                                                </TableCell>
-                                                <TableCell className="font-mono">{entry.ip}</TableCell>
-                                                <TableCell>{entry.device}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                             </div>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label className="font-medium">Theme</Label>
+                                <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
+                                    <Sun className="mr-2 h-4 w-4" /> Light
+                                </Button>
+                                <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
+                                    <Moon className="mr-2 h-4 w-4" /> Dark
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>UI Preferences</CardTitle>
-                        <CardDescription>Customize the look and feel of the application.</CardDescription>
+                        <CardTitle>Activity Log</CardTitle>
+                        <CardDescription>
+                            Recent sign-in activity on your account.
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                             <Label className="font-medium">Theme</Label>
-                             <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
-                        </div>
-                        <div className="flex space-x-2">
-                            <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
-                                <Sun className="mr-2 h-4 w-4" /> Light
-                            </Button>
-                            <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
-                                <Moon className="mr-2 h-4 w-4" /> Dark
-                            </Button>
+                    <CardContent>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date &amp; Time</TableHead>
+                                        <TableHead>Device</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loadingActivity ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center h-24">Loading activity...</TableCell>
+                                        </TableRow>
+                                    ) : activityLog.length === 0 ? (
+                                         <TableRow>
+                                            <TableCell colSpan={2} className="text-center h-24">No recent activity found.</TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        activityLog.map((log) => (
+                                            <TableRow key={log.id}>
+                                                <TableCell className="font-medium">{log.timestamp ? format(log.timestamp.toDate(), 'MMM dd, yyyy, p') : 'N/A'}</TableCell>
+                                                <TableCell><div className="flex items-center gap-2">{getDeviceIcon(log.device)}{parseDevice(log.device)}</div></TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
                     </CardContent>
                 </Card>
             </div>
         </ScrollArea>
     );
-}
+
+    
