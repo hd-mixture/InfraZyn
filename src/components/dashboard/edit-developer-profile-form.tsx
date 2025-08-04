@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, KeyboardEvent } from 'react';
+import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +32,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { UserProfile } from './developer-profile-view';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { ALL_SKILLS } from '@/lib/skills';
 
 const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
 
@@ -54,7 +56,9 @@ type EditDeveloperProfileFormProps = {
 export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDeveloperProfileFormProps) {
   const [loading, setLoading] = useState(false);
   const [skillInput, setSkillInput] = useState('');
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,6 +77,13 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
     control: form.control,
     name: "skills",
   });
+  
+  const skillsValue = form.watch('skills') || [];
+
+  const filteredSkills = ALL_SKILLS.filter(skill => 
+    skill.toLowerCase().includes(skillInput.toLowerCase()) && 
+    !skillsValue.includes(skill)
+  ).slice(0, 10);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,14 +99,23 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
     }
   }, [isOpen, user, form]);
   
+  const handleAddSkill = (skill: string) => {
+    const trimmedSkill = skill.trim();
+    if (trimmedSkill && !skillsValue.includes(trimmedSkill)) {
+      append(trimmedSkill);
+    }
+    setSkillInput('');
+    setIsPopoverOpen(false);
+    inputRef.current?.focus();
+  };
+  
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
+    if (e.key === 'Enter' && skillInput) {
       e.preventDefault();
-      const newSkill = skillInput.trim();
-      if (newSkill && !fields.some(field => field.value === newSkill)) {
-        append({ value: newSkill }, { shouldFocus: false });
-      }
-      setSkillInput('');
+      handleAddSkill(skillInput);
+    }
+    if (e.key === 'Backspace' && !skillInput && skillsValue.length > 0) {
+      remove(skillsValue.length - 1);
     }
   };
 
@@ -153,27 +173,59 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                   <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="On Leave">On Leave</SelectItem></SelectContent>
                 </Select><FormMessage /></FormItem>
               )}/>
-              <FormItem>
-                <FormLabel className="flex items-center gap-2"><Tag className="h-4 w-4" /> Skills</FormLabel>
-                <FormControl>
-                  <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10">
-                    {fields.map((field, index) => (
-                      <Badge key={field.id} variant="secondary">
-                        {field.value}
-                        <button type="button" onClick={() => remove(index)} className="ml-1.5 rounded-full p-0.5 hover:bg-destructive/20"><X className="h-3 w-3" /></button>
-                      </Badge>
-                    ))}
-                    <Input
-                      value={skillInput}
-                      onChange={(e) => setSkillInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Add a skill and press Enter"
-                      className="flex-1 h-auto p-0 border-none shadow-none focus-visible:ring-0 min-w-[150px]"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              
+              <FormField
+                control={form.control}
+                name="skills"
+                render={() => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Tag className="h-4 w-4" /> Skills</FormLabel>
+                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                           <FormControl>
+                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 items-center cursor-text" onClick={() => inputRef.current?.focus()}>
+                              {fields.map((field, index) => (
+                                <Badge key={field.id} variant="secondary">
+                                  {field.value}
+                                  <button type="button" onClick={() => remove(index)} className="ml-1.5 rounded-full p-0.5 hover:bg-destructive/20"><X className="h-3 w-3" /></button>
+                                </Badge>
+                              ))}
+                              <Input
+                                  ref={inputRef}
+                                  value={skillInput}
+                                  onChange={(e) => {
+                                      setSkillInput(e.target.value);
+                                      if(!isPopoverOpen) setIsPopoverOpen(true);
+                                  }}
+                                  onKeyDown={handleKeyDown}
+                                  placeholder={skillsValue.length === 0 ? "Add a skill and press Enter" : ""}
+                                  className="flex-1 h-auto p-0 border-none shadow-none focus-visible:ring-0 min-w-[150px] bg-transparent"
+                                />
+                            </div>
+                           </FormControl>
+                        </PopoverTrigger>
+                         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                           {filteredSkills.length > 0 ? (
+                            <ul className="py-1">
+                              {filteredSkills.map(skill => (
+                                <li 
+                                  key={skill}
+                                  onClick={() => handleAddSkill(skill)}
+                                  className="px-3 py-1.5 text-sm cursor-pointer hover:bg-accent"
+                                >
+                                  {skill}
+                                </li>
+                              ))}
+                            </ul>
+                           ) : skillInput ? (
+                             <div className="p-4 text-center text-sm text-muted-foreground">No matching skill found.</div>
+                           ) : null}
+                         </PopoverContent>
+                      </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField control={form.control} name="github" render={({ field }) => (
                 <FormItem><FormLabel className="flex items-center gap-2"><Github className="h-4 w-4" /> GitHub Profile URL</FormLabel><FormControl><Input placeholder="https://github.com/username" {...field} /></FormControl><FormMessage /></FormItem>
