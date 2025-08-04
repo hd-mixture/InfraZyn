@@ -118,10 +118,15 @@ export function NotificationPanel() {
         } else { // Developer or QA
             const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
             
-            unsubscribe = onSnapshot(tasksQuery, (tasksSnapshot) => {
+            const unsubscribeTasks = onSnapshot(tasksQuery, (tasksSnapshot) => {
                 const taskListeners: (() => void)[] = [];
                 let notificationsByTask: Record<string, Notification[]> = {};
                 
+                if (tasksSnapshot.empty) {
+                    setNotifications([]);
+                    return;
+                }
+
                 tasksSnapshot.docs.forEach(taskDoc => {
                     const taskId = taskDoc.id;
                     const notificationsQuery = query(
@@ -148,12 +153,15 @@ export function NotificationPanel() {
                     taskListeners.push(listener);
                 });
 
+                // This return is the cleanup function for the onSnapshot on tasksQuery
                 return () => {
                     taskListeners.forEach(unsub => unsub());
                 }
             }, (error) => {
                 console.error("Error fetching assigned tasks: ", error);
             });
+            
+            unsubscribe = unsubscribeTasks;
         }
 
         return () => {
@@ -226,6 +234,14 @@ export function NotificationPanel() {
             const currentUser = auth.currentUser;
             if (!currentUser) throw new Error("User not authenticated.");
 
+            // We need the full task document to find the opposite user
+            const taskDocRef = doc(db, 'tasks', notification.taskId!);
+            const taskDoc = await getDoc(taskDocRef);
+            if (!taskDoc.exists()) {
+                throw new Error("Task not found to reply to.");
+            }
+            const taskData = taskDoc.data() as Task;
+
             await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
                 text: tempReplyContent,
                 authorName: localStorage.getItem('userName'),
@@ -234,16 +250,11 @@ export function NotificationPanel() {
                 createdAt: Timestamp.now(),
             });
 
-            const taskDocRef = doc(db, 'tasks', notification.taskId);
-            const taskDoc = await getDoc(taskDocRef);
-            if (!taskDoc.exists()) throw new Error("Task not found.");
-            const taskData = taskDoc.data() as Task;
-
             const recipient = await getOppositeUser(taskData, currentUser.uid);
             
             if (recipient && recipient.id !== currentUser.uid) {
                 let notificationCollection;
-                if (recipient.role === 'manager' || recipient.role === 'admin') {
+                 if (recipient.role === 'manager' || recipient.role === 'admin') {
                      notificationCollection = collection(db, 'users', recipient.id, 'notifications');
                 } else {
                      notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
