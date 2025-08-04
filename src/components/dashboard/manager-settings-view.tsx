@@ -210,68 +210,66 @@ export function ManagerSettingsView() {
                             </form>
                         </CardContent>
                     </Card>
-                     <Card>
+                    <Card>
                         <CardHeader>
-                            <CardTitle>UI Preferences</CardTitle>
-                            <CardDescription>Customize the look and feel of the application.</CardDescription>
+                            <CardTitle>Activity Log</CardTitle>
+                            <CardDescription>
+                                Recent sign-in activity on your account.
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label className="font-medium">Theme</Label>
-                                <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
-                            </div>
-                            <div className="flex space-x-2">
-                                <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
-                                    <Sun className="mr-2 h-4 w-4" /> Light
-                                </Button>
-                                <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
-                                    <Moon className="mr-2 h-4 w-4" /> Dark
-                                </Button>
+                        <CardContent>
+                            <div className="border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date &amp; Time</TableHead>
+                                            <TableHead>Device</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {loadingActivity ? (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-center h-24">Loading activity...</TableCell>
+                                            </TableRow>
+                                        ) : activityLog.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-center h-24">No recent activity found.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            activityLog.map((log) => (
+                                                <TableRow key={log.id}>
+                                                    <TableCell className="font-medium">{log.timestamp ? format(log.timestamp.toDate(), 'MMM dd, yyyy, p') : 'N/A'}</TableCell>
+                                                    <TableCell><div className="flex items-center gap-2">{getDeviceIcon(log.device)}{parseDevice(log.device)}</div></TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-
-                 <Card>
+                <Card>
                     <CardHeader>
-                        <CardTitle>Activity Log</CardTitle>
-                        <CardDescription>
-                            Recent sign-in activity on your account.
-                        </CardDescription>
+                        <CardTitle>UI Preferences</CardTitle>
+                        <CardDescription>Customize the look and feel of the application.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date &amp; Time</TableHead>
-                                        <TableHead>Device</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loadingActivity ? (
-                                        <TableRow>
-                                            <TableCell colSpan={2} className="text-center h-24">Loading activity...</TableCell>
-                                        </TableRow>
-                                    ) : activityLog.length === 0 ? (
-                                         <TableRow>
-                                            <TableCell colSpan={2} className="text-center h-24">No recent activity found.</TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        activityLog.map((log) => (
-                                            <TableRow key={log.id}>
-                                                <TableCell className="font-medium">{log.timestamp ? format(log.timestamp.toDate(), 'MMM dd, yyyy, p') : 'N/A'}</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">{getDeviceIcon(log.device)}{parseDevice(log.device)}</div></TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <Label className="font-medium">Theme</Label>
+                            <p className="text-sm text-muted-foreground">Select the theme for the dashboard.</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => handleSetTheme('light')}>
+                                <Sun className="mr-2 h-4 w-4" /> Light
+                            </Button>
+                            <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => handleSetTheme('dark')}>
+                                <Moon className="mr-2 h-4 w-4" /> Dark
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
             </div>
         </ScrollArea>
     );
-
-    
+}
