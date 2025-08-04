@@ -44,12 +44,6 @@ type Notification = {
     createdAt: any;
 };
 
-type ReplyInfo = {
-    id: string;
-    content: string;
-    status: 'sending' | 'sent' | 'confirmed';
-};
-
 export function NotificationPanel() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [userId, setUserId] = useState<string | null>(null);
@@ -60,27 +54,12 @@ export function NotificationPanel() {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-    const [sentReplies, setSentReplies] = useState<ReplyInfo[]>(() => {
-        if (typeof window === 'undefined') return [];
-        const saved = localStorage.getItem('sentReplies');
-        try {
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
     const [animateBell, setAnimateBell] = useState(false);
     const previousUnreadCountRef = useRef(0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
     const router = useRouter();
     
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('sentReplies', JSON.stringify(sentReplies.filter(r => r.status === 'confirmed')));
-        }
-    }, [sentReplies]);
-
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
             if (user) {
@@ -139,21 +118,10 @@ export function NotificationPanel() {
         } else { // Developer or QA
             const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
             
-            const taskListeners: (() => void)[] = [];
-            let notificationsByTask: Record<string, Notification[]> = {};
-
             unsubscribe = onSnapshot(tasksQuery, (tasksSnapshot) => {
-                // Clean up old listeners
-                taskListeners.forEach(unsub => unsub());
-                taskListeners.length = 0;
-                notificationsByTask = {};
-
-                const taskIds = tasksSnapshot.docs.map(doc => doc.id);
-                if (taskIds.length === 0) {
-                    setNotifications([]);
-                    return;
-                }
-
+                const taskListeners: (() => void)[] = [];
+                let notificationsByTask: Record<string, Notification[]> = {};
+                
                 tasksSnapshot.docs.forEach(taskDoc => {
                     const taskId = taskDoc.id;
                     const notificationsQuery = query(
@@ -171,7 +139,6 @@ export function NotificationPanel() {
                         
                         notificationsByTask[taskId] = taskNotifications;
 
-                        // Combine all notifications from all tasks
                         const allNotifications = Object.values(notificationsByTask).flat();
                         allNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
                         setNotifications(allNotifications);
@@ -180,18 +147,13 @@ export function NotificationPanel() {
                     });
                     taskListeners.push(listener);
                 });
+
+                return () => {
+                    taskListeners.forEach(unsub => unsub());
+                }
             }, (error) => {
                 console.error("Error fetching assigned tasks: ", error);
             });
-            
-            // Add listeners cleanup to the main unsubscribe function
-            const originalUnsubscribe = unsubscribe;
-            unsubscribe = () => {
-                if (typeof originalUnsubscribe === 'function') {
-                    originalUnsubscribe();
-                }
-                taskListeners.forEach(unsub => unsub());
-            };
         }
 
         return () => {
@@ -264,7 +226,6 @@ export function NotificationPanel() {
             const currentUser = auth.currentUser;
             if (!currentUser) throw new Error("User not authenticated.");
 
-            // 1. Save the new comment
             await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
                 text: tempReplyContent,
                 authorName: localStorage.getItem('userName'),
@@ -273,39 +234,19 @@ export function NotificationPanel() {
                 createdAt: Timestamp.now(),
             });
 
-            // 2. Fetch the full task document to get all necessary info
             const taskDocRef = doc(db, 'tasks', notification.taskId);
             const taskDoc = await getDoc(taskDocRef);
             if (!taskDoc.exists()) throw new Error("Task not found.");
             const taskData = taskDoc.data() as Task;
 
-            // 3. Determine the recipient for the notification
             const recipient = await getOppositeUser(taskData, currentUser.uid);
             
             if (recipient && recipient.id !== currentUser.uid) {
                 let notificationCollection;
-                 // Admins and Managers get notifications in their own user collection.
-                 // The placeholder ID is for Admin.
                 if (recipient.role === 'manager' || recipient.role === 'admin') {
-                    const managerId = recipient.id === 'admin_user_placeholder' 
-                        ? (await getDocs(query(collection(db, 'users'), where('role', '==', 'admin')))).docs[0]?.id || 'ADMIN_UID_FALLBACK' // A better fallback would be a known admin UID
-                        : recipient.id;
-
-                     if (recipient.name === 'Admin') {
-                        // This block is for the system admin, who doesn't have a user doc in the same way.
-                        // We need a special path or a known UID. Let's assume there is an admin user document.
-                        const adminUserQuery = query(collection(db, "users"), where("email", "==", "admin@devtexhhub.com"));
-                        const adminSnapshot = await getDocs(adminUserQuery);
-                        if (!adminSnapshot.empty) {
-                           notificationCollection = collection(db, 'users', adminSnapshot.docs[0].id, 'notifications');
-                        } else {
-                           throw new Error("Admin user document not found.");
-                        }
-                    } else {
-                        notificationCollection = collection(db, 'users', recipient.id, 'notifications');
-                    }
+                     notificationCollection = collection(db, 'users', recipient.id, 'notifications');
                 } else {
-                    notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
+                     notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
                 }
                 
                 await addDoc(notificationCollection, {
@@ -348,15 +289,16 @@ export function NotificationPanel() {
     };
 
     const playSound = () => {
-        if (audioRef.current && audioRef.current.paused) {
-            audioRef.current.play().catch(e => console.warn("Audio play failed. User may need to interact with the page first. Details:", e));
+        if (!audioRef.current) {
+           audioRef.current = new Audio("https://res.cloudinary.com/dtdgxqt6p/video/upload/v1754223850/new-notification-021-370045_ejdegd.mp3");
+           audioRef.current.preload = 'auto';
         }
+        audioRef.current.play().catch(e => console.warn("Audio play failed. User may need to interact with the page first. Details:", e));
     }
 
 
     return (
         <>
-            <audio ref={audioRef} src="https://res.cloudinary.com/dtdgxqt6p/video/upload/v1754223850/new-notification-021-370045_ejdegd.mp3" preload="auto" />
             <DropdownMenu onOpenChange={(open) => { 
                 if(!open) setReplyingTo(null)
             }}>
