@@ -34,6 +34,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import type { UserProfile } from './developer-profile-view';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ALL_SKILLS } from '@/lib/skills';
+import { cn } from '@/lib/utils';
+
 
 const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
 
@@ -181,7 +183,7 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                 render={() => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2"><Tag className="h-4 w-4" /> Skills</FormLabel>
-                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                     <Popover open={isPopoverOpen && !!skillInput} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
                            <FormControl>
                             <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 items-center cursor-text" onClick={() => inputRef.current?.focus()}>
@@ -196,8 +198,7 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                                   value={skillInput}
                                   onChange={(e) => {
                                       setSkillInput(e.target.value);
-                                      if(!isPopoverOpen && e.target.value) setIsPopoverOpen(true);
-                                      if(isPopoverOpen && !e.target.value) setIsPopoverOpen(false);
+                                      if (!isPopoverOpen) setIsPopoverOpen(true);
                                   }}
                                   onKeyDown={handleKeyDown}
                                   placeholder={skillsValue.length === 0 ? "Add a skill and press Enter" : ""}
