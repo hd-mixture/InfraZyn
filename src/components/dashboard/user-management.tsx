@@ -517,7 +517,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy') : 'N/A'}
+                                                {user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy, p') : 'N/A'}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
@@ -532,14 +532,8 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Edit</span>
                                                         </DropdownMenuItem>
-                                                         {user.role !== 'manager' && (
+                                                         {(userRole === 'admin' || (userRole === 'manager' && user.addedBy === managerName)) && (
                                                             <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                <span>Delete</span>
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                         {user.role === 'manager' && userRole === 'admin' && (
-                                                             <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 <span>Delete</span>
                                                             </DropdownMenuItem>
