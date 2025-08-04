@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, User, X, Tag, Github, Linkedin, Gitlab, Activity } from 'lucide-react';
+import { Loader2, User, X, Tag, Github, Linkedin, Gitlab } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -81,6 +81,7 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
   const skillsValue = form.watch('skills') || [];
 
   const filteredSkills = ALL_SKILLS.filter(skill => 
+    skillInput && 
     skill.toLowerCase().includes(skillInput.toLowerCase()) && 
     !skillsValue.includes(skill)
   ).slice(0, 10);
@@ -195,7 +196,8 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
                                   value={skillInput}
                                   onChange={(e) => {
                                       setSkillInput(e.target.value);
-                                      if(!isPopoverOpen) setIsPopoverOpen(true);
+                                      if(!isPopoverOpen && e.target.value) setIsPopoverOpen(true);
+                                      if(isPopoverOpen && !e.target.value) setIsPopoverOpen(false);
                                   }}
                                   onKeyDown={handleKeyDown}
                                   placeholder={skillsValue.length === 0 ? "Add a skill and press Enter" : ""}
