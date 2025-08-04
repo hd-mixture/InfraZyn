@@ -270,11 +270,6 @@ export function NotificationPanel() {
                     const currentUser = auth.currentUser;
                     if (!currentUser) throw new Error("User not authenticated.");
 
-                    const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId!));
-                    if (!taskDoc.exists()) throw new Error("Task not found.");
-
-                    const taskData = taskDoc.data() as Task;
-                    
                     await addDoc(collection(db, 'tasks', notification.taskId!, 'comments'), {
                         text: tempReplyContent,
                         authorName: localStorage.getItem('userName'),
@@ -283,8 +278,14 @@ export function NotificationPanel() {
                         createdAt: Timestamp.now(),
                     });
 
-                    const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
+                    // Fetch the full task document to get project manager details
+                    const taskDocRef = doc(db, 'tasks', notification.taskId!);
+                    const taskDoc = await getDoc(taskDocRef);
+                    if (!taskDoc.exists()) throw new Error("Task not found.");
+                    const taskData = taskDoc.data() as Task;
 
+                    const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
+                    
                     if (recipient && recipient.id !== currentUser.uid) {
                         let notificationCollection;
                         if (recipient.role === 'manager' || recipient.role === 'admin') {

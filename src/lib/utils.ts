@@ -39,7 +39,6 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
 
     if (recipientRole === 'admin') {
          // The admin user is not in the 'users' collection, so we return a hardcoded object.
-         // This assumes the admin's notifications are handled differently or not needed for this flow.
         return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
 
