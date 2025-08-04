@@ -13,7 +13,8 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
 
     let recipientName: string | null = null;
     let recipientRole: string | null = null;
-
+    
+    // Determine the recipient's name and role
     if (currentUserName === assignedTo) {
         // Current user is the assignee (dev/qa), so notify the manager or admin.
         const projectDoc = await getDoc(doc(db, 'projects', project));
@@ -37,13 +38,17 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
     }
 
     if (recipientRole === 'admin') {
-         // Special handling for admin if not in users collection
-         // Assuming admin doesn't have a doc in 'users' collection
+         // The admin user is not in the 'users' collection, so we return a hardcoded object.
+         // This assumes the admin's notifications are handled differently or not needed for this flow.
         return { id: 'admin_user', name: 'Admin', role: 'admin' };
     }
 
-    // Find the user document to get the ID
-    const userQuery = query(collection(db, 'users'), where('name', '==', recipientName), where('role', '==', recipientRole));
+    // Find the user document in Firestore to get their UID.
+    const userQuery = query(
+        collection(db, 'users'), 
+        where('name', '==', recipientName), 
+        where('role', '==', recipientRole)
+    );
     const userSnapshot = await getDocs(userQuery);
 
     if (!userSnapshot.empty) {
@@ -51,6 +56,6 @@ export async function getOppositeUser(task: Task, currentUserId: string, current
         return { id: userDoc.id, name: userDoc.data().name, role: userDoc.data().role };
     }
     
-    console.error(`Could not find user: ${recipientName} with role: ${recipientRole}`);
+    console.error(`Could not find user document for: ${recipientName} with role: ${recipientRole}`);
     return null;
 }

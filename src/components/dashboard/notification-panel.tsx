@@ -104,6 +104,7 @@ export function NotificationPanel() {
     useEffect(() => {
         if (unreadCount > previousUnreadCountRef.current) {
             setAnimateBell(true);
+            playSound();
             const timer = setTimeout(() => setAnimateBell(false), 800); // Duration of animation
             return () => clearTimeout(timer);
         }
@@ -341,7 +342,6 @@ export function NotificationPanel() {
         <>
             <audio ref={audioRef} src="https://res.cloudinary.com/dtdgxqt6p/video/upload/v1754223850/new-notification-021-370045_ejdegd.mp3" preload="auto" />
             <DropdownMenu onOpenChange={(open) => { 
-                if (open) playSound();
                 if(!open) setReplyingTo(null)
             }}>
                 <DropdownMenuTrigger asChild>
