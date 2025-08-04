@@ -9,54 +9,65 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function getOppositeUser(task: Task, currentUserId: string, currentUserName: string): Promise<{id: string, name: string, role: string} | null> {
-    const { assignedTo, project, taskRole } = task;
+export async function getOppositeUser(
+  task: Task,
+  currentUserId: string
+): Promise<{id: string, name: string, role: string} | null> {
+  const { assignedTo, project, taskRole } = task;
 
-    let recipientName: string | null = null;
-    let recipientRole: string | null = null;
-    
-    // Determine the recipient's name and role
-    if (currentUserName === assignedTo) {
-        // Current user is the assignee (dev/qa), so notify the manager or admin.
-        const projectDoc = await getDoc(doc(db, 'projects', project));
-        if (projectDoc.exists() && projectDoc.data().projectManager) {
-            recipientName = projectDoc.data().projectManager;
-            recipientRole = 'manager'; // Assume manager, but handle admin case below
-        } else {
-            // Fallback to notify admin if no manager is assigned
-            recipientName = 'Admin';
-            recipientRole = 'admin';
-        }
-    } else {
-        // Current user is the assigner (manager/admin), so notify the assignee.
-        recipientName = assignedTo;
-        recipientRole = taskRole;
-    }
-
-    if (!recipientName || !recipientRole) {
-        console.error("Could not determine recipient.");
-        return null;
-    }
-
-    // Special handling for the Admin user, who might be the project manager but isn't in the 'users' collection with role 'manager'.
-    if (recipientName === 'Admin') {
-         // The admin user is not in the 'users' collection, so we return a hardcoded object.
-        return { id: 'admin_user', name: 'Admin', role: 'admin' };
-    }
-
-    // Find the user document in Firestore to get their UID.
-    const userQuery = query(
-        collection(db, 'users'), 
-        where('name', '==', recipientName), 
-        where('role', '==', recipientRole)
-    );
-    const userSnapshot = await getDocs(userQuery);
-
-    if (!userSnapshot.empty) {
-        const userDoc = userSnapshot.docs[0];
-        return { id: userDoc.id, name: userDoc.data().name, role: userDoc.data().role };
-    }
-    
-    console.error(`Could not find user document for: ${recipientName} with role: ${recipientRole}`);
+  const projectDoc = await getDoc(doc(db, 'projects', project));
+  if (!projectDoc.exists()) {
+    console.error("Project not found for the task.");
     return null;
+  }
+  const projectManagerName = projectDoc.data().projectManager;
+
+  // Determine who the current user is.
+  const usersRef = collection(db, "users");
+  const currentUserDoc = await getDoc(doc(usersRef, currentUserId));
+  
+  let isCurrentUserAssignee = false;
+  if (currentUserDoc.exists() && currentUserDoc.data().name === assignedTo) {
+      isCurrentUserAssignee = true;
+  }
+
+  let recipientName: string | null = null;
+  let recipientRole: 'manager' | 'developer' | 'qa' | 'admin' | null = null;
+  
+  if (isCurrentUserAssignee) {
+      // If current user is the assignee, the recipient is the project manager (or admin).
+      recipientName = projectManagerName;
+      recipientRole = 'manager'; // Assume manager, will handle admin case below
+  } else {
+      // If current user is not the assignee (i.e., they are the manager/admin), the recipient is the assignee.
+      recipientName = assignedTo;
+      recipientRole = taskRole;
+  }
+
+  if (!recipientName) {
+      console.error("Could not determine recipient's name.");
+      return null;
+  }
+
+  // Handle the special case where the manager is the Admin
+  if (recipientName === 'Admin') {
+      return { id: 'admin_user_placeholder', name: 'Admin', role: 'admin' };
+  }
+
+  // Find the recipient's user document in Firestore to get their UID.
+  const recipientQuery = query(
+      usersRef, 
+      where('name', '==', recipientName), 
+      where('role', '==', recipientRole)
+  );
+
+  const recipientSnapshot = await getDocs(recipientQuery);
+
+  if (!recipientSnapshot.empty) {
+      const userDoc = recipientSnapshot.docs[0];
+      return { id: userDoc.id, name: userDoc.data().name, role: userDoc.data().role };
+  }
+  
+  console.error(`Could not find user document for: ${recipientName} with role: ${recipientRole}`);
+  return null;
 }

@@ -258,67 +258,80 @@ export function NotificationPanel() {
         setReplyContent('');
         setReplyingTo(null);
         
-        const tempReplyId = Date.now().toString();
-        setSentReplies(prev => [...prev.filter(r => r.id !== notification.id), { id: notification.id, content: tempReplyContent, status: 'sending' }]);
-        
         markAsRead(notification);
 
-        setTimeout(() => {
-            setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
-            setTimeout(async () => {
-                 try {
-                    const currentUser = auth.currentUser;
-                    if (!currentUser) throw new Error("User not authenticated.");
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) throw new Error("User not authenticated.");
 
-                    await addDoc(collection(db, 'tasks', notification.taskId!, 'comments'), {
-                        text: tempReplyContent,
-                        authorName: localStorage.getItem('userName'),
-                        authorRole: localStorage.getItem('userRole'),
-                        authorAvatar: localStorage.getItem('userAvatar') || null,
-                        createdAt: Timestamp.now(),
-                    });
+            // 1. Save the new comment
+            await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
+                text: tempReplyContent,
+                authorName: localStorage.getItem('userName'),
+                authorRole: localStorage.getItem('userRole'),
+                authorAvatar: localStorage.getItem('userAvatar') || null,
+                createdAt: Timestamp.now(),
+            });
 
-                    // Fetch the full task document to get project manager details
-                    const taskDocRef = doc(db, 'tasks', notification.taskId!);
-                    const taskDoc = await getDoc(taskDocRef);
-                    if (!taskDoc.exists()) throw new Error("Task not found.");
-                    const taskData = taskDoc.data() as Task;
+            // 2. Fetch the full task document to get all necessary info
+            const taskDocRef = doc(db, 'tasks', notification.taskId);
+            const taskDoc = await getDoc(taskDocRef);
+            if (!taskDoc.exists()) throw new Error("Task not found.");
+            const taskData = taskDoc.data() as Task;
 
-                    const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
-                    
-                    if (recipient && recipient.id !== currentUser.uid) {
-                        let notificationCollection;
-                        if (recipient.role === 'manager' || recipient.role === 'admin') {
-                            notificationCollection = collection(db, 'users', recipient.id, 'notifications');
+            // 3. Determine the recipient for the notification
+            const recipient = await getOppositeUser(taskData, currentUser.uid);
+            
+            if (recipient && recipient.id !== currentUser.uid) {
+                let notificationCollection;
+                 // Admins and Managers get notifications in their own user collection.
+                 // The placeholder ID is for Admin.
+                if (recipient.role === 'manager' || recipient.role === 'admin') {
+                    const managerId = recipient.id === 'admin_user_placeholder' 
+                        ? (await getDocs(query(collection(db, 'users'), where('role', '==', 'admin')))).docs[0]?.id || 'ADMIN_UID_FALLBACK' // A better fallback would be a known admin UID
+                        : recipient.id;
+
+                     if (recipient.name === 'Admin') {
+                        // This block is for the system admin, who doesn't have a user doc in the same way.
+                        // We need a special path or a known UID. Let's assume there is an admin user document.
+                        const adminUserQuery = query(collection(db, "users"), where("email", "==", "admin@devtexhhub.com"));
+                        const adminSnapshot = await getDocs(adminUserQuery);
+                        if (!adminSnapshot.empty) {
+                           notificationCollection = collection(db, 'users', adminSnapshot.docs[0].id, 'notifications');
                         } else {
-                            notificationCollection = collection(db, 'tasks', notification.taskId!, 'notifications');
+                           throw new Error("Admin user document not found.");
                         }
-                        await addDoc(notificationCollection, {
-                            type: 'comment',
-                            recipientId: recipient.id,
-                            senderName: localStorage.getItem('userName'),
-                            senderAvatar: localStorage.getItem('userAvatar') || null,
-                            taskId: notification.taskId,
-                            taskName: taskData.taskName,
-                            messageSnippet: tempReplyContent.substring(0, 50),
-                            read: false,
-                            createdAt: Timestamp.now(),
-                        });
+                    } else {
+                        notificationCollection = collection(db, 'users', recipient.id, 'notifications');
                     }
-                    setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
-                } catch (error: any) {
-                    console.error("Error sending reply: ", error);
-                    toast({
-                        variant: 'destructive',
-                        title: "Failed to send reply",
-                        description: error.message
-                    });
-                    setSentReplies(prev => prev.filter(r => r.id !== notification.id));
-                } finally {
-                    setIsSubmittingReply(false);
+                } else {
+                    notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
                 }
-            }, 1000); 
-        }, 100);
+                
+                await addDoc(notificationCollection, {
+                    type: 'comment',
+                    recipientId: recipient.id,
+                    senderName: localStorage.getItem('userName'),
+                    senderAvatar: localStorage.getItem('userAvatar') || null,
+                    taskId: notification.taskId,
+                    taskName: taskData.taskName,
+                    messageSnippet: tempReplyContent.substring(0, 50),
+                    read: false,
+                    createdAt: Timestamp.now(),
+                });
+            }
+            toast({ title: "Reply Sent!", description: "Your message has been sent successfully."});
+
+        } catch (error: any) {
+            console.error("Error sending reply: ", error);
+            toast({
+                variant: 'destructive',
+                title: "Failed to send reply",
+                description: error.message
+            });
+        } finally {
+            setIsSubmittingReply(false);
+        }
     }
 
     const getIcon = (type: Notification['type']) => {
@@ -335,7 +348,9 @@ export function NotificationPanel() {
     };
 
     const playSound = () => {
-        audioRef.current?.play().catch(e => console.warn("Audio play failed. User may need to interact with the page first. Details:", e));
+        if (audioRef.current && audioRef.current.paused) {
+            audioRef.current.play().catch(e => console.warn("Audio play failed. User may need to interact with the page first. Details:", e));
+        }
     }
 
 
@@ -373,7 +388,6 @@ export function NotificationPanel() {
                                 <p className="text-center text-sm text-muted-foreground p-4">No notifications yet.</p>
                             ) : (
                                 notifications.map(notification => {
-                                    const repliedInfo = sentReplies.find(r => r.id === notification.id);
                                     return (
                                     <DropdownMenuItem key={notification.id} onSelect={(e) => e.preventDefault()} className="flex flex-col items-start gap-2 p-3 cursor-pointer">
                                         <div className="flex items-start gap-3 w-full" onClick={() => handleNotificationClick(notification)}>
@@ -392,9 +406,10 @@ export function NotificationPanel() {
                                             <div className="flex-1">
                                                 <p className="text-sm">
                                                     <span className="font-medium">{notification.senderName}</span>
-                                                    <span className="text-muted-foreground">
-                                                        {notification.type === 'comment' ? ' commented on ' : ' assigned you to '}
-                                                    </span>
+                                                     {notification.type === 'comment' 
+                                                        ? <span className="text-muted-foreground"> commented on </span>
+                                                        : <span className="text-muted-foreground"> assigned you to </span>
+                                                     }
                                                     <span className="font-medium text-primary">
                                                         {notification.taskName || notification.projectName}
                                                     </span>
@@ -428,17 +443,11 @@ export function NotificationPanel() {
                                                            {isSubmittingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                                         </Button>
                                                     </form>
-                                                ) : repliedInfo ? (
-                                                     <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 animate-in fade-in">
-                                                        {repliedInfo.status === 'sending' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                                                        {repliedInfo.status === 'sent' && <> <ThumbsUp className="h-3.5 w-3.5 text-green-500" /> <span>Reply sent!</span> </>}
-                                                        {repliedInfo.status === 'confirmed' && <span>Replied: - "{repliedInfo.content}"</span>}
-                                                    </div>
-                                                ) : !notification.read ? (
-                                                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
-                                                        Reply here
+                                                ) : (
+                                                     !notification.read && <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
+                                                        Reply
                                                     </Button>
-                                                ) : null}
+                                                )}
                                             </div>
                                         )}
                                     </DropdownMenuItem>

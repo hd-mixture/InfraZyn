@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -114,7 +115,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
 
             await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
-            const recipient = await getOppositeUser(task, user.uid, currentUser.name);
+            const recipient = await getOppositeUser(task, user.uid);
 
             if (recipient && recipient.id !== user.uid) {
                 let notificationCollection;
