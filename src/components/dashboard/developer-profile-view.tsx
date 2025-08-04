@@ -138,14 +138,10 @@ export function DeveloperProfileView() {
                             </Button>
                         </CardHeader>
                         <CardContent className="border-t pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                                 <div className="flex items-center gap-3">
                                     <Mail className="w-5 h-5 text-muted-foreground" />
                                     <span>{user.email}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <UserIcon className="w-5 h-5 text-muted-foreground" />
-                                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded-md">{user.id}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <Calendar className="w-5 h-5 text-muted-foreground" />
