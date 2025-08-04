@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,48 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Moon, Sun, CheckCircle, XCircle, Monitor, Smartphone } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword, onAuthStateChanged } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { collection, query, where, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
 
-const mockActivityLog = [
-    { date: 'Aug 23, 2024, 10:30 AM', device: 'Chrome on macOS', ip: '192.168.1.101', icon: <Monitor className="h-4 w-4" /> },
-    { date: 'Aug 22, 2024, 02:15 PM', device: 'Safari on iPhone', ip: '203.0.113.25', icon: <Smartphone className="h-4 w-4" /> },
-    { date: 'Aug 21, 2024, 09:00 AM', device: 'Chrome on Windows', ip: '198.51.100.12', icon: <Monitor className="h-4 w-4" /> },
-];
+
+type ActivityLog = {
+    id: string;
+    timestamp: Timestamp;
+    device: string;
+};
+
+const getDeviceIcon = (userAgent: string) => {
+    if (/iphone|ipad|ipod/i.test(userAgent)) return <Smartphone className="h-4 w-4" />;
+    if (/android/i.test(userAgent)) return <Smartphone className="h-4 w-4" />;
+    return <Monitor className="h-4 w-4" />;
+};
+
+const parseDevice = (userAgent: string) => {
+    // This is a very basic parser, a more robust library could be used for production
+    const ua = userAgent.toLowerCase();
+    let browser = 'Unknown Browser';
+    let os = 'Unknown OS';
+
+    // OS detection
+    if (ua.includes('windows')) os = 'Windows';
+    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS';
+    else if (ua.includes('linux')) os = 'Linux';
+    else if (ua.includes('android')) os = 'Android';
+    else if (ua.includes('iphone')) os = 'iOS';
+
+    // Browser detection
+    if (ua.includes('firefox')) browser = 'Firefox';
+    else if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+    else if (ua.includes('edg')) browser = 'Edge';
+
+    return `${browser} on ${os}`;
+}
+
 
 export function DeveloperSettingsView() {
     const { toast } = useToast();
@@ -31,8 +63,36 @@ export function DeveloperSettingsView() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+    const [loadingActivity, setLoadingActivity] = useState(true);
     
     const isPasswordValid = newPassword.length >= 6 && newPassword === confirmPassword && currentPassword.length > 0;
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const q = query(
+                    collection(db, "activityLogs"),
+                    where("userId", "==", user.uid),
+                    orderBy("timestamp", "desc"),
+                    limit(5)
+                );
+                const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+                    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
+                    setActivityLog(logs);
+                    setLoadingActivity(false);
+                }, (error) => {
+                    console.error("Error fetching activity logs:", error);
+                    setLoadingActivity(false);
+                });
+                return () => unsubscribeSnapshot();
+            } else {
+                setLoadingActivity(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -186,17 +246,25 @@ export function DeveloperSettingsView() {
                                     <TableRow>
                                         <TableHead>Date & Time</TableHead>
                                         <TableHead>Device</TableHead>
-                                        <TableHead>IP Address</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockActivityLog.map((log, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell className="font-medium">{log.date}</TableCell>
-                                            <TableCell><div className="flex items-center gap-2">{log.icon}{log.device}</div></TableCell>
-                                            <TableCell className="font-mono text-muted-foreground">{log.ip}</TableCell>
+                                    {loadingActivity ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center h-24">Loading activity...</TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : activityLog.length === 0 ? (
+                                         <TableRow>
+                                            <TableCell colSpan={2} className="text-center h-24">No recent activity found.</TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        activityLog.map((log) => (
+                                            <TableRow key={log.id}>
+                                                <TableCell className="font-medium">{log.timestamp ? format(log.timestamp.toDate(), 'MMM dd, yyyy, p') : 'N/A'}</TableCell>
+                                                <TableCell><div className="flex items-center gap-2">{getDeviceIcon(log.device)}{parseDevice(log.device)}</div></TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>

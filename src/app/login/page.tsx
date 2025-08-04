@@ -11,8 +11,8 @@ import { CodeXml, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { signInWithEmailAndPassword, UserCredential } from 'firebase/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +21,19 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const logActivity = async (userCredential: UserCredential) => {
+    try {
+        await addDoc(collection(db, "activityLogs"), {
+            userId: userCredential.user.uid,
+            timestamp: serverTimestamp(),
+            device: navigator.userAgent,
+        });
+    } catch (error) {
+        console.error("Failed to log activity:", error);
+    }
+  };
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,7 +41,8 @@ export default function LoginPage() {
     try {
         if (email === 'admin@devtexhhub.com' && password === 'HD@Mixture08') {
             // Special case for admin login
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            await logActivity(userCredential);
             localStorage.setItem('userRole', 'admin');
             
             const adminName = localStorage.getItem('adminName');
@@ -50,7 +64,9 @@ export default function LoginPage() {
                 const userDoc = querySnapshot.docs[0];
                 const user = userDoc.data();
                 
-                await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                await logActivity(userCredential);
+
 
                 localStorage.setItem('userRole', user.role);
                 localStorage.setItem('userName', user.name);
