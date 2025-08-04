@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -136,7 +137,8 @@ export function NotificationPanel() {
                 console.error("Error fetching user notifications: ", error);
             });
         } else { // Developer or QA
-            const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
+             const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
+            
             unsubscribe = onSnapshot(tasksQuery, async (tasksSnapshot) => {
                 const taskIds = tasksSnapshot.docs.map(doc => doc.id);
                 if (taskIds.length === 0) {
@@ -229,67 +231,64 @@ export function NotificationPanel() {
         setReplyingTo(null);
         
         setSentReplies(prev => [...prev.filter(r => r.id !== notification.id), { id: notification.id, content: tempReplyContent, status: 'sending' }]);
+        
+        markAsRead(notification);
 
-        try {
-            const currentUser = auth.currentUser;
-            if (!currentUser) throw new Error("User not authenticated.");
-
-            const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId));
-            if (!taskDoc.exists()) throw new Error("Task not found.");
-
-            const taskData = taskDoc.data() as Task;
-            
-            await addDoc(collection(db, 'tasks', notification.taskId, 'comments'), {
-                text: tempReplyContent,
-                authorName: localStorage.getItem('userName'),
-                authorRole: localStorage.getItem('userRole'),
-                authorAvatar: localStorage.getItem('userAvatar') || null,
-                createdAt: Timestamp.now(),
-            });
-
-            const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
-
-            if (recipient && recipient.id !== currentUser.uid) {
-                let notificationCollection;
-                if (recipient.role === 'manager' || recipient.role === 'admin') {
-                     notificationCollection = collection(db, 'users', recipient.id, 'notifications');
-                } else {
-                     notificationCollection = collection(db, 'tasks', notification.taskId, 'notifications');
-                }
-                 await addDoc(notificationCollection, {
-                    type: 'comment',
-                    recipientId: recipient.id,
-                    senderName: localStorage.getItem('userName'),
-                    senderAvatar: localStorage.getItem('userAvatar') || null,
-                    taskId: notification.taskId,
-                    taskName: taskData.taskName,
-                    messageSnippet: tempReplyContent.substring(0, 50),
-                    read: false,
-                    createdAt: Timestamp.now(),
-                });
-            }
-            
-            markAsRead(notification);
-            
-            setTimeout(() => {
+        setTimeout(() => {
                 setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'sent' } : r));
-                setTimeout(() => {
-                    setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
-                }, 1000);
+                setTimeout(async () => {
+                     try {
+                        const currentUser = auth.currentUser;
+                        if (!currentUser) throw new Error("User not authenticated.");
+
+                        const taskDoc = await getDoc(doc(db, 'tasks', notification.taskId!));
+                        if (!taskDoc.exists()) throw new Error("Task not found.");
+
+                        const taskData = taskDoc.data() as Task;
+                        
+                        await addDoc(collection(db, 'tasks', notification.taskId!, 'comments'), {
+                            text: tempReplyContent,
+                            authorName: localStorage.getItem('userName'),
+                            authorRole: localStorage.getItem('userRole'),
+                            authorAvatar: localStorage.getItem('userAvatar') || null,
+                            createdAt: Timestamp.now(),
+                        });
+
+                        const recipient = await getOppositeUser(taskData, currentUser.uid, currentUser.displayName || '');
+
+                        if (recipient && recipient.id !== currentUser.uid) {
+                            let notificationCollection;
+                            if (recipient.role === 'manager' || recipient.role === 'admin') {
+                                notificationCollection = collection(db, 'users', recipient.id, 'notifications');
+                            } else {
+                                notificationCollection = collection(db, 'tasks', notification.taskId!, 'notifications');
+                            }
+                            await addDoc(notificationCollection, {
+                                type: 'comment',
+                                recipientId: recipient.id,
+                                senderName: localStorage.getItem('userName'),
+                                senderAvatar: localStorage.getItem('userAvatar') || null,
+                                taskId: notification.taskId,
+                                taskName: taskData.taskName,
+                                messageSnippet: tempReplyContent.substring(0, 50),
+                                read: false,
+                                createdAt: Timestamp.now(),
+                            });
+                        }
+                        setSentReplies(prev => prev.map(r => r.id === notification.id ? { ...r, status: 'confirmed' } : r));
+                    } catch (error: any) {
+                        console.error("Error sending reply: ", error);
+                        toast({
+                            variant: 'destructive',
+                            title: "Failed to send reply",
+                            description: error.message
+                        });
+                        setSentReplies(prev => prev.filter(r => r.id !== notification.id));
+                    } finally {
+                        setIsSubmittingReply(false);
+                    }
+                }, 1000); 
             }, 100);
-            
-        } catch (error: any) {
-            console.error("Error sending reply: ", error);
-            toast({
-                variant: 'destructive',
-                title: "Failed to send reply",
-                description: error.message
-            });
-            // Remove the reply attempt on failure
-            setSentReplies(prev => prev.filter(r => r.id !== notification.id));
-        } finally {
-            setIsSubmittingReply(false);
-        }
     }
 
     const getIcon = (type: Notification['type']) => {
