@@ -111,13 +111,13 @@ export function NotificationPanel() {
         previousUnreadCountRef.current = unreadCount;
     }, [unreadCount]);
     
-    useEffect(() => {
-        if (!userId || !userRole) {
+     useEffect(() => {
+        if (!userId || !userRole || !userName) {
             setNotifications([]);
             return;
         }
 
-        let unsubscribe: () => void;
+        let unsubscribe: () => void = () => {};
 
         if (userRole === 'admin' || userRole === 'manager') {
             const q = query(
@@ -137,37 +137,57 @@ export function NotificationPanel() {
                 console.error("Error fetching user notifications: ", error);
             });
         } else { // Developer or QA
-             const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
+            const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', userName));
             
-            unsubscribe = onSnapshot(tasksQuery, async (tasksSnapshot) => {
+            const taskListeners: (() => void)[] = [];
+            const notificationsByTask: Record<string, Notification[]> = {};
+
+            unsubscribe = onSnapshot(tasksQuery, (tasksSnapshot) => {
+                // Clean up old listeners
+                taskListeners.forEach(unsub => unsub());
+                taskListeners.length = 0;
+
                 const taskIds = tasksSnapshot.docs.map(doc => doc.id);
                 if (taskIds.length === 0) {
                     setNotifications([]);
                     return;
                 }
 
-                const notificationsQuery = query(
-                    collectionGroup(db, 'notifications'),
-                    where('taskId', 'in', taskIds),
-                    where('recipientId', '==', userId),
-                    orderBy('createdAt', 'desc')
-                );
+                tasksSnapshot.docs.forEach(taskDoc => {
+                    const taskId = taskDoc.id;
+                    const notificationsQuery = query(
+                        collection(db, 'tasks', taskId, 'notifications'),
+                        where('recipientId', '==', userId)
+                    );
 
-                const notificationsSnapshot = await getDocs(notificationsQuery);
-                const fetchedNotifications = notificationsSnapshot.docs.map(doc => {
-                     const pathSegments = doc.ref.path.split('/');
-                     const parentPath = pathSegments.slice(0, -1).join('/');
-                    return {
-                        id: doc.id,
-                        parentPath: parentPath,
-                        ...doc.data(),
-                    } as Notification;
+                    const listener = onSnapshot(notificationsQuery, (notificationsSnapshot) => {
+                        const taskNotifications = notificationsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            parentPath: doc.ref.path,
+                            ...doc.data(),
+                        } as Notification));
+                        
+                        notificationsByTask[taskId] = taskNotifications;
+
+                        // Combine all notifications from all tasks
+                        const allNotifications = Object.values(notificationsByTask).flat();
+                        allNotifications.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+                        setNotifications(allNotifications);
+                    }, (error) => {
+                        console.error(`Error fetching notifications for task ${taskId}: `, error);
+                    });
+                    taskListeners.push(listener);
                 });
-                setNotifications(fetchedNotifications);
-
             }, (error) => {
-                console.error("Error fetching task-based notifications: ", error);
+                console.error("Error fetching assigned tasks: ", error);
             });
+            
+            // Add listeners cleanup to the main unsubscribe function
+            const originalUnsubscribe = unsubscribe;
+            unsubscribe = () => {
+                originalUnsubscribe();
+                taskListeners.forEach(unsub => unsub());
+            };
         }
 
         return () => {
@@ -393,10 +413,9 @@ export function NotificationPanel() {
                                                     </form>
                                                 ) : repliedInfo ? (
                                                      <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 animate-in fade-in">
-                                                        {repliedInfo.status === 'sending' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                                                        {repliedInfo.status === 'sent' ? <ThumbsUp className="h-3.5 w-3.5 text-green-500" /> : null}
-                                                        {repliedInfo.status === 'sent' ? <span>Reply sent!</span> : null}
-                                                        {repliedInfo.status === 'confirmed' ? <span>Replied: - "{repliedInfo.content}"</span> : null}
+                                                        {repliedInfo.status === 'sending' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                                        {repliedInfo.status === 'sent' && <> <ThumbsUp className="h-3.5 w-3.5 text-green-500" /> <span>Reply sent!</span> </>}
+                                                        {repliedInfo.status === 'confirmed' && <span>Replied: - "{repliedInfo.content}"</span>}
                                                     </div>
                                                 ) : !notification.read ? (
                                                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); setReplyingTo(notification.id)}}>
