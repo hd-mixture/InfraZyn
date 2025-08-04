@@ -71,7 +71,7 @@ export function NotificationPanel() {
     });
     const [animateBell, setAnimateBell] = useState(false);
     const previousUnreadCountRef = useRef(0);
-    const audioRef = useRef<HTMLAudioElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
     const router = useRouter();
     
@@ -104,7 +104,6 @@ export function NotificationPanel() {
     useEffect(() => {
         if (unreadCount > previousUnreadCountRef.current) {
             setAnimateBell(true);
-            audioRef.current?.play().catch(e => console.error("Error playing sound:", e));
             const timer = setTimeout(() => setAnimateBell(false), 800); // Duration of animation
             return () => clearTimeout(timer);
         }
@@ -333,10 +332,18 @@ export function NotificationPanel() {
         setViewingTask(null);
     };
 
+    const playSound = () => {
+        audioRef.current?.play().catch(e => console.warn("Audio play failed. User may need to interact with the page first. Details:", e));
+    }
+
+
     return (
         <>
             <audio ref={audioRef} src="https://res.cloudinary.com/dtdgxqt6p/video/upload/v1754223850/new-notification-021-370045_ejdegd.mp3" preload="auto" />
-            <DropdownMenu onOpenChange={(open) => { if(!open) setReplyingTo(null) }}>
+            <DropdownMenu onOpenChange={(open) => { 
+                if (open) playSound();
+                if(!open) setReplyingTo(null)
+            }}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className={cn("h-9 w-9 relative", animateBell && 'animate-ring')}>
                         <Bell className="h-4 w-4" />
