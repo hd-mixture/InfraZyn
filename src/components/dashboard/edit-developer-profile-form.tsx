@@ -252,3 +252,4 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
     </Dialog>
   );
 }
+
