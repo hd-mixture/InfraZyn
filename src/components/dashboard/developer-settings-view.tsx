@@ -8,20 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Moon, Sun, CheckCircle, XCircle, Code, Edit, GitBranch, Folder, Clock, Activity, Monitor, Smartphone } from 'lucide-react';
+import { Loader2, Moon, Sun, CheckCircle, XCircle, Monitor, Smartphone } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Badge } from '../ui/badge';
-
-const mockProjects = [
-    { id: 1, name: 'E-commerce Platform', repo: 'github.com/org/ecom', branch: 'develop' },
-    { id: 2, name: 'Mobile App', repo: 'gitlab.com/org/mobile', branch: 'feature/login' },
-    { id: 3, name: 'Internal Dashboard', repo: 'github.com/org/dashboard', branch: 'main' },
-]
 
 const mockActivityLog = [
     { date: 'Aug 23, 2024, 10:30 AM', device: 'Chrome on macOS', ip: '192.168.1.101', icon: <Monitor className="h-4 w-4" /> },
@@ -182,75 +174,9 @@ export function DeveloperSettingsView() {
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Project Preferences</CardTitle>
-                        <CardDescription>
-                            Manage your project settings and availability.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                             <Label className="font-medium">Assigned Projects</Label>
-                              <div className="border rounded-md">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Project</TableHead>
-                                            <TableHead>Repository Link</TableHead>
-                                            <TableHead>Default Branch</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {mockProjects.map(project => (
-                                            <TableRow key={project.id}>
-                                                <TableCell className="font-medium">{project.name}</TableCell>
-                                                <TableCell><a href={`https://${project.repo}`} target="_blank" className="text-blue-500 hover:underline">{project.repo}</a></TableCell>
-                                                <TableCell><Badge variant="outline"><GitBranch className="h-3 w-3 mr-1.5" />{project.branch}</Badge></TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                              </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="availability">Work Hours / Availability</Label>
-                                <Select defaultValue="9-5">
-                                    <SelectTrigger id="availability">
-                                        <SelectValue placeholder="Select your availability" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="9-5">9:00 AM - 5:00 PM</SelectItem>
-                                        <SelectItem value="10-6">10:00 AM - 6:00 PM</SelectItem>
-                                        <SelectItem value="flexible">Flexible Hours</SelectItem>
-                                        <SelectItem value="part-time">Part-time (4 hours)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="editor">Code Editor Preference</Label>
-                                <Select defaultValue="vscode">
-                                    <SelectTrigger id="editor">
-                                        <SelectValue placeholder="Select your editor" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="vscode">Visual Studio Code</SelectItem>
-                                        <SelectItem value="webstorm">WebStorm</SelectItem>
-                                        <SelectItem value="sublime">Sublime Text</SelectItem>
-                                        <SelectItem value="vim">Vim</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
                         <CardTitle>Activity Log</CardTitle>
                         <CardDescription>
                             Recent sign-in activity on your account.
-                            <br/><span className="text-xs italic text-muted-foreground/80">(This is sample data for demonstration.)</span>
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
