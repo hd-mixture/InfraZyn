@@ -1,7 +1,7 @@
 
 'use client';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, ListChecks, LogOut, CodeXml, ChevronLeft, ChevronRight, Folders, Settings } from "lucide-react";
+import { LayoutDashboard, ListChecks, LogOut, CodeXml, ChevronLeft, ChevronRight, Folders, Settings, User } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -65,6 +65,22 @@ export function DeveloperSidebar() {
             </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('profile')} tooltip="Profile" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/developer-dashboard?view=profile">
+                    <User />
+                    <span className="group-data-[collapsible=icon]:hidden">Profile</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('settings')} tooltip="Settings" className="group-data-[collapsible=icon]:justify-center">
+                  <Link href="/developer-dashboard?view=settings">
+                    <Settings />
+                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
                     <Link href="/login">

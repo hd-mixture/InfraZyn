@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DeveloperDashboardView } from "@/components/dashboard/developer-dashboard-view";
 import { AssignedTasksView } from "@/components/dashboard/assigned-tasks-view";
 import { CompletedProjectsView } from "@/components/dashboard/completed-projects-view";
+import { DeveloperProfileView } from "@/components/dashboard/developer-profile-view";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
 
 function DeveloperDashboardContent() {
@@ -27,7 +28,7 @@ function DeveloperDashboardContent() {
       case 'projects':
         return <CompletedProjectsView developerName={developerName} />;
       case 'profile':
-        return <ComingSoon />;
+        return <DeveloperProfileView />;
       case 'settings':
         return <ComingSoon />;
       case 'dashboard':
