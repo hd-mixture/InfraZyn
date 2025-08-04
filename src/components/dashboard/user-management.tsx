@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -373,17 +374,10 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
     };
 
     const handleDeleteUser = async () => {
-        if (!deletingUser || userRole !== 'admin') {
-            toast({
-                variant: 'destructive',
-                title: 'Permission Denied',
-                description: 'Only administrators can delete users from authentication.',
-            });
-            return;
-        }
+        if (!deletingUser) return;
 
         try {
-            const result = await deleteUser({ uid: deletingUser.id });
+            const result = await deleteUser({ uid: deletingUser.id, userName: deletingUser.name });
 
             if (!result.success && result.message.includes('not configured')) {
                 toast({
@@ -391,13 +385,20 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                     title: 'Admin SDK Not Configured',
                     description: 'Skipping deletion from Auth. Check server logs.'
                 });
-            }
+                await deleteDoc(doc(db, "users", deletingUser.id));
 
-            await deleteDoc(doc(db, "users", deletingUser.id));
+            } else if (!result.success) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Deletion Failed',
+                    description: result.message
+                });
+                return;
+            }
 
             toast({
                 title: "User Deleted!",
-                description: `User "${deletingUser.name}" has been deleted.`,
+                description: result.message || `User "${deletingUser.name}" has been deleted.`,
             });
         } catch (e: any) {
             console.error("Error deleting user: ", e);
@@ -531,8 +532,14 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Edit</span>
                                                         </DropdownMenuItem>
-                                                        {userRole === 'admin' && user.role !== 'admin' && (
+                                                         {user.role !== 'manager' && (
                                                             <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                <span>Delete</span>
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                         {user.role === 'manager' && userRole === 'admin' && (
+                                                             <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 <span>Delete</span>
                                                             </DropdownMenuItem>
@@ -563,7 +570,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                       This action cannot be undone. This will permanently delete the user from Authentication and the Firestore database.
+                       This action cannot be undone. This will permanently delete the user from Authentication, remove their user record, and delete all tasks assigned to them.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
