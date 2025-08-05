@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Code, ShieldCheck, Palette } from 'lucide-react';
+import { CodeXml, ShieldCheck, Palette } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
@@ -63,7 +63,7 @@ export function CreateTaskForm({ children, userRole, managerName }: CreateTaskFo
                 >
                     <Label htmlFor="developer" className="flex items-center p-4 border rounded-md has-[:checked]:border-primary cursor-pointer w-full">
                          <RadioGroupItem value="developer" id="developer" className="mr-3" />
-                         <Code className="mr-3 h-6 w-6" />
+                         <CodeXml className="mr-3 h-6 w-6" />
                          <div className='flex flex-col'>
                             <span className="font-semibold">Developer</span>
                             <span className="text-xs text-muted-foreground">Technical implementation.</span>
