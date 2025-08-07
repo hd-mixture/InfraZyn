@@ -22,6 +22,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { Progress } from '../ui/progress';
 
 type ViewDesignTaskDialogProps = {
     task: DesignTask;
