@@ -9,6 +9,8 @@ import {
   IconLogout,
   IconPlus,
   IconUsersGroup,
+  IconUser,
+  IconSettings,
 } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
@@ -16,6 +18,7 @@ import { CreateTaskForm } from "./create-task-form";
 import { useEffect, useState } from "react";
 import { Logo, LogoIcon } from "./logo";
 import { useSidebar } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
 
 
 export function ManagerSidebar() {
@@ -71,6 +74,26 @@ export function ManagerSidebar() {
     },
   ];
 
+  const bottomLinks = [
+     {
+      label: "Profile",
+      href: "/manager-dashboard?view=profile",
+      icon: <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('profile'),
+    },
+     {
+      label: "Settings",
+      href: "/manager-dashboard?view=settings",
+      icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('settings'),
+    },
+    {
+      label: "Logout",
+      href: "/login",
+      icon: <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+    }
+  ]
+
   return (
     <Sidebar>
        <SidebarBody className="justify-between gap-10">
@@ -78,9 +101,19 @@ export function ManagerSidebar() {
             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-4">
               <CreateTaskForm userRole="manager" managerName={managerName}>
-                 <Button className="w-full">
-                    <IconPlus className="h-4 w-4 mr-2" />
-                    New Task
+                 <Button className="w-full justify-center">
+                    <IconPlus className="h-5 w-5" />
+                    <motion.span
+                        animate={{
+                            display: open ? "inline-block" : "none",
+                            opacity: open ? 1 : 0,
+                            width: open ? 'auto' : 0,
+                            marginLeft: open ? '0.5rem' : 0,
+                        }}
+                        className="text-sm whitespace-pre"
+                        >
+                        New Task
+                    </motion.span>
                 </Button>
               </CreateTaskForm>
             </div>
@@ -91,16 +124,9 @@ export function ManagerSidebar() {
             </div>
           </div>
           <div>
-            <SidebarLink
-              onClick={handleLogout}
-              link={{
-                label: "Logout",
-                href: "/login",
-                icon: (
-                  <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
-                ),
-              }}
-            />
+            {bottomLinks.map((link, idx) => (
+              <SidebarLink key={idx} link={link} onClick={link.label === 'Logout' ? handleLogout : undefined}/>
+            ))}
           </div>
         </SidebarBody>
     </Sidebar>

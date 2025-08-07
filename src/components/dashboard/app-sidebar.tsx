@@ -11,7 +11,6 @@ import {
   IconPlus,
   IconClock,
   IconClipboardList,
-  IconCode,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -19,6 +18,7 @@ import { CreateProjectForm } from "./create-project-form";
 import { Button } from "../ui/button";
 import { Logo, LogoIcon } from "./logo";
 import { useSidebar } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
 
 export function AppSidebar() {
   const searchParams = useSearchParams();
@@ -85,9 +85,19 @@ export function AppSidebar() {
              {open ? <Logo /> : <LogoIcon />}
             <div className="mt-4">
               <CreateProjectForm>
-                <Button className="w-full">
-                    <IconPlus className="h-4 w-4 mr-2" />
-                    New Project
+                <Button className="w-full justify-center">
+                    <IconPlus className="h-5 w-5" />
+                     <motion.span
+                        animate={{
+                            display: open ? "inline-block" : "none",
+                            opacity: open ? 1 : 0,
+                            width: open ? 'auto' : 0,
+                            marginLeft: open ? '0.5rem' : 0,
+                        }}
+                        className="text-sm whitespace-pre"
+                        >
+                        New Project
+                    </motion.span>
                 </Button>
               </CreateProjectForm>
             </div>

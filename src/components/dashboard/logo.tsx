@@ -9,7 +9,7 @@ export const Logo = () => {
   return (
     <Link
       href="/"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black dark:text-white shimmer"
+      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black dark:text-white"
     >
         <CodeXml className="h-6 w-6 text-primary" />
         <motion.span
@@ -26,7 +26,7 @@ export const LogoIcon = () => {
   return (
     <Link
       href="/"
-      className="relative z-20 flex items-center justify-center space-x-2 py-1 text-sm font-normal text-black shimmer"
+      className="relative z-20 flex items-center justify-center space-x-2 py-1 text-sm font-normal text-black"
     >
         <CodeXml className="h-6 w-6 text-primary" />
     </Link>
