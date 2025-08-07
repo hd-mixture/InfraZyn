@@ -251,50 +251,52 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
              
             {/* View/Edit Moodboard Dialog */}
             <Dialog open={!!selectedMoodboard} onOpenChange={() => setSelectedMoodboard(null)}>
-                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                     {selectedMoodboard && (
+                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                    {selectedMoodboard && (
                         <>
-                        <DialogHeader>
-                            <DialogTitle>{selectedMoodboard.title}</DialogTitle>
-                            <DialogDescription>{selectedMoodboard.description}</DialogDescription>
-                        </DialogHeader>
-                         {selectedMoodboard.images.length > 0 ? (
-                            <div className="flex-grow flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="p-6 pb-0">
+                            <DialogHeader>
+                                <DialogTitle>{selectedMoodboard.title}</DialogTitle>
+                                <DialogDescription>{selectedMoodboard.description}</DialogDescription>
+                            </DialogHeader>
+                        </div>
+                        {selectedMoodboard.images.length > 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden p-6 pt-2">
                                 <Carousel
-                                    setApi={setCarouselApi}
-                                    plugins={[autoplayPlugin.current]}
-                                    className="w-full h-full"
-                                    onMouseEnter={autoplayPlugin.current.stop}
-                                    onMouseLeave={autoplayPlugin.current.reset}
+                                setApi={setCarouselApi}
+                                plugins={[autoplayPlugin.current]}
+                                className="w-full h-full"
+                                onMouseEnter={autoplayPlugin.current.stop}
+                                onMouseLeave={autoplayPlugin.current.reset}
                                 >
-                                    <CarouselContent className="h-full">
-                                        {selectedMoodboard.images.map((img, index) => (
-                                            <CarouselItem key={index} className="h-full">
-                                                <div className="relative h-full w-full flex items-center justify-center">
-                                                    <Image
-                                                        src={img.url}
-                                                        alt={`Moodboard image ${index + 1}`}
-                                                        layout="fill"
-                                                        objectFit="contain"
-                                                        className="rounded-lg"
-                                                        data-ai-hint={img.hint}
-                                                    />
-                                                </div>
-                                            </CarouselItem>
-                                        ))}
-                                    </CarouselContent>
+                                <CarouselContent className="h-full">
+                                    {selectedMoodboard.images.map((img, index) => (
+                                    <CarouselItem key={index} className="h-full">
+                                        <div className="relative h-full w-full flex items-center justify-center">
+                                        <Image
+                                            src={img.url}
+                                            alt={`Moodboard image ${index + 1}`}
+                                            layout="fill"
+                                            objectFit="contain"
+                                            className="rounded-lg"
+                                            data-ai-hint={img.hint}
+                                        />
+                                        </div>
+                                    </CarouselItem>
+                                    ))}
+                                </CarouselContent>
                                 </Carousel>
                                 <div className="absolute bottom-4 text-center text-sm text-muted-foreground">
-                                    Slide {currentSlide} of {selectedMoodboard.images.length}
+                                Slide {currentSlide} of {selectedMoodboard.images.length}
                                 </div>
                             </div>
-                         ) : (
-                            <div className="flex-grow flex items-center justify-center">
+                        ) : (
+                            <div className="flex-1 flex items-center justify-center">
                                 <p className="text-muted-foreground">No images in this moodboard yet.</p>
                             </div>
-                         )}
+                        )}
                         </>
-                     )}
+                    )}
                 </DialogContent>
             </Dialog>
             
