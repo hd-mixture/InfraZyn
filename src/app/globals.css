@@ -128,6 +128,15 @@ body {
     .animate-ring {
         animation: ring 0.8s ease-in-out;
     }
+
+    .embla-fade .embla__slide {
+        opacity: 0;
+        transition: opacity 0.4s ease-in-out;
+    }
+
+    .embla-fade .embla__slide.is-in-view {
+        opacity: 1;
+    }
 }
 
 @keyframes progress-animation {

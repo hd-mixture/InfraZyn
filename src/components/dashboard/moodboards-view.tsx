@@ -251,28 +251,27 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
              
             {/* View/Edit Moodboard Dialog */}
             <Dialog open={!!selectedMoodboard} onOpenChange={() => setSelectedMoodboard(null)}>
-                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                     {selectedMoodboard && (
                         <>
-                        <div className="p-6 pb-2">
-                            <DialogHeader>
-                                <DialogTitle>{selectedMoodboard.title}</DialogTitle>
-                                <DialogDescription>{selectedMoodboard.description}</DialogDescription>
-                            </DialogHeader>
-                        </div>
+                        <DialogHeader className="p-6 pb-2">
+                            <DialogTitle>{selectedMoodboard.title}</DialogTitle>
+                            <DialogDescription>{selectedMoodboard.description}</DialogDescription>
+                        </DialogHeader>
                         {selectedMoodboard.images.length > 0 ? (
-                            <div className="flex-1 flex flex-col p-6 pt-0">
+                            <div className="flex-1 flex flex-col p-6 pt-0 overflow-hidden">
                                 <Carousel
                                     setApi={setCarouselApi}
                                     plugins={[autoplayPlugin.current]}
-                                    className="w-full h-full"
+                                    opts={{ loop: true }}
+                                    className="w-full h-full relative embla-fade"
                                     onMouseEnter={autoplayPlugin.current.stop}
                                     onMouseLeave={autoplayPlugin.current.reset}
                                 >
                                     <CarouselContent className="h-full">
                                         {selectedMoodboard.images.map((img, index) => (
-                                            <CarouselItem key={index}>
-                                                <div className="relative aspect-video w-full h-full">
+                                            <CarouselItem key={index} className="h-full">
+                                                <div className="relative w-full h-full">
                                                 <Image
                                                     src={img.url}
                                                     alt={`Moodboard image ${index + 1}`}
