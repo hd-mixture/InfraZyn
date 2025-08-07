@@ -82,7 +82,7 @@ const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "o
     "manager": "default",
     "developer": "secondary",
     "qa": "outline",
-    "designer": "default"
+    "designer": "secondary"
 }
 
 type CreateUserFormProps = {
