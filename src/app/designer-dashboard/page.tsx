@@ -9,7 +9,7 @@ import { MoodboardsView } from "@/components/dashboard/moodboards-view";
 import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
 import { MyDesignsView } from "@/components/dashboard/my-designs-view";
 import { DesignerProfileView } from "@/components/dashboard/designer-profile-view";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { DesignerSettingsView } from "@/components/dashboard/designer-settings-view";
 
 function DesignerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +30,7 @@ function DesignerDashboardContent() {
       case 'profile':
         return <DesignerProfileView />;
       case 'settings':
-        return <ComingSoon />;
+        return <DesignerSettingsView />;
       case 'dashboard':
       default:
         return <DesignerDashboardView designerName={designerName} />;

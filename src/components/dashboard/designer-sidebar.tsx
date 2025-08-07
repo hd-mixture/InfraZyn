@@ -1,5 +1,4 @@
 
-
 'use client';
 import React from "react";
 import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
@@ -8,8 +7,6 @@ import {
   IconPalette,
   IconPhoto,
   IconLogout,
-  IconUser,
-  IconSettings
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -60,21 +57,6 @@ export function DesignerSidebar() {
     },
   ];
 
-  const bottomLinks = [
-     {
-      label: "Profile",
-      href: "/designer-dashboard?view=profile",
-      icon: <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('profile'),
-    },
-     {
-      label: "Settings",
-      href: "/designer-dashboard?view=settings",
-      icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('settings'),
-    },
-  ]
-
   return (
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
@@ -87,9 +69,6 @@ export function DesignerSidebar() {
           </div>
         </div>
         <div>
-          {bottomLinks.map((link, idx) => (
-            <SidebarLink key={idx} link={link} />
-          ))}
           <SidebarLink
             link={{
               label: "Logout",
