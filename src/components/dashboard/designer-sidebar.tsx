@@ -1,15 +1,21 @@
 
 'use client';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Palette, Image as ImageIcon, LogOut, CodeXml, ChevronLeft, ChevronRight, User, Settings } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
+import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import {
+  IconLayoutDashboard,
+  IconPalette,
+  IconPhoto,
+  IconLogout,
+} from "@tabler/icons-react";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
 
 export function DesignerSidebar() {
   const searchParams = useSearchParams();
-  const { toggleSidebar, state } = useSidebar();
-  const currentView = searchParams.get('view');
+  const { open, setOpen } = useSidebar();
+  const currentView = searchParams.get('view')
 
   const isActive = (view: string | null) => {
     if (!currentView && (view === 'dashboard' || view === null)) {
@@ -24,74 +30,85 @@ export function DesignerSidebar() {
     }
   }
 
+  const links = [
+    {
+      label: "Dashboard",
+      href: "/designer-dashboard?view=dashboard",
+      icon: (
+        <IconLayoutDashboard className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+      ),
+      active: isActive('dashboard')
+    },
+    {
+      label: "My Designs",
+      href: "/designer-dashboard?view=designs",
+      icon: (
+        <IconPalette className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+      ),
+      active: isActive('designs')
+    },
+    {
+      label: "Moodboards",
+      href: "/designer-dashboard?view=moodboards",
+      icon: (
+        <IconPhoto className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+      ),
+      active: isActive('moodboards')
+    },
+  ];
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-            <div className="relative h-8 w-8 flex items-center justify-center group/logo-toggle cursor-pointer" onClick={toggleSidebar}>
-                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200 opacity-100 group-hover/logo-toggle:opacity-0")} />
-                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
-                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
-                </div>
-            </div>
-            <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">Designer Hub</h1>
+    <Sidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+          {open ? <Logo /> : <LogoIcon />}
+          <div className="mt-8 flex flex-col gap-2">
+            {links.map((link, idx) => (
+              <SidebarLink key={idx} link={link} />
+            ))}
+          </div>
         </div>
-      </SidebarHeader>
-      <SidebarContent className="p-4 flex flex-col justify-between">
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('dashboard')} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/designer-dashboard?view=dashboard">
-                    <LayoutDashboard />
-                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('designs')} tooltip="My Designs" className="group-data-[collapsible=icon]:justify-center">
-                 <Link href="/designer-dashboard?view=designs">
-                    <Palette />
-                    <span className="group-data-[collapsible=icon]:hidden">My Designs</span>
-                 </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('moodboards')} tooltip="Moodboards" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/designer-dashboard?view=moodboards">
-                    <ImageIcon />
-                    <span className="group-data-[collapsible=icon]:hidden">Moodboards</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('profile')} tooltip="Profile" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/designer-dashboard?view=profile">
-                    <User />
-                    <span className="group-data-[collapsible=icon]:hidden">Profile</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('settings')} tooltip="Settings" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/designer-dashboard?view=settings">
-                    <Settings />
-                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
-                    <Link href="/login">
-                      <LogOut />
-                      <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-         </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="p-4" />
+        <div>
+          <SidebarLink
+            link={{
+              label: "Logout",
+              href: "/login",
+              icon: (
+                <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+              ),
+            }}
+            onClick={handleLogout}
+          />
+        </div>
+      </SidebarBody>
     </Sidebar>
   );
 }
+
+export const Logo = () => {
+  return (
+    <Link
+      href="/"
+      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black dark:text-white"
+    >
+      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="font-medium whitespace-pre text-black dark:text-white"
+      >
+        Designer Hub
+      </motion.span>
+    </Link>
+  );
+};
+export const LogoIcon = () => {
+  return (
+    <Link
+      href="/"
+      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
+    >
+      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
+    </Link>
+  );
+};

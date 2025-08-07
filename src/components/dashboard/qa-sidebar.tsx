@@ -1,14 +1,19 @@
 
 'use client';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Bug, ListChecks, FileText, LogOut, CodeXml, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import {
+  IconLayoutDashboard,
+  IconBug,
+  IconListChecks,
+  IconFileText,
+  IconLogout,
+  IconCode
+} from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 export function QASidebar() {
   const searchParams = useSearchParams();
-  const { toggleSidebar, state } = useSidebar();
   const currentView = searchParams.get('view');
 
   const isActive = (view: string | null) => {
@@ -24,66 +29,60 @@ export function QASidebar() {
     }
   }
 
+  const links = [
+    {
+        label: "Dashboard",
+        href: "/qa-dashboard?view=dashboard",
+        icon: <IconLayoutDashboard className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+        active: isActive('dashboard')
+    },
+    {
+        label: "Testing Tasks",
+        href: "/qa-dashboard?view=testing-tasks",
+        icon: <IconListChecks className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+        active: isActive('testing-tasks')
+    },
+    {
+        label: "Bug Reports",
+        href: "/qa-dashboard?view=bug-reports",
+        icon: <IconBug className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+        active: isActive('bug-reports')
+    },
+    {
+        label: "Test Cases",
+        href: "/qa-dashboard?view=test-cases",
+        icon: <IconFileText className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+        active: isActive('test-cases')
+    }
+  ];
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-            <div className="relative h-8 w-8 flex items-center justify-center group/logo-toggle cursor-pointer" onClick={toggleSidebar}>
-                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200 opacity-100 group-hover/logo-toggle:opacity-0")} />
-                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
-                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
-                </div>
+    <Sidebar>
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-1 flex-col overflow-y-auto">
+            <div className="flex items-center gap-2 p-2">
+                <IconCode className="w-8 h-8 text-primary" />
+                <h1 className="text-xl font-semibold font-headline">DevTeXhHub QA</h1>
             </div>
-            <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">DevTeXhHub QA</h1>
+            <div className="mt-8 flex flex-col gap-2">
+                {links.map((link, idx) => (
+                    <SidebarLink key={idx} link={link} />
+                ))}
+            </div>
         </div>
-      </SidebarHeader>
-      <SidebarContent className="p-4 flex flex-col justify-between">
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('dashboard')} tooltip="Dashboard" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/qa-dashboard?view=dashboard">
-                    <LayoutDashboard />
-                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('testing-tasks')} tooltip="Testing Tasks" className="group-data-[collapsible=icon]:justify-center">
-                 <Link href="/qa-dashboard?view=testing-tasks">
-                    <ListChecks />
-                    <span className="group-data-[collapsible=icon]:hidden">Testing Tasks</span>
-                 </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('bug-reports')} tooltip="Bug Reports" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/qa-dashboard?view=bug-reports">
-                    <Bug />
-                    <span className="group-data-[collapsible=icon]:hidden">Bug Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('test-cases')} tooltip="Test Cases" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/qa-dashboard?view=test-cases">
-                    <FileText />
-                    <span className="group-data-[collapsible=icon]:hidden">Test Cases</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
-                    <Link href="/login">
-                      <LogOut />
-                      <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-         </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="p-4" />
+        <div>
+            <SidebarLink
+                onClick={handleLogout}
+                link={{
+                label: "Logout",
+                href: "/login",
+                icon: (
+                  <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+                ),
+              }}
+            />
+        </div>
+      </SidebarBody>
     </Sidebar>
   );
 }

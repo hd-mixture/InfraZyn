@@ -1,12 +1,14 @@
 
 'use client';
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { DesignerSidebar } from "@/components/dashboard/designer-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
+import { MyDesignsView } from "@/components/dashboard/my-designs-view";
+import { Sidebar } from "@/components/ui/sidebar";
 
 function DesignerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,9 +23,8 @@ function DesignerDashboardContent() {
   const renderContent = () => {
     switch (view) {
       case 'designs':
+        return <MyDesignsView designerName={designerName} searchQuery={searchQuery} />;
       case 'moodboards':
-      case 'profile':
-      case 'settings':
         return <ComingSoon />;
       case 'dashboard':
       default:
@@ -32,11 +33,16 @@ function DesignerDashboardContent() {
   }
 
   return (
-    <div className="flex flex-col h-full p-4 sm:p-6 lg:p-8 gap-6">
-      <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-       <main className="flex-1 overflow-y-auto">
-        {renderContent()}
-      </main>
+    <div className="flex flex-1">
+      <DesignerSidebar />
+      <div className="flex flex-col h-screen flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 lg:p-8">
+            <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        </div>
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-8">
+          {renderContent()}
+        </main>
+      </div>
     </div>
   )
 }
@@ -57,19 +63,16 @@ export default function DesignerDashboardPage() {
 
   if (!isAuthenticated) {
     return (
-      <SidebarProvider>
-         <div className="flex-1 flex items-center justify-center">Loading...</div>;
-      </SidebarProvider>
+        <div className="h-screen w-full flex items-center justify-center">Loading...</div>
     )
   }
 
   return (
     <SidebarProvider>
-        <DesignerSidebar />
-        <div className="flex flex-col h-screen overflow-y-auto bg-background flex-1">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
-            <DesignerDashboardContent />
-          </Suspense>
+        <div className="flex h-screen">
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
+                <DesignerDashboardContent />
+            </Suspense>
         </div>
     </SidebarProvider>
   );

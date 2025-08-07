@@ -1,17 +1,23 @@
 
 'use client';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, ListChecks, Users, LogOut, PlusCircle, CodeXml, ChevronLeft, ChevronRight, Folders, UsersRound } from "lucide-react";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import {
+  IconFolders,
+  IconListChecks,
+  IconUsers,
+  IconLogout,
+  IconPlus,
+  IconCode,
+  IconUsersGroup,
+} from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { CreateTaskForm } from "./create-task-form";
-import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 export function ManagerSidebar() {
   const searchParams = useSearchParams();
-  const { toggleSidebar, state } = useSidebar();
   const currentView = searchParams.get('view');
   const [managerName, setManagerName] = useState<string | null>(null);
 
@@ -30,80 +36,72 @@ export function ManagerSidebar() {
   
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
+        localStorage.clear();
     }
   }
 
+  const links = [
+    {
+      label: "Projects",
+      href: "/manager-dashboard?view=projects",
+      icon: <IconFolders className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('projects'),
+    },
+    {
+      label: "Tasks",
+      href: "/manager-dashboard?view=tasks",
+      icon: <IconListChecks className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('tasks'),
+    },
+    {
+      label: "Team",
+      href: "/manager-dashboard?view=users",
+      icon: <IconUsers className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('users'),
+    },
+    {
+      label: "Manage Team",
+      href: "/manager-dashboard?view=manage-team",
+      icon: <IconUsersGroup className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('manage-team'),
+    },
+  ];
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-            <div className="relative h-8 w-8 flex items-center justify-center group/logo-toggle cursor-pointer" onClick={toggleSidebar}>
-                <CodeXml className={cn("w-8 h-8 text-primary transition-opacity duration-200 opacity-100 group-hover/logo-toggle:opacity-0")} />
-                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/logo-toggle:opacity-100">
-                    {state === 'expanded' ? <ChevronLeft className="w-6 h-6 text-primary" /> : <ChevronRight className="w-6 h-6 text-primary" />}
-                </div>
+    <Sidebar>
+       <SidebarBody className="justify-between gap-10">
+          <div className="flex flex-1 flex-col overflow-y-auto">
+            <div className="flex items-center gap-2 p-2">
+                <IconCode className="w-8 h-8 text-primary" />
+                <h1 className="text-xl font-semibold font-headline">DevTeXhHub</h1>
             </div>
-            <h1 className="text-xl font-semibold font-headline group-data-[collapsible=icon]:hidden">DevTeXhHub</h1>
-        </div>
-      </SidebarHeader>
-      <SidebarContent className="p-4 flex flex-col justify-between">
-        <div>
-            <CreateTaskForm userRole="manager" managerName={managerName}>
-              <Button className="w-full bg-primary text-primary-foreground h-12 rounded-lg mb-4 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:self-center group-data-[collapsible=icon]:hover:w-full group-data-[collapsible=icon]:hover:rounded-lg transition-all duration-300 ease-in-out">
-                  <PlusCircle />
-                  <span className="group-data-[collapsible=icon]:hidden group-data-[collapsible=icon]:hover:inline">Create new task</span>
-              </Button>
-            </CreateTaskForm>
-            <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('projects')} tooltip="Projects" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/manager-dashboard?view=projects">
-                    <Folders />
-                    <span className="group-data-[collapsible=icon]:hidden">Projects</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('tasks')} tooltip="Tasks" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/manager-dashboard?view=tasks">
-                    <ListChecks />
-                    <span className="group-data-[collapsible=icon]:hidden">Tasks</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                 <SidebarMenuButton asChild isActive={isActive('users')} tooltip="Team" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/manager-dashboard?view=users">
-                    <Users />
-                    <span className="group-data-[collapsible=icon]:hidden">Team</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                 <SidebarMenuButton asChild isActive={isActive('manage-team')} tooltip="Manage Team" className="group-data-[collapsible=icon]:justify-center">
-                  <Link href="/manager-dashboard?view=manage-team">
-                    <UsersRound />
-                    <span className="group-data-[collapsible=icon]:hidden">Manage Team</span>
-                  </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            </SidebarMenu>
-        </div>
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Logout" className="group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
-                    <Link href="/login">
-                      <LogOut />
-                      <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-         </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="p-4">
-      </SidebarFooter>
+            <div className="mt-4">
+              <CreateTaskForm userRole="manager" managerName={managerName}>
+                 <Button className="w-full">
+                    <IconPlus className="h-4 w-4 mr-2" />
+                    New Task
+                </Button>
+              </CreateTaskForm>
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              {links.map((link, idx) => (
+                <SidebarLink key={idx} link={link} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <SidebarLink
+              onClick={handleLogout}
+              link={{
+                label: "Logout",
+                href: "/login",
+                icon: (
+                  <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+                ),
+              }}
+            />
+          </div>
+        </SidebarBody>
     </Sidebar>
   );
 }
