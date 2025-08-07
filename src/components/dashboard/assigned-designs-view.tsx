@@ -26,6 +26,7 @@ export type DesignTask = {
     description?: string;
     attachmentUrls?: { name: string, url: string }[];
     priority?: 'Low' | 'Medium' | 'High';
+    completionAttachments?: { name: string; url: string; }[];
 };
 
 type Project = {

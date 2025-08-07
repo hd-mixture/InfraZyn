@@ -89,25 +89,31 @@ export function MyDesignsView({ designerName, searchQuery }: MyDesignsViewProps)
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredTasks.map((task, index) => (
-                        <Card key={task.id} className="overflow-hidden group">
-                            <CardContent className="p-0">
-                                <Image
-                                    src={`https://placehold.co/400x300.png?text=${encodeURIComponent(task.taskName)}&${index}`}
-                                    alt={task.taskName}
-                                    width={400}
-                                    height={300}
-                                    className="object-cover w-full h-48 group-hover:scale-105 transition-transform duration-300"
-                                    data-ai-hint="design abstract"
-                                />
-                            </CardContent>
-                            <CardFooter className="flex-col items-start p-4 bg-card">
-                                <p className="font-semibold truncate w-full" title={task.taskName}>{task.taskName}</p>
-                                <p className="text-sm text-muted-foreground">{getProjectName(task.project)}</p>
-                                <p className="text-xs text-muted-foreground mt-2">Completed on {format(task.dueDate.toDate(), 'MMM dd, yyyy')}</p>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                    {filteredTasks.map((task, index) => {
+                        const finalImage = task.completionAttachments && task.completionAttachments.length > 0
+                            ? task.completionAttachments[0].url
+                            : `https://placehold.co/400x300.png?text=${encodeURIComponent(task.taskName)}&${index}`;
+
+                        return (
+                            <Card key={task.id} className="overflow-hidden group">
+                                <CardContent className="p-0">
+                                    <Image
+                                        src={finalImage}
+                                        alt={task.taskName}
+                                        width={400}
+                                        height={300}
+                                        className="object-cover w-full h-48 group-hover:scale-105 transition-transform duration-300"
+                                        data-ai-hint="design abstract"
+                                    />
+                                </CardContent>
+                                <CardFooter className="flex-col items-start p-4 bg-card">
+                                    <p className="font-semibold truncate w-full" title={task.taskName}>{task.taskName}</p>
+                                    <p className="text-sm text-muted-foreground">{getProjectName(task.project)}</p>
+                                    <p className="text-xs text-muted-foreground mt-2">Completed on {format(task.dueDate.toDate(), 'MMM dd, yyyy')}</p>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
         </div>

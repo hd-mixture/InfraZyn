@@ -62,23 +62,29 @@ export function RecentDesignsView({ designerName }: RecentDesignsViewProps) {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 gap-4">
-                        {completedTasks.slice(0, 4).map((task, index) => (
-                             <div key={task.id} className="relative group overflow-hidden rounded-lg">
-                                <Image
-                                    src={`https://placehold.co/400x300.png?${index}`}
-                                    alt={task.taskName}
-                                    width={400}
-                                    height={300}
-                                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                                    data-ai-hint="design abstract"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                <div className="absolute bottom-0 left-0 p-3 text-white">
-                                    <h4 className="font-semibold text-sm truncate">{task.taskName}</h4>
-                                    <p className="text-xs opacity-80">{formatDistanceToNow(task.dueDate.toDate(), { addSuffix: true })}</p>
+                        {completedTasks.slice(0, 4).map((task, index) => {
+                            const finalImage = task.completionAttachments && task.completionAttachments.length > 0
+                                ? task.completionAttachments[0].url
+                                : `https://placehold.co/400x300.png?text=No%20Image&${index}`;
+                            
+                            return (
+                                <div key={task.id} className="relative group overflow-hidden rounded-lg">
+                                    <Image
+                                        src={finalImage}
+                                        alt={task.taskName}
+                                        width={400}
+                                        height={300}
+                                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                                        data-ai-hint="design abstract"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 p-3 text-white">
+                                        <h4 className="font-semibold text-sm truncate">{task.taskName}</h4>
+                                        <p className="text-xs opacity-80">{formatDistanceToNow(task.dueDate.toDate(), { addSuffix: true })}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </CardContent>

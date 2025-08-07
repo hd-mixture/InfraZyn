@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Progress } from '../ui/progress';
+import { CompleteDesignTaskDialog } from './complete-design-task-dialog';
 
 type ViewDesignTaskDialogProps = {
     task: DesignTask;
@@ -55,6 +56,7 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: strin
 
 export function ViewDesignTaskDialog({ task: initialTask, projectName, isOpen, onOpenChange }: ViewDesignTaskDialogProps) {
     const [task, setTask] = React.useState(initialTask);
+    const [isCompleteDialogOpen, setIsCompleteDialogOpen] = React.useState(false);
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -62,6 +64,11 @@ export function ViewDesignTaskDialog({ task: initialTask, projectName, isOpen, o
     }, [initialTask]);
 
     const handleStatusChange = async (newStatus: 'To Do' | 'In Progress' | 'Done') => {
+        if (newStatus === 'Done') {
+            setIsCompleteDialogOpen(true);
+            return;
+        }
+
         try {
             const taskRef = doc(db, "tasks", task.id);
             const updateData: { status: string; progress?: number } = { status: newStatus };
@@ -69,8 +76,6 @@ export function ViewDesignTaskDialog({ task: initialTask, projectName, isOpen, o
                 updateData.progress = 0;
             } else if (newStatus === 'In Progress' && (task.progress || 0) === 100) {
                  updateData.progress = 99;
-            } else if (newStatus === 'Done') {
-                updateData.progress = 100;
             }
             await updateDoc(taskRef, updateData);
             setTask(prev => ({...prev, status: newStatus, progress: updateData.progress ?? prev.progress }));
@@ -109,103 +114,119 @@ export function ViewDesignTaskDialog({ task: initialTask, projectName, isOpen, o
     } = task;
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>{taskName}</DialogTitle>
-                    <DialogDescription>
-                        Details for the design task.
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                    <div className="space-y-4 pr-4">
-                        <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
-                         <DetailRow icon={<List size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />
-                         <div className="grid grid-cols-3 items-center gap-4 py-2">
-                            <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
-                                <CheckCircle size={16}/>
-                                <span>Status</span>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>{taskName}</DialogTitle>
+                        <DialogDescription>
+                            Details for the design task.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh]">
+                        <div className="space-y-4 pr-4">
+                            <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
+                            <DetailRow icon={<List size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />
+                            <div className="grid grid-cols-3 items-center gap-4 py-2">
+                                <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
+                                    <CheckCircle size={16}/>
+                                    <span>Status</span>
+                                </div>
+                                <div className="col-span-2">
+                                    <Select value={status} onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(newStatus)}>
+                                        <SelectTrigger className="w-[180px] h-9">
+                                            <SelectValue placeholder="Set status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="To Do">To Do</SelectItem>
+                                            <SelectItem value="In Progress">In Progress</SelectItem>
+                                            <SelectItem value="Done">Done</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <div className="col-span-2">
-                                <Select value={status} onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(newStatus)}>
-                                    <SelectTrigger className="w-[180px] h-9">
-                                        <SelectValue placeholder="Set status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="To Do">To Do</SelectItem>
-                                        <SelectItem value="In Progress">In Progress</SelectItem>
-                                        <SelectItem value="Done">Done</SelectItem>
-                                    </SelectContent>
-                                </Select>
+
+                            <div className="grid grid-cols-3 items-center gap-4 py-2">
+                                <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
+                                    <Percent size={16} />
+                                    <span>Progress</span>
+                                </div>
+                                <div className="col-span-2">
+                                {status === 'In Progress' ? (
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <div className="w-[180px] cursor-pointer group">
+                                                    <Progress value={progress || 0} indicatorClassName="bg-blue-500" />
+                                                    <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {progress || 0}%
+                                                    </span>
+                                                </div>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-48 p-2">
+                                                <Slider
+                                                    defaultValue={[progress || 0]}
+                                                    max={100}
+                                                    step={5}
+                                                    onValueCommit={(value) => handleProgressChange(value[0])}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    ) : status === 'Done' ? (
+                                        <Progress value={100} indicatorClassName="bg-green-500" className="w-[180px]" />
+                                    ) : (
+                                        <div className="w-[180px] h-2 bg-secondary rounded-full" />
+                                    )}
+                                </div>
                             </div>
+
+                            <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority || 'Medium']}>{priority || 'Medium'}</Badge>} />
+                            <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
+                            <DetailRow icon={<Info size={16}/>} label="Description" value={<p className="whitespace-pre-wrap">{description || 'No description provided.'}</p>} />
+
+                            {attachmentUrls && attachmentUrls.length > 0 && (
+                                <DetailRow 
+                                    icon={<Paperclip size={16}/>} 
+                                    label="Attachments" 
+                                    value={
+                                        <div className="space-y-2">
+                                            {attachmentUrls.map((file, index) => (
+                                                <a
+                                                    key={index}
+                                                    href={file.url}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                                                >
+                                                    <File className="w-4 h-4" />
+                                                    {file.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    } 
+                                />
+                            )}
                         </div>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <Button onClick={() => onOpenChange(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                         <div className="grid grid-cols-3 items-center gap-4 py-2">
-                            <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
-                                <Percent size={16} />
-                                <span>Progress</span>
-                            </div>
-                            <div className="col-span-2">
-                               {status === 'In Progress' ? (
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <div className="w-[180px] cursor-pointer group">
-                                                <Progress value={progress || 0} indicatorClassName="bg-blue-500" />
-                                                <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {progress || 0}%
-                                                </span>
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-48 p-2">
-                                             <Slider
-                                                defaultValue={[progress || 0]}
-                                                max={100}
-                                                step={5}
-                                                onValueCommit={(value) => handleProgressChange(value[0])}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                ) : status === 'Done' ? (
-                                    <Progress value={100} indicatorClassName="bg-green-500" className="w-[180px]" />
-                                ) : (
-                                    <div className="w-[180px] h-2 bg-secondary rounded-full" />
-                                )}
-                            </div>
-                        </div>
-
-                        <DetailRow icon={<Flag size={16}/>} label="Priority" value={<Badge variant="outline" className={priorityColor[priority || 'Medium']}>{priority || 'Medium'}</Badge>} />
-                        <DetailRow icon={<Calendar size={16}/>} label="Due Date" value={format(dueDate.toDate(), 'PPP')} />
-                        <DetailRow icon={<Info size={16}/>} label="Description" value={<p className="whitespace-pre-wrap">{description || 'No description provided.'}</p>} />
-
-                        {attachmentUrls && attachmentUrls.length > 0 && (
-                            <DetailRow 
-                                icon={<Paperclip size={16}/>} 
-                                label="Attachments" 
-                                value={
-                                    <div className="space-y-2">
-                                        {attachmentUrls.map((file, index) => (
-                                            <a
-                                                key={index}
-                                                href={file.url}
-                                                download
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                                            >
-                                                <File className="w-4 h-4" />
-                                                {file.name}
-                                            </a>
-                                        ))}
-                                    </div>
-                                } 
-                            />
-                        )}
-                    </div>
-                </ScrollArea>
-                 <DialogFooter>
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            <CompleteDesignTaskDialog
+                task={task}
+                isOpen={isCompleteDialogOpen}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setIsCompleteDialogOpen(false);
+                    }
+                }}
+                onSuccess={() => {
+                    setIsCompleteDialogOpen(false);
+                    onOpenChange(false); // Close the main details dialog on success
+                }}
+            />
+        </>
     );
 }
