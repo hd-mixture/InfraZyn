@@ -5,7 +5,7 @@ import { DesignerSidebar } from "@/components/dashboard/designer-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { MoodboardsView } from "@/components/dashboard/moodboards-view";
 import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
 import { MyDesignsView } from "@/components/dashboard/my-designs-view";
 
@@ -24,7 +24,7 @@ function DesignerDashboardContent() {
       case 'designs':
         return <MyDesignsView designerName={designerName} searchQuery={searchQuery} />;
       case 'moodboards':
-        return <ComingSoon />;
+        return <MoodboardsView designerName={designerName} searchQuery={searchQuery} />;
       case 'dashboard':
       default:
         return <DesignerDashboardView designerName={designerName} />;
