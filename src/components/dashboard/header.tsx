@@ -56,6 +56,10 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
                     return { title: 'My Designs', icon: <Palette className="h-7 w-7" /> };
                 case 'moodboards':
                     return { title: 'Moodboards', icon: <ImageIcon className="h-7 w-7" /> };
+                case 'profile':
+                    return { title: 'Profile', icon: <User className="h-7 w-7" /> };
+                case 'settings':
+                    return { title: 'Settings', icon: <Settings className="h-7 w-7" /> };
                 case 'dashboard':
                 default:
                     return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };

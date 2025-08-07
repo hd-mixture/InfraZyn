@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MoodboardsView } from "@/components/dashboard/moodboards-view";
 import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
 import { MyDesignsView } from "@/components/dashboard/my-designs-view";
+import { DesignerProfileView } from "@/components/dashboard/designer-profile-view";
+import { ComingSoon } from "@/components/dashboard/coming-soon";
 
 function DesignerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,6 +27,10 @@ function DesignerDashboardContent() {
         return <MyDesignsView designerName={designerName} searchQuery={searchQuery} />;
       case 'moodboards':
         return <MoodboardsView designerName={designerName} searchQuery={searchQuery} />;
+      case 'profile':
+        return <DesignerProfileView />;
+      case 'settings':
+        return <ComingSoon />;
       case 'dashboard':
       default:
         return <DesignerDashboardView designerName={designerName} />;
