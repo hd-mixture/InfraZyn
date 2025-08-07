@@ -29,7 +29,7 @@ export function RecentDesignsView({ designerName }: RecentDesignsViewProps) {
             where("assignedTo", "==", designerName),
             where("taskRole", "==", "designer"),
             where("status", "==", "Done"),
-            orderBy("dueDate", "desc")
+            orderBy("completedAt", "desc")
         );
         const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
             const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DesignTask));
@@ -67,6 +67,8 @@ export function RecentDesignsView({ designerName }: RecentDesignsViewProps) {
                                 ? task.completionAttachments[0].url
                                 : `https://placehold.co/400x300.png?text=No%20Image&${index}`;
                             
+                            const completedTime = task.completedAt ? formatDistanceToNow(task.completedAt.toDate(), { addSuffix: true }) : 'just now';
+
                             return (
                                 <div key={task.id} className="relative group overflow-hidden rounded-lg">
                                     <Image
@@ -80,7 +82,7 @@ export function RecentDesignsView({ designerName }: RecentDesignsViewProps) {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                     <div className="absolute bottom-0 left-0 p-3 text-white">
                                         <h4 className="font-semibold text-sm truncate">{task.taskName}</h4>
-                                        <p className="text-xs opacity-80">{formatDistanceToNow(task.dueDate.toDate(), { addSuffix: true })}</p>
+                                        <p className="text-xs opacity-80">{completedTime}</p>
                                     </div>
                                 </div>
                             )

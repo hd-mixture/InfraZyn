@@ -94,6 +94,9 @@ export function MyDesignsView({ designerName, searchQuery }: MyDesignsViewProps)
                             ? task.completionAttachments[0].url
                             : `https://placehold.co/400x300.png?text=${encodeURIComponent(task.taskName)}&${index}`;
 
+                        const completionTimestamp = task.completedAt ? task.completedAt.toDate() : task.dueDate.toDate();
+                        const formattedCompletionDate = format(completionTimestamp, 'MMM dd, yyyy, p');
+
                         return (
                             <Card key={task.id} className="overflow-hidden group">
                                 <CardContent className="p-0">
@@ -109,7 +112,7 @@ export function MyDesignsView({ designerName, searchQuery }: MyDesignsViewProps)
                                 <CardFooter className="flex-col items-start p-4 bg-card">
                                     <p className="font-semibold truncate w-full" title={task.taskName}>{task.taskName}</p>
                                     <p className="text-sm text-muted-foreground">{getProjectName(task.project)}</p>
-                                    <p className="text-xs text-muted-foreground mt-2">Completed on {format(task.dueDate.toDate(), 'MMM dd, yyyy')}</p>
+                                    <p className="text-xs text-muted-foreground mt-2">Completed on {formattedCompletionDate}</p>
                                 </CardFooter>
                             </Card>
                         )
