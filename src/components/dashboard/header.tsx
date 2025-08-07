@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, Photo } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -55,7 +55,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
                 case 'designs':
                     return { title: 'My Designs', icon: <Palette className="h-7 w-7" /> };
                 case 'moodboards':
-                    return { title: 'Moodboards', icon: <Photo className="h-7 w-7" /> };
+                    return { title: 'Moodboards', icon: <ImageIcon className="h-7 w-7" /> };
                 case 'dashboard':
                 default:
                     return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
