@@ -230,13 +230,23 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-grow cursor-pointer" onClick={() => setSelectedMoodboard(board)}>
-                                <div className="grid grid-cols-3 gap-1 h-32">
-                                {board.images.slice(0, 3).map((img, index) => (
-                                    <div key={index} className="relative h-full w-full bg-muted rounded-md overflow-hidden">
-                                        <Image src={img.url} alt={`Moodboard image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint={img.hint} />
-                                    </div>
-                                ))}
-                                {board.images.length === 0 && <div className="col-span-3 h-full flex items-center justify-center text-muted-foreground text-sm">No images yet</div>}
+                                <div className="relative h-32 w-full">
+                                    {board.images.length === 0 ? (
+                                         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-md">No images yet</div>
+                                    ) : (
+                                        board.images.slice(0, 3).map((img, index) => (
+                                            <div key={index} 
+                                                 className="absolute h-24 w-2/3 bg-muted rounded-lg overflow-hidden border-2 border-background shadow-md"
+                                                 style={{
+                                                     top: `${index * 15}px`,
+                                                     left: `${index * 15}%`,
+                                                     zIndex: index,
+                                                 }}
+                                            >
+                                                <Image src={img.url} alt={`Moodboard image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint={img.hint} />
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </CardContent>
                             <CardFooter>
@@ -251,7 +261,7 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
              
             {/* View/Edit Moodboard Dialog */}
             <Dialog open={!!selectedMoodboard} onOpenChange={() => setSelectedMoodboard(null)}>
-                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
                     {selectedMoodboard && (
                         <>
                         <DialogHeader className="p-6 pb-2">
@@ -259,27 +269,25 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
                             <DialogDescription>{selectedMoodboard.description}</DialogDescription>
                         </DialogHeader>
                         {selectedMoodboard.images.length > 0 ? (
-                            <div className="flex-1 flex flex-col p-6 pt-0 overflow-hidden">
+                            <div className="flex-1 flex flex-col overflow-hidden pb-6">
                                 <Carousel
                                     setApi={setCarouselApi}
                                     plugins={[autoplayPlugin.current]}
                                     opts={{ loop: true }}
                                     className="w-full h-full relative embla-fade"
-                                    onMouseEnter={autoplayPlugin.current.stop}
-                                    onMouseLeave={autoplayPlugin.current.reset}
                                 >
                                     <CarouselContent className="h-full">
                                         {selectedMoodboard.images.map((img, index) => (
-                                            <CarouselItem key={index} className="h-full">
-                                                <div className="relative w-full h-full">
-                                                <Image
-                                                    src={img.url}
-                                                    alt={`Moodboard image ${index + 1}`}
-                                                    layout="fill"
-                                                    objectFit="contain"
-                                                    className="rounded-lg"
-                                                    data-ai-hint={img.hint}
-                                                />
+                                            <CarouselItem key={index} className="h-full flex items-center justify-center">
+                                                <div className="relative w-full h-full max-h-[calc(80vh-100px)] aspect-video">
+                                                    <Image
+                                                        src={img.url}
+                                                        alt={`Moodboard image ${index + 1}`}
+                                                        layout="fill"
+                                                        objectFit="contain"
+                                                        className="rounded-lg"
+                                                        data-ai-hint={img.hint}
+                                                    />
                                                 </div>
                                             </CarouselItem>
                                         ))}
