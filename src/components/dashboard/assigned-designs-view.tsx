@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { ViewDesignTaskDialog } from './view-design-task-dialog';
+import { Progress } from '../ui/progress';
 
 export type DesignTask = {
     id: string;
@@ -103,6 +104,7 @@ export function AssignedDesignsView({ designerName }: AssignedDesignsViewProps) 
                                     <TableHead>Task</TableHead>
                                     <TableHead>Project</TableHead>
                                     <TableHead>Due Date</TableHead>
+                                    <TableHead>Progress</TableHead>
                                     <TableHead className="text-right">Details</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -119,6 +121,21 @@ export function AssignedDesignsView({ designerName }: AssignedDesignsViewProps) 
                                             <TableCell>{getProjectName(task.project)}</TableCell>
                                             <TableCell className={cn(isOverdue && 'text-destructive')}>
                                                 {format(dueDate, 'MMM dd, yyyy')}
+                                            </TableCell>
+                                             <TableCell>
+                                                {task.status === 'In Progress' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={task.progress || 0} indicatorClassName="bg-blue-500" className="w-24" />
+                                                        <span className="text-xs text-muted-foreground">{task.progress || 0}%</span>
+                                                    </div>
+                                                ) : task.status === 'Done' ? (
+                                                     <div className="flex items-center gap-2">
+                                                        <Progress value={100} indicatorClassName="bg-green-500" className="w-24" />
+                                                        <span className="text-xs text-muted-foreground">100%</span>
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                  <Button variant="ghost" size="icon" onClick={() => setViewingTask(task)}>
