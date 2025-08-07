@@ -5,7 +5,7 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   IconLayoutDashboard,
   IconFolders,
-  IconListChecks,
+  IconListCheck,
   IconUsers,
   IconLogout,
   IconPlus,
@@ -17,10 +17,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CreateProjectForm } from "./create-project-form";
 import { Button } from "../ui/button";
+import { Logo, LogoIcon } from "./logo";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
   const searchParams = useSearchParams();
   const currentView = searchParams.get('view');
+  const { open } = useSidebar();
+
 
   const isActive = (view: string | null) => {
     if (!currentView && (view === null || view === 'dashboard')) {
@@ -51,7 +55,7 @@ export function AppSidebar() {
     {
       label: "Tasks",
       href: "/?view=tasks",
-      icon: <IconListChecks className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      icon: <IconListCheck className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
       active: isActive('tasks'),
     },
     {
@@ -78,10 +82,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col overflow-y-auto">
-            <div className="flex items-center gap-2 p-2">
-                <IconCode className="w-8 h-8 text-primary" />
-                <h1 className="text-xl font-semibold font-headline">DevTeXhHub</h1>
-            </div>
+             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-4">
               <CreateProjectForm>
                 <Button className="w-full">

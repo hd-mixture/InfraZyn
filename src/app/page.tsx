@@ -1,6 +1,6 @@
 
 'use client';
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Overview } from "@/components/dashboard/overview";
@@ -101,14 +101,15 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <div className="flex flex-col h-screen overflow-y-auto">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
-            <DashboardContent />
-          </Suspense>
+        <div className="flex">
+            <AppSidebar />
+            <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+                <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
+                    <DashboardContent />
+                </Suspense>
+            </div>
         </div>
-      </SidebarInset>
     </SidebarProvider>
   );
 }
+

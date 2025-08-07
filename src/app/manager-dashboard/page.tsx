@@ -1,6 +1,6 @@
 
 'use client';
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { ManagerSidebar } from "@/components/dashboard/manager-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
@@ -72,14 +72,15 @@ export default function ManagerDashboardPage() {
 
   return (
     <SidebarProvider>
-      <ManagerSidebar />
-      <SidebarInset>
-        <div className="flex flex-col h-screen overflow-y-auto">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
-            <ManagerDashboardContent />
-          </Suspense>
+        <div className="flex h-screen">
+            <ManagerSidebar />
+            <div className="flex flex-col flex-1 h-screen overflow-y-auto">
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
+                <ManagerDashboardContent />
+            </Suspense>
+            </div>
         </div>
-      </SidebarInset>
     </SidebarProvider>
   );
 }
+

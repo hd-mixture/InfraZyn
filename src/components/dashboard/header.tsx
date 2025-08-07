@@ -1,13 +1,12 @@
 
-
 'use client';
 
-import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
 import { DelayPredictor } from "./delay-predictor";
-import { SidebarTrigger, useSidebar } from "../ui/sidebar";
+import { useSidebar } from "../ui/sidebar";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -19,7 +18,7 @@ type DashboardHeaderProps = {
 };
 
 export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeaderProps) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpen, open } = useSidebar();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const view = searchParams.get('view');
@@ -79,7 +78,11 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
   return (
     <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-            {isMobile && <SidebarTrigger className="-ml-2" />}
+            {isMobile && (
+              <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} className="-ml-2">
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
             <div className={cn("flex items-center gap-3", isMobile && showSearchInput && "hidden")}>
               {pageInfo.icon}
               <h1 className="text-2xl font-bold">{pageInfo.title}</h1>

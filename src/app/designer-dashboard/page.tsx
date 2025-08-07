@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
 import { MyDesignsView } from "@/components/dashboard/my-designs-view";
-import { Sidebar } from "@/components/ui/sidebar";
 
 function DesignerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +33,6 @@ function DesignerDashboardContent() {
 
   return (
     <div className="flex flex-1">
-      <DesignerSidebar />
       <div className="flex flex-col h-screen flex-1 overflow-y-auto">
         <div className="p-4 sm:p-6 lg:p-8">
             <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -70,6 +68,7 @@ export default function DesignerDashboardPage() {
   return (
     <SidebarProvider>
         <div className="flex h-screen">
+            <DesignerSidebar />
             <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
                 <DesignerDashboardContent />
             </Suspense>

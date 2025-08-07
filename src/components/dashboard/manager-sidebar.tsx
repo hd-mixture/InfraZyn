@@ -1,25 +1,29 @@
 
+
 'use client';
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   IconFolders,
-  IconListChecks,
+  IconListCheck,
   IconUsers,
   IconLogout,
   IconPlus,
-  IconCode,
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
-import Link from "next/link";
 import { CreateTaskForm } from "./create-task-form";
 import { useEffect, useState } from "react";
+import { Logo, LogoIcon } from "./logo";
+import { useSidebar } from "@/components/ui/sidebar";
+
 
 export function ManagerSidebar() {
   const searchParams = useSearchParams();
   const currentView = searchParams.get('view');
   const [managerName, setManagerName] = useState<string | null>(null);
+  const { open } = useSidebar();
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -50,7 +54,7 @@ export function ManagerSidebar() {
     {
       label: "Tasks",
       href: "/manager-dashboard?view=tasks",
-      icon: <IconListChecks className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      icon: <IconListCheck className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
       active: isActive('tasks'),
     },
     {
@@ -71,10 +75,7 @@ export function ManagerSidebar() {
     <Sidebar>
        <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col overflow-y-auto">
-            <div className="flex items-center gap-2 p-2">
-                <IconCode className="w-8 h-8 text-primary" />
-                <h1 className="text-xl font-semibold font-headline">DevTeXhHub</h1>
-            </div>
+            {open ? <Logo /> : <LogoIcon />}
             <div className="mt-4">
               <CreateTaskForm userRole="manager" managerName={managerName}>
                  <Button className="w-full">
