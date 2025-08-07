@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider>
-        <div className="flex">
+        <div className="flex h-screen">
             <AppSidebar />
             <div className="flex-1 flex flex-col h-screen overflow-y-auto">
                 <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
