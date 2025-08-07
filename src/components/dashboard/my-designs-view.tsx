@@ -77,10 +77,6 @@ export function MyDesignsView({ designerName, searchQuery }: MyDesignsViewProps)
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3">
-                <Palette className="h-7 w-7" />
-                <h1 className="text-2xl font-bold">My Designs</h1>
-            </div>
             {filteredTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg bg-muted/50">
                     <ImageIcon className="w-16 h-16 text-muted-foreground mb-4" />

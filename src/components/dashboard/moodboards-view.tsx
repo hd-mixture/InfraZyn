@@ -179,8 +179,7 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Moodboards</h1>
+            <div className="flex justify-end items-center">
                 <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                     <DialogTrigger asChild>
                         <Button>
