@@ -63,87 +63,11 @@ export const SidebarProvider = ({
   );
 };
 
-const SidebarWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { isMobile } = useSidebar();
+
+const SidebarWrapper = ({ children, className, ...props }: React.ComponentProps<typeof motion.div>) => {
+  const { isMobile, open, setOpen, animate } = useSidebar();
   if (isMobile) {
-    return <MobileSidebar>{children}</MobileSidebar>;
-  }
-  return <DesktopSidebar>{children}</DesktopSidebar>;
-};
-
-export const Sidebar = ({
-  children,
-  open,
-  setOpen,
-  animate,
-}: {
-  children: React.ReactNode;
-  open?: boolean;
-  setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
-  animate?: boolean;
-}) => {
-  return (
-    <SidebarWrapper>
-      {children}
-    </SidebarWrapper>
-  );
-};
-
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
-  return (
-    <>
-      <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
-    </>
-  );
-};
-
-export const DesktopSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof motion.div>) => {
-  const { open, setOpen, animate } = useSidebar();
-  return (
-    <>
-      <motion.div
-        className={cn(
-          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0 border-r border-neutral-200 dark:border-neutral-700",
-          className
-        )}
-        animate={{
-          width: animate ? (open ? "300px" : "72px") : "300px",
-        }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    </>
-  );
-};
-
-export const MobileSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"div">) => {
-  const { open, setOpen } = useSidebar();
-  return (
-    <>
-      <div
-        className={cn(
-          "h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full border-b border-neutral-200 dark:border-neutral-700"
-        )}
-        {...props}
-      >
-        <div className="flex justify-end z-20 w-full">
-          <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
+    return (
         <AnimatePresence>
           {open && (
             <motion.div
@@ -169,10 +93,55 @@ export const MobileSidebar = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-    </>
+    );
+  }
+  return (
+       <motion.div
+        className={cn(
+          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0 border-r border-neutral-200 dark:border-neutral-700",
+          className
+        )}
+        animate={{
+          width: animate ? (open ? "300px" : "72px") : "300px",
+        }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        {...props}
+      >
+        {children}
+      </motion.div>
   );
 };
+
+
+export const Sidebar = ({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof motion.div>) => {
+  const { isMobile } = useSidebar();
+  if (isMobile) {
+      return null;
+  }
+  return <SidebarWrapper className={className} {...props}>{children}</SidebarWrapper>;
+};
+
+export const SidebarBody = ({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof motion.div>) => {
+  const { isMobile } = useSidebar();
+  if (isMobile) {
+    // In mobile view, the body is rendered inside the animated overlay.
+    // The SidebarWrapper handles the mobile container. We just need to pass the children.
+     return <SidebarWrapper className={className} {...props}>{children}</SidebarWrapper>;
+  }
+  // In desktop view, the body is the direct child of the Sidebar
+  return <>{children}</>;
+};
+
+
 
 export const SidebarLink = ({
   link,
