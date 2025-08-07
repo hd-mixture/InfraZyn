@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import axios from 'axios';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
 
 
 type Moodboard = {
@@ -49,6 +51,8 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
     const [deletingMoodboard, setDeletingMoodboard] = useState<Moodboard | null>(null);
     const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [carouselApi, setCarouselApi] = useState<CarouselApi>()
+    const [currentSlide, setCurrentSlide] = useState(0)
     const { toast } = useToast();
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -56,6 +60,22 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
         defaultValues: { title: '', description: '' },
     });
     
+    const autoplayPlugin = useRef(
+        Autoplay({ delay: 2000, stopOnInteraction: true })
+    );
+
+    useEffect(() => {
+        if (!carouselApi) {
+          return
+        }
+     
+        setCurrentSlide(carouselApi.selectedScrollSnap() + 1)
+     
+        carouselApi.on("select", () => {
+          setCurrentSlide(carouselApi.selectedScrollSnap() + 1)
+        })
+      }, [carouselApi])
+
     useEffect(() => {
         if (!designerName) {
             setLoading(false);
@@ -231,22 +251,48 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
              
             {/* View/Edit Moodboard Dialog */}
             <Dialog open={!!selectedMoodboard} onOpenChange={() => setSelectedMoodboard(null)}>
-                <DialogContent className="max-w-4xl h-[90vh]">
+                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                      {selectedMoodboard && (
                         <>
                         <DialogHeader>
                             <DialogTitle>{selectedMoodboard.title}</DialogTitle>
                             <DialogDescription>{selectedMoodboard.description}</DialogDescription>
                         </DialogHeader>
-                        <div className="h-full overflow-hidden">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1 h-full overflow-y-auto">
-                                {selectedMoodboard.images.map((img, index) => (
-                                     <div key={index} className="relative aspect-square group">
-                                        <Image src={img.url} alt={`Moodboard image ${index + 1}`} layout="fill" objectFit="cover" className="rounded-lg" data-ai-hint={img.hint} />
-                                     </div>
-                                ))}
+                         {selectedMoodboard.images.length > 0 ? (
+                            <div className="flex-grow flex flex-col items-center justify-center relative overflow-hidden">
+                                <Carousel
+                                    setApi={setCarouselApi}
+                                    plugins={[autoplayPlugin.current]}
+                                    className="w-full h-full"
+                                    onMouseEnter={autoplayPlugin.current.stop}
+                                    onMouseLeave={autoplayPlugin.current.reset}
+                                >
+                                    <CarouselContent className="h-full">
+                                        {selectedMoodboard.images.map((img, index) => (
+                                            <CarouselItem key={index} className="h-full">
+                                                <div className="relative h-full w-full flex items-center justify-center">
+                                                    <Image
+                                                        src={img.url}
+                                                        alt={`Moodboard image ${index + 1}`}
+                                                        layout="fill"
+                                                        objectFit="contain"
+                                                        className="rounded-lg"
+                                                        data-ai-hint={img.hint}
+                                                    />
+                                                </div>
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                </Carousel>
+                                <div className="absolute bottom-4 text-center text-sm text-muted-foreground">
+                                    Slide {currentSlide} of {selectedMoodboard.images.length}
+                                </div>
                             </div>
-                        </div>
+                         ) : (
+                            <div className="flex-grow flex items-center justify-center">
+                                <p className="text-muted-foreground">No images in this moodboard yet.</p>
+                            </div>
+                         )}
                         </>
                      )}
                 </DialogContent>
