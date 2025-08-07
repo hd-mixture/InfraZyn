@@ -20,6 +20,7 @@ import axios from 'axios';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
 import Autoplay from "embla-carousel-autoplay"
+import { cn } from '@/lib/utils';
 
 
 type Moodboard = {
@@ -69,10 +70,10 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
           return
         }
      
-        setCurrentSlide(carouselApi.selectedScrollSnap() + 1)
+        setCurrentSlide(carouselApi.selectedScrollSnap())
      
         carouselApi.on("select", () => {
-          setCurrentSlide(carouselApi.selectedScrollSnap() + 1)
+          setCurrentSlide(carouselApi.selectedScrollSnap())
         })
       }, [carouselApi])
 
@@ -293,8 +294,16 @@ export function MoodboardsView({ designerName, searchQuery }: MoodboardsViewProp
                                         ))}
                                     </CarouselContent>
                                 </Carousel>
-                                <div className="text-center text-sm text-muted-foreground pt-2">
-                                Slide {currentSlide} of {selectedMoodboard.images.length}
+                                <div className="flex justify-center items-center gap-2 pt-4">
+                                    {selectedMoodboard.images.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => carouselApi?.scrollTo(index)}
+                                            className={cn("p-0 h-1 rounded-full transition-all duration-300", 
+                                                index === currentSlide ? "w-8 bg-primary" : "w-6 bg-muted-foreground/50"
+                                            )}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         ) : (
