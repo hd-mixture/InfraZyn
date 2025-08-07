@@ -6,11 +6,17 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { DesignerDashboardView } from "@/components/dashboard/designer-dashboard-view";
 
 function DesignerDashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
+  const [designerName, setDesignerName] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDesignerName(localStorage.getItem('userName'));
+  }, []);
 
   const renderContent = () => {
     switch (view) {
@@ -21,11 +27,7 @@ function DesignerDashboardContent() {
         return <ComingSoon />;
       case 'dashboard':
       default:
-        return (
-          <div className="space-y-6">
-            <ComingSoon />
-          </div>
-        );
+        return <DesignerDashboardView designerName={designerName} />;
     }
   }
 
@@ -54,19 +56,21 @@ export default function DesignerDashboardPage() {
   }, [router]);
 
   if (!isAuthenticated) {
-    return <div className="flex-1 flex items-center justify-center">Loading...</div>;
+    return (
+      <SidebarProvider>
+         <div className="flex-1 flex items-center justify-center">Loading...</div>;
+      </SidebarProvider>
+    )
   }
 
   return (
     <SidebarProvider>
-      <DesignerSidebar />
-      <SidebarInset>
-        <div className="flex flex-col h-screen overflow-y-auto">
+        <DesignerSidebar />
+        <div className="flex flex-col h-screen overflow-y-auto bg-background flex-1">
           <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
             <DesignerDashboardContent />
           </Suspense>
         </div>
-      </SidebarInset>
     </SidebarProvider>
   );
 }
