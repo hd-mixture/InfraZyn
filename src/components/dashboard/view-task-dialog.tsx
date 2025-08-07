@@ -10,7 +10,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
-import type { Task } from './tasks-kanban-view';
+import type { Task } from './assigned-tasks-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle, MessageSquare, ThumbsUp, Check } from 'lucide-react';

@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { Input } from '../ui/input';
 import Link from 'next/link';
-import type { Task } from './tasks-kanban-view';
+import type { Task } from './assigned-tasks-view';
 import { getOppositeUser } from '@/lib/utils';
 
 type Comment = {

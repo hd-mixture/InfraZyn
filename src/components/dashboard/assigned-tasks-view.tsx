@@ -100,6 +100,8 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
             const updateData: { status: string; progress?: number } = { status: newStatus };
             if (newStatus === 'To Do') {
                 updateData.progress = 0;
+            } else if (newStatus === 'In Progress' && (task.progress || 0) === 100) {
+                 updateData.progress = 99;
             }
             await updateDoc(taskRef, updateData);
 
@@ -194,7 +196,7 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                         </TableCell>
                                          {!isDashboard && (
                                             <TableCell>
-                                                {task.status === 'In Progress' && (
+                                                {task.status === 'In Progress' ? (
                                                      <Popover>
                                                         <PopoverTrigger asChild>
                                                             <div className="w-[120px] cursor-pointer group">
@@ -209,13 +211,14 @@ export function AssignedTasksView({ developerName, isDashboard = false }: Assign
                                                                 defaultValue={[task.progress || 0]}
                                                                 max={100}
                                                                 step={5}
-                                                                onValueChange={(value) => handleProgressChange(task.id, value[0])}
+                                                                onValueCommit={(value) => handleProgressChange(task.id, value[0])}
                                                             />
                                                         </PopoverContent>
                                                     </Popover>
-                                                )}
-                                                {task.status === 'Done' && (
+                                                ) : task.status === 'Done' ? (
                                                     <Progress value={100} indicatorClassName="bg-green-500" className="w-[120px]" />
+                                                ) : (
+                                                    <div className="w-[120px] h-2 bg-secondary rounded-full" />
                                                 )}
                                             </TableCell>
                                         )}
