@@ -7,7 +7,7 @@ import { collection, onSnapshot, query, where, DocumentData, doc, updateDoc } fr
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Mail, Phone, Calendar, Briefcase, ListChecks, Users, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { Camera, Mail, Phone, Calendar, Briefcase, ListChecks, Users, Link as LinkIcon, Loader2, Activity } from 'lucide-react';
 import type { Project } from './project-summary';
 import type { Task } from './tasks-kanban-view';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ type UserProfile = {
     phone?: string;
     bio?: string;
     avatar?: string;
+    status: 'Active' | 'On Leave';
     createdAt: {
         seconds: number;
         nanoseconds: number;
@@ -196,7 +197,13 @@ export function ManagerProfileView({ managerName }: ManagerProfileViewProps) {
                             </div>
                         </div>
                         <div className="flex-1">
-                            <CardTitle className="text-3xl">{manager.name}</CardTitle>
+                            <CardTitle className="text-3xl flex items-center gap-4">
+                                {manager.name}
+                                <Badge variant={manager.status === 'Active' ? 'secondary' : 'outline'} className={manager.status === 'Active' ? 'text-green-600' : 'text-muted-foreground'}>
+                                    <Activity className="w-3 h-3 mr-1.5" />
+                                    {manager.status}
+                                </Badge>
+                            </CardTitle>
                             <CardDescription className="text-lg">Project Manager</CardDescription>
                             <p className="text-muted-foreground mt-2">
                                 {manager.bio || 'Dedicated and experienced Project Manager with a passion for building great products and leading effective teams.'}

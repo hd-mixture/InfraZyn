@@ -33,11 +33,13 @@ import { Badge } from '../ui/badge';
 import type { UserProfile } from './designer-profile-view';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ALL_SKILLS } from '@/lib/skills';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   phone: z.string().optional(),
   bio: z.string().optional(),
+  status: z.enum(['Active', 'On Leave']),
   designTools: z.array(z.string()).optional(),
   specializations: z.array(z.string()).optional(),
   palette: z.string().optional(),
@@ -72,6 +74,7 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
       name: user.name,
       phone: user.phone || '',
       bio: user.bio || '',
+      status: user.status || 'Active',
       designTools: user.designTools || [],
       specializations: user.specializations || [],
       palette: user.palette || '',
@@ -91,6 +94,7 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
         name: user.name,
         phone: user.phone || '',
         bio: user.bio || '',
+        status: user.status || 'Active',
         designTools: user.designTools || [],
         specializations: user.specializations || [],
         palette: user.palette || '',
@@ -120,6 +124,7 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
         name: values.name,
         phone: values.phone,
         bio: values.bio,
+        status: values.status,
         designTools: values.designTools,
         specializations: values.specializations,
         palette: values.palette,
@@ -160,6 +165,12 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
               )}/>
               <FormField control={form.control} name="bio" render={({ field }) => (
                 <FormItem><FormLabel>Bio / About</FormLabel><FormControl><Textarea placeholder="Tell us a little about your design philosophy" rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem><FormLabel>Current Status</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Set your status" /></SelectTrigger></FormControl>
+                  <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="On Leave">On Leave</SelectItem></SelectContent>
+                </Select><FormMessage /></FormItem>
               )}/>
               
               <FormItem>

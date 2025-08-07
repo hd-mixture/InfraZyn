@@ -7,7 +7,7 @@ import { collection, onSnapshot, query, where, doc, updateDoc, Timestamp } from 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Mail, User as UserIcon, Calendar, Edit, Loader2, Palette, Brush, Tag, Phone } from 'lucide-react';
+import { Camera, Mail, User as UserIcon, Calendar, Edit, Loader2, Palette, Brush, Tag, Phone, Activity } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { format } from 'date-fns';
@@ -27,6 +27,7 @@ export type UserProfile = {
     designTools?: string[];
     specializations?: string[];
     palette?: string;
+    status: 'Active' | 'On Leave';
 };
 
 export function DesignerProfileView() {
@@ -120,7 +121,13 @@ export function DesignerProfileView() {
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <CardTitle className="text-3xl flex items-center gap-4">{user.name}</CardTitle>
+                                <CardTitle className="text-3xl flex items-center gap-4">
+                                    {user.name}
+                                     <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'} className={user.status === 'Active' ? 'text-green-600' : 'text-muted-foreground'}>
+                                        <Activity className="w-3 h-3 mr-1.5" />
+                                        {user.status || 'Active'}
+                                    </Badge>
+                                </CardTitle>
                                 <CardDescription className="text-lg capitalize">{user.role}</CardDescription>
                                 <p className="text-muted-foreground mt-2 text-sm">{user.bio || 'This designer has not added a bio yet.'}</p>
                             </div>

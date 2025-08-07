@@ -29,11 +29,13 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Loader2, User } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   phone: z.string().optional(),
   bio: z.string().optional(),
+  status: z.enum(['Active', 'On Leave']),
 });
 
 type UserProfile = {
@@ -43,6 +45,7 @@ type UserProfile = {
     phone?: string;
     bio?: string;
     avatar?: string;
+    status: 'Active' | 'On Leave';
 };
 
 type EditProfileFormProps = {
@@ -60,6 +63,7 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
       name: user.name,
       phone: user.phone || '',
       bio: user.bio || '',
+      status: user.status || 'Active',
     },
   });
 
@@ -69,6 +73,7 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
         name: user.name,
         phone: user.phone || '',
         bio: user.bio || '',
+        status: user.status || 'Active',
       });
     }
   }, [isOpen, user, form]);
@@ -81,6 +86,7 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
         name: values.name,
         phone: values.phone,
         bio: values.bio,
+        status: values.status,
       });
 
       if (values.name !== user.name) {
@@ -164,6 +170,12 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
                   </FormItem>
                 )}
               />
+               <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem><FormLabel>Current Status</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Set your status" /></SelectTrigger></FormControl>
+                  <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="On Leave">On Leave</SelectItem></SelectContent>
+                </Select><FormMessage /></FormItem>
+              )}/>
               <DialogFooter className="pt-4 !justify-end">
                 <Button type="submit" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
