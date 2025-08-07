@@ -39,7 +39,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   designTools: z.array(z.string()).optional(),
-  specializations: z.array(z.array(z.string())).optional(),
+  specializations: z.array(z.string()).optional(),
   palette: z.string().optional(),
 });
 
@@ -49,8 +49,14 @@ type EditDesignerProfileFormProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
-const DESIGN_TOOLS = ALL_SKILLS.filter(s => ["Figma", "Adobe XD", "Sketch", "Adobe Illustrator", "Adobe Photoshop", "Canva", "InVision", "Zeplin"].includes(s));
-const SPECIALIZATIONS = ALL_SKILLS.filter(s => ["UI/UX", "Branding", "Illustration", "Motion", "Web Design", "Mobile App Design", "Design Systems"].includes(s));
+const DESIGN_TOOLS = [
+    "Figma", "Adobe XD", "Sketch", "Adobe Illustrator", "Adobe Photoshop", 
+    "Canva", "InVision", "Zeplin", "Framer", "Principle"
+];
+const SPECIALIZATIONS = [
+    "UI Design", "UX Design", "Branding", "Illustration", "Motion Graphics", 
+    "Web Design", "Mobile App Design", "Design Systems", "Prototyping", "User Research"
+];
 
 
 export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesignerProfileFormProps) {
@@ -115,7 +121,7 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
         phone: values.phone,
         bio: values.bio,
         designTools: values.designTools,
-        specializations: values.specializations as any,
+        specializations: values.specializations,
         palette: values.palette,
       };
 
