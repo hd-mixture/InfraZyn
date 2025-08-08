@@ -85,34 +85,45 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
   });
   
   useEffect(() => {
-    const getManagerForQA = async () => {
-        if (!qaName) return null;
+    const fetchProjects = async () => {
+      if (!qaName) {
+        setFilteredProjects([]);
+        return;
+      }
+
+      try {
+        // 1. Find the QA user to get their manager's name
         const usersQuery = query(collection(db, 'users'), where('name', '==', qaName));
         const userSnapshot = await getDocs(usersQuery);
-        if (!userSnapshot.empty) {
-            const qaData = userSnapshot.docs[0].data() as User;
-            return qaData.addedBy; // This is the manager's name
+        
+        if (userSnapshot.empty) {
+          setFilteredProjects([]);
+          return;
         }
-        return null;
-    }
-    
-    const fetchProjects = async () => {
-        const managerName = await getManagerForQA();
+
+        const qaData = userSnapshot.docs[0].data() as User;
+        const managerName = qaData.addedBy;
+
+        // 2. If a manager is found, fetch only that manager's projects
         if (managerName) {
-            const projectsQuery = query(collection(db, 'projects'), where('projectManager', '==', managerName));
-            const projectsSnapshot = await getDocs(projectsQuery);
-            const userProjects = projectsSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
-            setFilteredProjects(userProjects);
+          const projectsQuery = query(collection(db, 'projects'), where('projectManager', '==', managerName));
+          const projectsSnapshot = await getDocs(projectsQuery);
+          const userProjects = projectsSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+          setFilteredProjects(userProjects);
         } else {
-            // Fallback for QA not assigned to a manager, show all projects (or none)
-            setFilteredProjects(allProjects);
+          // 3. If no manager is assigned, the QA should see no projects.
+          setFilteredProjects([]);
         }
+      } catch (error) {
+        console.error("Error fetching projects for QA: ", error);
+        setFilteredProjects([]); // Set to empty on error
+      }
     };
     
     if (isOpen) {
         fetchProjects();
     }
-  }, [isOpen, qaName, allProjects]);
+  }, [isOpen, qaName]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!qaName) return;
@@ -159,7 +170,7 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl>
                                     <SelectContent>
                                         {filteredProjects.length === 0 ? (
-                                            <div className="p-2 text-sm text-muted-foreground">No projects found.</div>
+                                            <div className="p-2 text-sm text-muted-foreground">No projects found for your team.</div>
                                         ) : (
                                             filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))
                                         )}
