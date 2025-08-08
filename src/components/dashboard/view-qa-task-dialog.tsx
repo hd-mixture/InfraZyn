@@ -14,7 +14,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { QATask } from './assigned-testing-tasks';
 import { Badge } from '../ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Calendar, File, Flag, Folder, Info, Paperclip, CheckCircle, Percent, History, ThumbsDown } from 'lucide-react';
+import { Calendar, File, Flag, Folder, Info, Paperclip, CheckCircle, Percent, History, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Slider } from '../ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -25,6 +25,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { Progress } from '../ui/progress';
 import { CompleteQATaskDialog } from './complete-qa-task-dialog';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
 
 type ViewQATaskDialogProps = {
     task: QATask;
@@ -78,7 +79,10 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                 updateData.progress = 0;
             } else if (newStatus === 'In Progress') {
                  if((task.progress || 0) === 100) updateData.progress = 99;
-                 updateData.verificationStatus = 'failed'
+                 // When QA moves it back to In Progress, it implies they are working on a failed review.
+                 // We can reset verificationStatus here if needed, or leave it as 'failed'.
+                 // Let's reset it to avoid confusion.
+                 updateData.verificationStatus = 'failed' 
             }
             await updateDoc(taskRef, updateData);
             setTask(prev => ({...prev, status: newStatus, progress: updateData.progress ?? prev.progress, verificationStatus: updateData.verificationStatus ?? prev.verificationStatus }));
@@ -133,15 +137,17 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                                 <>
                                     <div className="space-y-4 rounded-lg bg-muted/50 p-4">
                                         <h3 className="font-semibold text-sm flex items-center gap-2"><History size={16} /> Review History</h3>
-                                        {reviewHistory.filter(h => h.status === 'failed' && h.reason).slice(-1).map((history, index) => (
-                                             <div key={index} className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
-                                                <div className="flex items-center gap-2 font-semibold text-destructive mb-1">
-                                                    <ThumbsDown size={14} />
-                                                    <span>Failed by {history.reviewedBy}</span>
+                                        {reviewHistory.map((history, index) => (
+                                            <div key={index} className={cn("p-3 rounded-md border", history.status === 'failed' ? 'bg-destructive/10 border-destructive/20' : 'bg-green-500/10 border-green-500/20')}>
+                                                <div className={cn("flex items-center gap-2 font-semibold mb-1", history.status === 'failed' ? 'text-destructive' : 'text-green-600')}>
+                                                    {history.status === 'failed' ? <ThumbsDown size={14} /> : <ThumbsUp size={14}/>}
+                                                    <span>{history.status === 'failed' ? 'Failed' : 'Passed'} by {history.reviewedBy}</span>
                                                     <span className="font-normal text-xs">({formatDistanceToNow(history.timestamp.toDate(), { addSuffix: true })})</span>
                                                 </div>
-                                                <p className="text-sm text-destructive/80 italic">"{history.reason}"</p>
-                                             </div>
+                                                {history.reason && (
+                                                    <p className="text-sm text-destructive/80 italic">"{history.reason}"</p>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                     <Separator/>
@@ -155,7 +161,11 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                                     <span>Status</span>
                                 </div>
                                 <div className="col-span-2">
-                                    <Select value={status} onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(newStatus)}>
+                                    <Select 
+                                        value={status} 
+                                        onValueChange={(newStatus: 'To Do' | 'In Progress' | 'Done') => handleStatusChange(newStatus)}
+                                        disabled={task.verificationStatus === 'passed'}
+                                    >
                                         <SelectTrigger className="w-[180px] h-9">
                                             <SelectValue placeholder="Set status" />
                                         </SelectTrigger>
@@ -165,6 +175,7 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                                             <SelectItem value="Done">Done</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    {task.verificationStatus === 'passed' && <p className="text-xs text-muted-foreground mt-1">Task is passed and locked.</p>}
                                 </div>
                             </div>
 
@@ -176,7 +187,7 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                                 <div className="col-span-2">
                                 {status === 'In Progress' ? (
                                         <Popover>
-                                            <PopoverTrigger asChild>
+                                            <PopoverTrigger asChild disabled={task.verificationStatus === 'passed'}>
                                                 <div className="w-[180px] cursor-pointer group">
                                                     <Progress value={progress || 0} indicatorClassName="bg-blue-500" />
                                                     <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
