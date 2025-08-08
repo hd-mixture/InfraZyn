@@ -11,7 +11,7 @@ type TestCaseResultsProps = {
 };
 
 export function TestCaseResults({ qaName }: TestCaseResultsProps) {
-  const [tasks, setTasks] = useState<{ status: 'To Do' | 'In Progress' | 'Done', testType: string }[]>([]);
+  const [tasks, setTasks] = useState<{ verificationStatus?: 'passed' | 'failed' }[]>([]);
 
   useEffect(() => {
     if (!qaName) return;
@@ -20,11 +20,11 @@ export function TestCaseResults({ qaName }: TestCaseResultsProps) {
         collection(db, "tasks"),
         where("assignedTo", "==", qaName),
         where("taskRole", "==", "qa"),
-        where("testType", "in", ["Manual Testing", "Regression Testing", "Automation Testing", "UAT (User Acceptance Testing)"])
+        where("testType", "==", "Bug Reporting")
     );
     
     const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
-        const fetchedTasks = snapshot.docs.map(doc => ({ status: doc.data().status, testType: doc.data().testType }));
+        const fetchedTasks = snapshot.docs.map(doc => ({ verificationStatus: doc.data().verificationStatus }));
         setTasks(fetchedTasks as any);
     });
 
@@ -32,18 +32,16 @@ export function TestCaseResults({ qaName }: TestCaseResultsProps) {
   }, [qaName]);
 
   const stats = useMemo(() => {
-    const passed = tasks.filter(task => task.status === 'Done').length;
-    // For simplicity, we'll consider 'To Do' and 'In Progress' as not failed yet.
-    // A more complex system might have a 'Failed' status.
-    const failed = 0; 
+    const passed = tasks.filter(task => task.verificationStatus === 'passed').length;
+    const failed = tasks.filter(task => task.verificationStatus === 'failed').length;
     return { passed, failed };
   }, [tasks]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Test Case Results</CardTitle>
-        <CardDescription>Outcome of your testing tasks.</CardDescription>
+        <CardTitle>Bug Verification Results</CardTitle>
+        <CardDescription>Manager-verified bug report outcomes.</CardDescription>
       </CardHeader>
       <CardContent className="flex justify-around items-center">
         <div className="text-center">

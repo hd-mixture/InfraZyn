@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Eye, ThumbsUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ViewQATaskDialog } from './view-qa-task-dialog';
 import { ViewTaskDialog } from './view-task-dialog'; // Generic viewer
@@ -31,6 +31,8 @@ export type QATask = {
     createdAt: Timestamp;
     assignedTo: string;
     taskRole: 'qa';
+    verificationStatus?: 'pending' | 'passed' | 'failed';
+    failureReason?: string;
 };
 
 type Project = {
@@ -102,6 +104,20 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
     return isDashboard ? sorted.slice(0, 5) : sorted;
   }, [tasks, isDashboard]);
 
+  const getStatusComponent = (task: QATask) => {
+      const colors = task.testType === 'Bug Reporting' ? bugStatusColor : statusColor;
+      if(task.status === 'Done' && task.verificationStatus === 'pending') {
+        return <Badge variant="outline" className={cn(colors[task.status])}>Pending Review</Badge>
+      }
+      if(task.status === 'Done' && task.verificationStatus === 'passed') {
+        return <Badge variant="outline" className="text-green-700 bg-green-100 border-green-700"><ThumbsUp className="h-3 w-3 mr-1"/>Verified</Badge>
+      }
+      if(task.verificationStatus === 'failed') {
+          return <Badge variant="destructive">Failed Review</Badge>
+      }
+      return <Badge variant="outline" className={cn(colors[task.status])}>{task.status}</Badge>
+  }
+
   return (
     <>
     <Card>
@@ -127,7 +143,6 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                 </TableHeader>
                 <TableBody>
                     {sortedTasks.map(task => {
-                        const colors = task.testType === 'Bug Reporting' ? bugStatusColor : statusColor;
                         return (
                         <TableRow key={task.id}>
                             <TableCell className="font-medium">
@@ -137,7 +152,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                             <TableCell>{getProjectName(task.project)}</TableCell>
                             <TableCell>{format(task.dueDate.toDate(), 'MMM dd, yyyy')}</TableCell>
                             <TableCell>
-                                <Badge variant="outline" className={cn(colors[task.status])}>{task.status}</Badge>
+                                {getStatusComponent(task)}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => setViewingTask(task)}>

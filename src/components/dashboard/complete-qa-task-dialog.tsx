@@ -76,17 +76,23 @@ export function CompleteQATaskDialog({ task, isOpen, onOpenChange, onSuccess }: 
         }
 
         const taskRef = doc(db, 'tasks', task.id);
-        await updateDoc(taskRef, {
+        const updateData: any = {
             status: 'Done',
             progress: 100,
             completionNotes: values.completionNotes,
             completionAttachments: attachmentUrls,
             completedAt: Timestamp.now(),
-        });
+        };
+
+        if (task.testType === 'Bug Reporting') {
+            updateData.verificationStatus = 'pending';
+        }
+
+        await updateDoc(taskRef, updateData);
 
         toast({
             title: "Task Completed!",
-            description: "Your testing results have been submitted.",
+            description: "Your testing results have been submitted for review.",
         });
         onSuccess();
         form.reset();
@@ -170,7 +176,7 @@ export function CompleteQATaskDialog({ task, isOpen, onOpenChange, onSuccess }: 
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button type="submit" disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit & Mark as Done
+                        Submit for Review
                     </Button>
                 </DialogFooter>
             </form>

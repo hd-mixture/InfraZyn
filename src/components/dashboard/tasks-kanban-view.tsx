@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star, Trash2 } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from 'firebase/firestore';
 import { CreateTaskForm } from './create-task-form';
 import { format } from 'date-fns';
 import {
@@ -33,6 +33,7 @@ import { EditTaskForm } from './edit-task-form';
 import { ViewTaskDialog } from './view-task-dialog';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Progress } from '../ui/progress';
+import { FailTaskDialog } from './fail-task-dialog';
 
 
 export type Task = {
@@ -48,20 +49,22 @@ export type Task = {
     developerNotes?: string;
     developerAttachments?: { name: string, url: string }[];
     createdAt: Timestamp;
-    taskRole: 'developer' | 'qa';
-    taskType?: 'Feature' | 'Bug Fix' | 'Enhancement';
+    taskRole: 'developer' | 'qa' | 'designer';
+    taskType?: string;
     estimatedHours?: number;
     techStack?: string;
     subtasks?: string;
     testCaseTitle?: string;
     relatedModule?: string;
     testDescription?: string;
-    testType?: 'Manual' | 'Automation' | 'Regression' | 'Smoke';
+    testType?: string;
     bugSeverity?: 'Low' | 'Medium' | 'High' | 'Critical';
     progress?: number;
     completedAt?: Timestamp;
     completionNotes?: string;
     completionAttachments?: { name: string, url: string }[];
+    verificationStatus?: 'pending' | 'passed' | 'failed';
+    failureReason?: string;
 };
 
 
@@ -86,7 +89,10 @@ const priorityIcons: { [key: string]: React.ReactNode } = {
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />
 };
 
-const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask }: { task: Task, user?: User, onEditTask: (task: Task) => void, onViewTask: (task: Task) => void, onDeleteTask: (task: Task) => void }) => (
+const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask, onVerifyTask }: { task: Task, user?: User, onEditTask: (task: Task) => void, onViewTask: (task: Task) => void, onDeleteTask: (task: Task) => void, onVerifyTask: (task: Task, newStatus: 'passed' | 'failed') => void }) => {
+    const isPendingVerification = task.taskRole === 'qa' && task.testType === 'Bug Reporting' && task.status === 'Done' && task.verificationStatus === 'pending';
+    
+    return (
     <Card className="mb-4 bg-card hover:shadow-md transition-shadow">
         <CardHeader className="p-3">
             <div className="flex justify-between items-start">
@@ -111,9 +117,9 @@ const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask }: { task: 
                     <span className="text-xs text-muted-foreground">{task.progress}%</span>
                 </div>
             )}
-             {task.status === 'Done' && (
+             {task.status === 'Done' && !isPendingVerification && (
                 <div className="flex items-center gap-2 mb-2">
-                    <Progress value={100} className="w-full h-1" indicatorClassName="bg-green-500" />
+                    <Progress value={100} className="w-full h-1" indicatorClassName={task.verificationStatus === 'passed' ? 'bg-green-500' : 'bg-blue-500'} />
                     <span className="text-xs text-muted-foreground">100%</span>
                 </div>
             )}
@@ -139,12 +145,20 @@ const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask }: { task: 
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
-             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onViewTask(task)}>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-             </Button>
+            {isPendingVerification ? (
+                 <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 text-green-600 hover:text-green-600 hover:bg-green-100" onClick={() => onVerifyTask(task, 'passed')}><ThumbsUp className="h-4 w-4 mr-1"/>Pass</Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-red-100" onClick={() => onVerifyTask(task, 'failed')}><ThumbsDown className="h-4 w-4 mr-1"/>Fail</Button>
+                 </div>
+            ) : (
+                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onViewTask(task)}>
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                 </Button>
+            )}
         </CardFooter>
     </Card>
-);
+    )
+};
 
 type TasksKanbanViewProps = {
     searchQuery?: string;
@@ -160,6 +174,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
     const [viewingTask, setViewingTask] = useState<Task | null>(null);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+    const [failingTask, setFailingTask] = useState<Task | null>(null);
     const { toast } = useToast();
 
     const taskQuery = useMemo(() => {
@@ -171,7 +186,6 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             if (managerProjectIds.length > 0) {
                  return query(collection(db, 'tasks'), where('project', 'in', managerProjectIds));
             } else {
-                // To return an empty query if manager has no projects
                 return query(collection(db, 'tasks'), where('project', 'in', ['non-existent']));
             }
         }
@@ -282,6 +296,29 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             setDeletingTask(null);
         }
     };
+    
+    const handleVerifyTask = async (task: Task, newStatus: 'passed' | 'failed') => {
+        if (newStatus === 'failed') {
+            setFailingTask(task);
+            return;
+        }
+
+        try {
+            const taskRef = doc(db, "tasks", task.id);
+            await updateDoc(taskRef, { verificationStatus: 'passed' });
+            toast({
+                title: "Task Verified",
+                description: `Task "${task.taskName}" has been marked as passed.`,
+            });
+        } catch (error) {
+            console.error("Error verifying task: ", error);
+             toast({
+                variant: "destructive",
+                title: "Verification Failed",
+                description: "There was a problem verifying the task.",
+            });
+        }
+    };
 
 
     if (loading) {
@@ -339,6 +376,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                                                             onViewTask={setViewingTask}
                                                             onEditTask={setEditingTask}
                                                             onDeleteTask={setDeletingTask}
+                                                            onVerifyTask={handleVerifyTask}
                                                         />
                                                     ))}
                                                     {project.tasks.filter(t => t.status === status).length === 0 && (
@@ -366,6 +404,13 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                     task={editingTask}
                     isOpen={!!editingTask}
                     onOpenChange={() => setEditingTask(null)}
+                />
+            )}
+             {failingTask && (
+                <FailTaskDialog
+                    task={failingTask}
+                    isOpen={!!failingTask}
+                    onOpenChange={() => setFailingTask(null)}
                 />
             )}
             <AlertDialog open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>
