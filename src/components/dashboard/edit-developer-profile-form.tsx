@@ -161,7 +161,7 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
           <DialogTitle className="flex items-center gap-2"><User className="w-5 h-5" /> Edit Profile</DialogTitle>
           <DialogDescription>Update your developer profile information below.</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+        <ScrollArea className="max-h-[70vh] -mx-6 px-6 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-1">
               <FormField control={form.control} name="name" render={({ field }) => (

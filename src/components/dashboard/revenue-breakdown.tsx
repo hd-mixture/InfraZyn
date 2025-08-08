@@ -77,7 +77,7 @@ export function RevenueBreakdown({ children }: { children: React.ReactNode }) {
                         A detailed breakdown of revenue per project.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[400px] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                     <Table>
                         <TableHeader>
                             <TableRow>

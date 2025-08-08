@@ -335,7 +335,7 @@ export function NotificationPanel() {
                         )}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <ScrollArea className="h-96">
+                    <ScrollArea className="h-96 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                         <DropdownMenuGroup>
                             {notifications.length === 0 ? (
                                 <p className="text-center text-sm text-muted-foreground p-4">No notifications yet.</p>

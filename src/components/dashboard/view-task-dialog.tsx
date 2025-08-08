@@ -115,7 +115,7 @@ export function ViewTaskDialog({ task, isOpen, onOpenChange }: ViewTaskDialogPro
                         </div>
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
+                <ScrollArea className="max-h-[60vh] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                     <div className="space-y-5 pr-2">
                         {(status === 'In Progress' || status === 'Done') && (
                             <DetailRow 

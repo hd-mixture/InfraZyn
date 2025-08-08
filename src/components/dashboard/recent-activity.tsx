@@ -54,7 +54,7 @@ export function RecentActivity() {
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow">
-                <ScrollArea className="h-[26rem] pr-4 -mr-4">
+                <ScrollArea className="h-[26rem] pr-4 -mr-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                     <div className="space-y-6">
                         {loading ? (
                             <p>Loading activities...</p>

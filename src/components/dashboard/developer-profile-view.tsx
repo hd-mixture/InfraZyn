@@ -109,7 +109,7 @@ export function DeveloperProfileView() {
     return (
         <>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                 <div className="space-y-6 pb-6 pr-4">
                     <Card>
                         <CardHeader className="flex flex-col md:flex-row gap-6 items-start">

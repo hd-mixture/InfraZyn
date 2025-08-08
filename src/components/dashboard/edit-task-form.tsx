@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type ReactNode, useEffect } from 'react';
@@ -181,7 +182,7 @@ export function EditTaskForm({ task, isOpen, onOpenChange }: EditTaskFormProps) 
             Update the details for your task below.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
+        <ScrollArea className="max-h-[70vh] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
                  <FormField

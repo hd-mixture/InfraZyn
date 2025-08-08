@@ -249,7 +249,7 @@ export function EditProjectForm({ project, isOpen, onOpenChange }: EditProjectFo
             Update the details for your project below.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh]">
+        <ScrollArea className="max-h-[70vh] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1 pr-4">
                 <FormField

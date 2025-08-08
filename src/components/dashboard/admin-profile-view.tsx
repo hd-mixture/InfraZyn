@@ -136,7 +136,7 @@ export function AdminProfileView() {
             className="hidden"
             accept="image/*"
         />
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-full scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             <div className="space-y-6 pb-6 pr-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <Card className="lg:col-span-3">

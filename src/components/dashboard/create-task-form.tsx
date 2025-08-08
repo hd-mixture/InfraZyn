@@ -54,7 +54,7 @@ export function CreateTaskForm({ children, userRole, managerName }: CreateTaskFo
             First, select the role for the new task, then fill in the details.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+        <ScrollArea className="max-h-[70vh] -mx-6 px-6 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             <div className="space-y-6 pr-2">
                 <RadioGroup
                     value={selectedRole || ''}

@@ -123,7 +123,7 @@ export function ViewDesignTaskDialog({ task: initialTask, projectName, isOpen, o
                             Details for the design task.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="max-h-[60vh]">
+                    <ScrollArea className="max-h-[60vh] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                         <div className="space-y-4 pr-4">
                             <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                             <DetailRow icon={<List size={16}/>} label="Task Type" value={<Badge variant="secondary">{taskType}</Badge>} />

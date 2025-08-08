@@ -169,7 +169,7 @@ export function ManagerSettingsView() {
     };
 
     return (
-        <ScrollArea className='h-full pr-4'>
+        <ScrollArea className='h-full pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent'>
             <div className="space-y-6">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>

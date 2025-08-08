@@ -123,7 +123,7 @@ export function EditProfileForm({ user, isOpen, onOpenChange }: EditProfileFormP
             Update your personal information below.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+        <ScrollArea className="max-h-[70vh] -mx-6 px-6 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-1">
               <FormField

@@ -239,7 +239,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
     .sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        return b.createdAt.toMillis() - a.createdAt.toMillis();
+        return b.createdAt.toMillis() - b.createdAt.toMillis();
     });
   }, [projects, filterProject, filterManager, filterStatus, searchQuery]);
   
@@ -290,7 +290,7 @@ export function ProjectSummary({ searchQuery, onEditProject }: ProjectSummaryPro
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <ScrollArea className="h-[40rem] pr-4">
+        <ScrollArea className="h-[40rem] pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
             {loading ? (
             <div className="text-center">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
