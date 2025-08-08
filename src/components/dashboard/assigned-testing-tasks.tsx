@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 import { Button } from '../ui/button';
-import type { Task as KanbanTask } from './tasks-kanban-view';
 import { ViewQATaskDialog } from './view-qa-task-dialog';
+import { ViewTaskDialog } from './view-task-dialog'; // Generic viewer
 
 
 export type QATask = {
@@ -27,6 +27,9 @@ export type QATask = {
     completionAttachments?: { name: string; url: string; }[];
     completionNotes?: string;
     completedAt?: Timestamp;
+    createdAt: Timestamp;
+    assignedTo: string;
+    taskRole: 'qa';
 };
 
 type Project = {
@@ -138,10 +141,17 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
         )}
       </CardContent>
     </Card>
-    {viewingTask && (
+    {viewingTask && !isDashboard && (
         <ViewQATaskDialog
             task={viewingTask}
             projectName={getProjectName(viewingTask.project)}
+            isOpen={!!viewingTask}
+            onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
+        />
+    )}
+     {viewingTask && isDashboard && (
+        <ViewTaskDialog
+            task={viewingTask}
             isOpen={!!viewingTask}
             onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
         />

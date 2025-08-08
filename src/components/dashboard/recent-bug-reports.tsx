@@ -22,8 +22,8 @@ type RecentBugReportsProps = {
 
 const statusColor: { [key: string]: string } = {
   "Done": "border-green-500 text-green-500",
-  "In Progress": "border-blue-500 text-blue-500",
-  "To Do": "border-yellow-500 text-yellow-500",
+  "In Progress": "border-yellow-500 text-yellow-500",
+  "To Do": "border-red-500 text-red-500",
 }
 
 export function RecentBugReports({ qaName, isDashboard = false }: RecentBugReportsProps) {

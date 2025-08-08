@@ -18,15 +18,15 @@ const chartConfig = {
   },
   'To Do': {
     label: "To Do",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--destructive))",
   },
   'In Progress': {
     label: "In Progress",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-3))",
   },
   'Done': {
     label: "Fixed",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-2))",
   },
 }
 
