@@ -69,25 +69,25 @@ export function ViewTestCaseDialog({ testCase, projectName, isOpen, onOpenChange
                                 <Folder size={16} className="text-muted-foreground" />
                                 <div>
                                     <p className="text-xs text-muted-foreground">Project</p>
-                                    <p className="font-medium">{projectName}</p>
+                                    <div className="font-medium">{projectName}</div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
                                 <FileText size={16} className="text-muted-foreground" />
                                 <div>
                                     <p className="text-xs text-muted-foreground">Status</p>
-                                    <p className="font-medium">
+                                    <div className="font-medium">
                                         <Badge variant="outline" className={statusColor[testCase.status]}>{testCase.status}</Badge>
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
                                 <Flag size={16} className="text-muted-foreground" />
                                 <div>
                                     <p className="text-xs text-muted-foreground">Priority</p>
-                                    <p className="font-medium">
+                                    <div className="font-medium">
                                         <Badge variant="outline" className={priorityColor[testCase.priority]}>{testCase.priority}</Badge>
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

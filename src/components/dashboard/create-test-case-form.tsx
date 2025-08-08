@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, query, where, getDocs } from 'firebase/firestore';
 import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
@@ -47,6 +47,12 @@ type Project = {
     projectName: string;
 };
 
+type User = {
+    id: string;
+    name: string;
+    addedBy?: string;
+}
+
 type CreateTestCaseFormProps = {
     children: React.ReactNode;
     qaName: string | null;
@@ -55,8 +61,9 @@ type CreateTestCaseFormProps = {
     onOpenChange: (isOpen: boolean) => void;
 };
 
-export function CreateTestCaseForm({ children, qaName, projects, isOpen, onOpenChange }: CreateTestCaseFormProps) {
+export function CreateTestCaseForm({ children, qaName, projects: allProjects, isOpen, onOpenChange }: CreateTestCaseFormProps) {
   const [loading, setLoading] = useState(false);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -76,6 +83,36 @@ export function CreateTestCaseForm({ children, qaName, projects, isOpen, onOpenC
     control: form.control,
     name: 'steps',
   });
+  
+  useEffect(() => {
+    const getManagerForQA = async () => {
+        if (!qaName) return;
+        const usersQuery = query(collection(db, 'users'), where('name', '==', qaName));
+        const userSnapshot = await getDocs(usersQuery);
+        if (!userSnapshot.empty) {
+            const qaData = userSnapshot.docs[0].data() as User;
+            return qaData.addedBy; // This is the manager's name
+        }
+        return null;
+    }
+    
+    const fetchProjects = async () => {
+        const managerName = await getManagerForQA();
+        if (managerName) {
+            const projectsQuery = query(collection(db, 'projects'), where('projectManager', '==', managerName));
+            const projectsSnapshot = await getDocs(projectsQuery);
+            const userProjects = projectsSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+            setFilteredProjects(userProjects);
+        } else {
+            // Fallback for QA not assigned to a manager, show all projects
+            setFilteredProjects(allProjects);
+        }
+    };
+    
+    if (isOpen) {
+        fetchProjects();
+    }
+  }, [isOpen, qaName, allProjects]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!qaName) return;
@@ -120,7 +157,7 @@ export function CreateTestCaseForm({ children, qaName, projects, isOpen, onOpenC
                             <FormField control={form.control} name="projectId" render={({ field }) => (
                                 <FormItem className="md:col-span-2"><FormLabel>Project</FormLabel><Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl>
-                                    <SelectContent>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))}</SelectContent>
+                                    <SelectContent>{filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))}</SelectContent>
                                 </Select><FormMessage /></FormItem>
                             )}/>
                              <FormField control={form.control} name="priority" render={({ field }) => (
