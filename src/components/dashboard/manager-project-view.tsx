@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye, Star, Code, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, Eye, Star, Code, ShieldCheck, Palette } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, Timestamp, where, doc, updateDoc } from "firebase/firestore";
@@ -43,12 +43,13 @@ type User = {
     id: string;
     name: string;
     avatar?: string;
-    role: 'developer' | 'qa' | 'manager';
+    role: 'developer' | 'qa' | 'manager' | 'designer';
 }
 
 const roleIcons: { [key: string]: React.ReactNode } = {
     'developer': <Code className="h-4 w-4 text-blue-500" />,
-    'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
+    'qa': <ShieldCheck className="h-4 w-4 text-green-500" />,
+    'designer': <Palette className="h-4 w-4 text-orange-500" />
 };
 
 const statusColor: { [key: string]: string } = {
@@ -112,7 +113,7 @@ export function ManagerProjectView({ searchQuery, managerName }: ManagerProjectV
         setLoading(false);
     });
 
-    const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
+    const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa", "designer"]));
     const unsubscribeUsers = onSnapshot(usersQuery, (userSnapshot) => {
         const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         setUsers(fetchedUsers);

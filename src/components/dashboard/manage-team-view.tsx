@@ -23,7 +23,7 @@ import { ScrollArea } from '../ui/scroll-area';
 type User = {
     id: string;
     name: string;
-    role: 'developer' | 'qa';
+    role: 'developer' | 'qa' | 'designer';
     avatar?: string;
 };
 
@@ -48,7 +48,7 @@ export function ManageTeamView({ managerName }: ManageTeamViewProps) {
             collection(db, "projects"),
             where("projectManager", "==", managerName)
         );
-        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa"]));
+        const usersQuery = query(collection(db, "users"), where("role", "in", ["developer", "qa", "designer"]));
         
         const unsubscribeUsers = onSnapshot(usersQuery, (userSnapshot) => {
             const fetchedUsers = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
