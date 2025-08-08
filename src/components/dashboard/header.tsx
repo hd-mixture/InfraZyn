@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, ImageIcon } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, ImageIcon, Bug, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -32,7 +32,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
   }, []);
 
   const pageInfo = useMemo(() => {
-        if (pathname.includes('manager')) {
+        if (pathname.includes('manager-dashboard')) {
             switch(view) {
                 case 'users':
                     return { title: 'Team', icon: <Users className="h-7 w-7" /> };
@@ -50,12 +50,46 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
             }
         }
 
-        if (pathname.includes('designer')) {
+        if (pathname.includes('designer-dashboard')) {
             switch(view) {
                 case 'designs':
                     return { title: 'My Designs', icon: <Palette className="h-7 w-7" /> };
                 case 'moodboards':
                     return { title: 'Moodboards', icon: <ImageIcon className="h-7 w-7" /> };
+                case 'profile':
+                    return { title: 'Profile', icon: <User className="h-7 w-7" /> };
+                case 'settings':
+                    return { title: 'Settings', icon: <Settings className="h-7 w-7" /> };
+                case 'dashboard':
+                default:
+                    return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
+            }
+        }
+
+        if (pathname.includes('developer-dashboard')) {
+             switch(view) {
+                case 'tasks':
+                    return { title: 'My Tasks', icon: <ListChecks className="h-7 w-7" /> };
+                case 'projects':
+                    return { title: 'Completed Projects', icon: <Folders className="h-7 w-7" /> };
+                case 'profile':
+                    return { title: 'Profile', icon: <User className="h-7 w-7" /> };
+                case 'settings':
+                    return { title: 'Settings', icon: <Settings className="h-7 w-7" /> };
+                case 'dashboard':
+                default:
+                    return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
+            }
+        }
+        
+        if (pathname.includes('qa-dashboard')) {
+            switch(view) {
+                case 'testing-tasks':
+                    return { title: 'Testing Tasks', icon: <ListChecks className="h-7 w-7" /> };
+                case 'bug-reports':
+                    return { title: 'Bug Reports', icon: <Bug className="h-7 w-7" /> };
+                case 'test-cases':
+                    return { title: 'Test Cases', icon: <FileText className="h-7 w-7" /> };
                 case 'profile':
                     return { title: 'Profile', icon: <User className="h-7 w-7" /> };
                 case 'settings':
