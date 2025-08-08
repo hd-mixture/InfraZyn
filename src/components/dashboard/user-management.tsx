@@ -64,6 +64,7 @@ export type User = {
     status: 'Active' | 'Inactive';
     avatar?: string;
     addedBy?: string;
+    assignedManager?: string;
 };
 
 type Project = {
@@ -136,8 +137,11 @@ function CreateUserForm({ userRole, managerName }: CreateUserFormProps) {
 
             if (userRole === 'manager' && managerName) {
                 userData.addedBy = managerName;
-            } else if (userRole === 'admin' && values.assignedManager) {
-                userData.addedBy = values.assignedManager;
+            } else if (userRole === 'admin') {
+                userData.addedBy = 'Admin';
+                if (values.assignedManager) {
+                    userData.assignedManager = values.assignedManager;
+                }
             }
 
             await setDoc(doc(db, "users", user.uid), userData);
@@ -344,25 +348,26 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                 }
             });
         }
+         users.forEach(user => {
+            if(user.assignedManager && !map.has(user.id)) {
+                map.set(user.id, user.assignedManager);
+            }
+        });
         return map;
-    }, [managerTeams]);
+    }, [managerTeams, users]);
 
     const filteredUsers = useMemo(() => {
         if (userRole === 'manager' && managerName) {
-            const teamMemberSet = new Set<string>();
-            
-            (managerTeams[managerName]?.members || []).forEach(member => teamMemberSet.add(member.id));
-
-            users.forEach(user => {
-                if (user.addedBy === managerName) {
-                    teamMemberSet.add(user.id);
-                }
+             return users.filter(user => {
+                if (user.addedBy === managerName) return true;
+                if (user.assignedManager === managerName) return true;
+                
+                const inferredManager = userToManagerMap.get(user.id);
+                return inferredManager === managerName;
             });
-
-            return users.filter(user => teamMemberSet.has(user.id));
         }
         return users;
-    }, [userRole, managerName, users, managerTeams]);
+    }, [userRole, managerName, users, userToManagerMap]);
     
 
     const handleEditUser = (user: User) => {
@@ -456,6 +461,8 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                             addedByText = `(Added by ${user.addedBy})`;
                                         } else if (inferredManager && inferredManager !== 'Multiple') {
                                             addedByText = `(Managed by ${inferredManager})`;
+                                        } else if (user.assignedManager) {
+                                            addedByText = `(Managed by ${user.assignedManager})`;
                                         } else if (!user.addedBy && user.role !== 'manager') {
                                             addedByText = '(Added by You)';
                                         }
