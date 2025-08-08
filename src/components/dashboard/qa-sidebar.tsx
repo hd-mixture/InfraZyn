@@ -8,6 +8,8 @@ import {
   IconListCheck,
   IconFileText,
   IconLogout,
+  IconUser,
+  IconSettings
 } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -59,6 +61,26 @@ export function QASidebar() {
     }
   ];
 
+  const bottomLinks = [
+     {
+      label: "Profile",
+      href: "/qa-dashboard?view=profile",
+      icon: <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('profile'),
+    },
+     {
+      label: "Settings",
+      href: "/qa-dashboard?view=settings",
+      icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('settings'),
+    },
+    {
+      label: "Logout",
+      href: "/login",
+      icon: <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+    }
+  ]
+
   return (
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
@@ -71,16 +93,9 @@ export function QASidebar() {
             </div>
         </div>
         <div>
-            <SidebarLink
-                onClick={handleLogout}
-                link={{
-                label: "Logout",
-                href: "/login",
-                icon: (
-                  <IconLogout className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
-                ),
-              }}
-            />
+           {bottomLinks.map((link, idx) => (
+                <SidebarLink key={idx} link={link} onClick={link.label === 'Logout' ? handleLogout : undefined}/>
+            ))}
         </div>
       </SidebarBody>
     </Sidebar>

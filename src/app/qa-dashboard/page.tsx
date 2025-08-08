@@ -9,6 +9,8 @@ import { RecentBugReports } from "@/components/dashboard/recent-bug-reports";
 import { AssignedTestingTasks } from "@/components/dashboard/assigned-testing-tasks";
 import { QADashboardView } from "@/components/dashboard/qa-dashboard-view";
 import { TestCasesView } from "@/components/dashboard/test-cases-view";
+import { QAProfileView } from "@/components/dashboard/qa-profile-view";
+import { QASettingsView } from "@/components/dashboard/qa-settings-view";
 
 function QADashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,9 +31,9 @@ function QADashboardContent() {
       case 'test-cases':
         return <TestCasesView qaName={qaName} searchQuery={searchQuery} />;
       case 'profile':
-        return <ComingSoon />;
+        return <QAProfileView />;
       case 'settings':
-        return <ComingSoon />;
+        return <QASettingsView />;
       case 'dashboard':
       default:
         return <QADashboardView qaName={qaName} />;
