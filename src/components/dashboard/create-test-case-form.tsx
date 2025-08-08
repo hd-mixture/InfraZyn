@@ -86,7 +86,7 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
   
   useEffect(() => {
     const getManagerForQA = async () => {
-        if (!qaName) return;
+        if (!qaName) return null;
         const usersQuery = query(collection(db, 'users'), where('name', '==', qaName));
         const userSnapshot = await getDocs(usersQuery);
         if (!userSnapshot.empty) {
@@ -104,7 +104,7 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
             const userProjects = projectsSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
             setFilteredProjects(userProjects);
         } else {
-            // Fallback for QA not assigned to a manager, show all projects
+            // Fallback for QA not assigned to a manager, show all projects (or none)
             setFilteredProjects(allProjects);
         }
     };
@@ -157,7 +157,13 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
                             <FormField control={form.control} name="projectId" render={({ field }) => (
                                 <FormItem className="md:col-span-2"><FormLabel>Project</FormLabel><Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl>
-                                    <SelectContent>{filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))}</SelectContent>
+                                    <SelectContent>
+                                        {filteredProjects.length === 0 ? (
+                                            <div className="p-2 text-sm text-muted-foreground">No projects found.</div>
+                                        ) : (
+                                            filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))
+                                        )}
+                                    </SelectContent>
                                 </Select><FormMessage /></FormItem>
                             )}/>
                              <FormField control={form.control} name="priority" render={({ field }) => (
