@@ -62,18 +62,6 @@ export function QASidebar() {
   ];
 
   const bottomLinks = [
-     {
-      label: "Profile",
-      href: "/qa-dashboard?view=profile",
-      icon: <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('profile'),
-    },
-     {
-      label: "Settings",
-      href: "/qa-dashboard?view=settings",
-      icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('settings'),
-    },
     {
       label: "Logout",
       href: "/login",

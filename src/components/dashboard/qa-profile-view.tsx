@@ -7,7 +7,7 @@ import { collection, onSnapshot, query, where, doc, updateDoc, Timestamp } from 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Mail, User as UserIcon, Calendar, Edit, Loader2, Bug, ListChecks, Activity, ShieldCheck, FileText, XCircle, CheckCircle } from 'lucide-react';
+import { Camera, Mail, User as UserIcon, Calendar, Edit, Loader2, Bug, ListChecks, Activity, ShieldCheck, FileText, XCircle, CheckCircle, Phone } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { format } from 'date-fns';
@@ -171,7 +171,7 @@ export function QAProfileView() {
                         <CardContent className="border-t pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                                 <div className="flex items-center gap-3"><Mail className="w-5 h-5 text-muted-foreground" /> <span>{user.email}</span></div>
-                                <div className="flex items-center gap-3"><UserIcon className="w-5 h-5 text-muted-foreground" /> <span>Quality Assurance Team</span></div>
+                                <div className="flex items-center gap-3"><Phone className="w-5 h-5 text-muted-foreground" /> <span>{user.phone || 'Not Provided'}</span></div>
                                 <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-muted-foreground" /> <span>Joined on {format(user.createdAt.toDate(), 'dd MMM yyyy')}</span></div>
                             </div>
                         </CardContent>
