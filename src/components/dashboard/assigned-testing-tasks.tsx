@@ -9,17 +9,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 import { Button } from '../ui/button';
-import { ViewTaskDialog } from './view-task-dialog';
 import type { Task as KanbanTask } from './tasks-kanban-view';
+import { ViewQATaskDialog } from './view-qa-task-dialog';
 
 
-type QATask = {
+export type QATask = {
     id: string;
     taskName: string;
     project: string;
     status: 'To Do' | 'In Progress' | 'Done';
     testType: string;
     dueDate: Timestamp;
+    progress?: number;
+    description?: string;
+    attachmentUrls?: { name: string, url: string }[];
+    priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+    completionAttachments?: { name: string; url: string; }[];
+    completionNotes?: string;
+    completedAt?: Timestamp;
 };
 
 type Project = {
@@ -42,7 +49,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
   const [tasks, setTasks] = useState<QATask[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewingTask, setViewingTask] = useState<KanbanTask | null>(null);
+  const [viewingTask, setViewingTask] = useState<QATask | null>(null);
   
   const title = isDashboard ? "My Testing Tasks" : "All Assigned Testing Tasks";
   const description = isDashboard ? "Your most recent testing tasks." : "A complete list of your assigned testing tasks.";
@@ -120,7 +127,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                                 <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => setViewingTask(task as unknown as KanbanTask)}>
+                                <Button variant="ghost" size="icon" onClick={() => setViewingTask(task)}>
                                     <Eye className="h-4 w-4" />
                                 </Button>
                             </TableCell>
@@ -132,10 +139,11 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
       </CardContent>
     </Card>
     {viewingTask && (
-        <ViewTaskDialog
+        <ViewQATaskDialog
             task={viewingTask}
+            projectName={getProjectName(viewingTask.project)}
             isOpen={!!viewingTask}
-            onOpenChange={() => setViewingTask(null)}
+            onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
         />
     )}
     </>
