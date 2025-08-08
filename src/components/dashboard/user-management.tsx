@@ -87,9 +87,9 @@ const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "o
 }
 
 const roleIcons: { [key: string]: React.ReactNode } = {
-    developer: <Code className="h-2.5 w-2.5 text-blue-500" />,
-    qa: <ShieldCheck className="h-2.5 w-2.5 text-green-500" />,
-    designer: <Palette className="h-2.5 w-2.5 text-orange-500" />,
+    developer: <Code className="h-3 w-3 text-blue-500" />,
+    qa: <ShieldCheck className="h-3 w-3 text-green-500" />,
+    designer: <Palette className="h-3 w-3 text-orange-500" />,
 };
 
 
@@ -489,7 +489,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                         {roleIcons[user.role] && (
-                                                            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background p-0.5">
+                                                            <div className="absolute -bottom-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-background p-0.5">
                                                                 {roleIcons[user.role]}
                                                             </div>
                                                         )}
