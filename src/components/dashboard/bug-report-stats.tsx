@@ -16,15 +16,15 @@ const chartConfig = {
   count: {
     label: "Count",
   },
-  'To Do': {
+  ToDo: {
     label: "To Do",
     color: "hsl(var(--destructive))",
   },
-  'In Progress': {
+  InProgress: {
     label: "In Progress",
     color: "hsl(var(--chart-3))",
   },
-  'Done': {
+  Done: {
     label: "Fixed",
     color: "hsl(var(--chart-2))",
   },
@@ -63,9 +63,9 @@ export function BugReportStats({ qaName }: BugReportStatsProps) {
         }
     });
     return [
-        { status: "To Do", count: counts['To Do'], fill: "var(--color-To Do)" },
-        { status: "In Progress", count: counts['In Progress'], fill: "var(--color-In Progress)" },
-        { status: "Done", count: counts['Done'], fill: "var(--color-Done)" },
+        { status: "ToDo", label: "To Do", count: counts['To Do'], fill: "var(--color-ToDo)" },
+        { status: "InProgress", label: "In Progress", count: counts['In Progress'], fill: "var(--color-InProgress)" },
+        { status: "Done", label: "Fixed", count: counts['Done'], fill: "var(--color-Done)" },
     ];
   }, [tasks]);
 
@@ -80,11 +80,10 @@ export function BugReportStats({ qaName }: BugReportStatsProps) {
           <BarChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="status"
+              dataKey="label"
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              tickFormatter={(value) => chartConfig[value as keyof typeof chartConfig]?.label}
             />
             <ChartTooltip
               cursor={false}
