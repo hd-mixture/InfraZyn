@@ -11,7 +11,7 @@ type TestCaseResultsProps = {
 };
 
 export function TestCaseResults({ qaName }: TestCaseResultsProps) {
-  const [tasks, setTasks] = useState<{ verificationStatus?: 'passed' | 'failed' }[]>([]);
+  const [tasks, setTasks] = useState<{ verificationStatus?: 'passed' | 'failed', failureCount?: number }[]>([]);
 
   useEffect(() => {
     if (!qaName) return;
@@ -24,7 +24,10 @@ export function TestCaseResults({ qaName }: TestCaseResultsProps) {
     );
     
     const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
-        const fetchedTasks = snapshot.docs.map(doc => ({ verificationStatus: doc.data().verificationStatus }));
+        const fetchedTasks = snapshot.docs.map(doc => ({ 
+            verificationStatus: doc.data().verificationStatus,
+            failureCount: doc.data().failureCount 
+        }));
         setTasks(fetchedTasks as any);
     });
 
@@ -33,8 +36,8 @@ export function TestCaseResults({ qaName }: TestCaseResultsProps) {
 
   const stats = useMemo(() => {
     const passed = tasks.filter(task => task.verificationStatus === 'passed').length;
-    const failed = tasks.filter(task => task.verificationStatus === 'failed').length;
-    return { passed, failed };
+    const totalFailures = tasks.reduce((acc, task) => acc + (task.failureCount || 0), 0);
+    return { passed, failed: totalFailures };
   }, [tasks]);
 
   return (

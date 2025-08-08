@@ -1,7 +1,7 @@
 
 'use client'
 
-import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { PlusCircle, Clock, ArrowUp, ArrowRight, ArrowDown, MoreHorizontal, Edit, Eye, Star, Trash2, ThumbsUp, ThumbsDown, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, doc, deleteDoc, updateDoc, orderBy, addDoc, serverTimestamp, increment, arrayUnion } from 'firebase/firestore';
 import { CreateTaskForm } from './create-task-form';
 import { format } from 'date-fns';
 import {
@@ -65,6 +65,13 @@ export type Task = {
     completionAttachments?: { name: string, url: string }[];
     verificationStatus?: 'pending' | 'passed' | 'failed';
     failureReason?: string;
+    failureCount?: number;
+    reviewHistory?: {
+        status: 'passed' | 'failed';
+        reason?: string;
+        timestamp: Timestamp;
+        reviewedBy: string;
+    }[];
 };
 
 
@@ -147,6 +154,7 @@ const TaskCard = ({ task, user, onEditTask, onViewTask, onDeleteTask, onVerifyTa
             </TooltipProvider>
             {isPendingVerification ? (
                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => onViewTask(task)}><Eye className="h-4 w-4 mr-1"/>Review</Button>
                     <Button variant="ghost" size="sm" className="h-7 text-green-600 hover:text-green-600 hover:bg-green-100" onClick={() => onVerifyTask(task, 'passed')}><ThumbsUp className="h-4 w-4 mr-1"/>Pass</Button>
                     <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-red-100" onClick={() => onVerifyTask(task, 'failed')}><ThumbsDown className="h-4 w-4 mr-1"/>Fail</Button>
                  </div>
@@ -305,7 +313,14 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
 
         try {
             const taskRef = doc(db, "tasks", task.id);
-            await updateDoc(taskRef, { verificationStatus: 'passed' });
+            await updateDoc(taskRef, {
+                verificationStatus: 'passed',
+                reviewHistory: arrayUnion({
+                    status: 'passed',
+                    timestamp: serverTimestamp(),
+                    reviewedBy: managerName || 'Admin'
+                })
+            });
             toast({
                 title: "Task Verified",
                 description: `Task "${task.taskName}" has been marked as passed.`,

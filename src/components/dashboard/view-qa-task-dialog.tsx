@@ -13,8 +13,8 @@ import {
 import { ScrollArea } from '../ui/scroll-area';
 import type { QATask } from './assigned-testing-tasks';
 import { Badge } from '../ui/badge';
-import { format } from 'date-fns';
-import { Calendar, File, Flag, Folder, Info, Paperclip, CheckCircle, Percent } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { Calendar, File, Flag, Folder, Info, Paperclip, CheckCircle, Percent, History, ThumbsDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Slider } from '../ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -24,6 +24,7 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Progress } from '../ui/progress';
 import { CompleteQATaskDialog } from './complete-qa-task-dialog';
+import { Separator } from '../ui/separator';
 
 type ViewQATaskDialogProps = {
     task: QATask;
@@ -46,7 +47,7 @@ const statusColor: { [key: string]: string } = {
 };
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
-    <div className="grid grid-cols-3 items-center gap-4 py-2">
+    <div className="grid grid-cols-3 items-start gap-4 py-2">
         <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2">
             {icon}
             <span>{label}</span>
@@ -72,14 +73,15 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
 
         try {
             const taskRef = doc(db, "tasks", task.id);
-            const updateData: { status: string; progress?: number } = { status: newStatus };
+            const updateData: { status: string; progress?: number, verificationStatus?: string } = { status: newStatus };
             if (newStatus === 'To Do') {
                 updateData.progress = 0;
-            } else if (newStatus === 'In Progress' && (task.progress || 0) === 100) {
-                 updateData.progress = 99;
+            } else if (newStatus === 'In Progress') {
+                 if((task.progress || 0) === 100) updateData.progress = 99;
+                 updateData.verificationStatus = 'failed'
             }
             await updateDoc(taskRef, updateData);
-            setTask(prev => ({...prev, status: newStatus, progress: updateData.progress ?? prev.progress }));
+            setTask(prev => ({...prev, status: newStatus, progress: updateData.progress ?? prev.progress, verificationStatus: updateData.verificationStatus ?? prev.verificationStatus }));
             toast({
                 title: "Status Updated",
                 description: "The task status has been successfully updated.",
@@ -111,7 +113,8 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
         dueDate,
         attachmentUrls,
         progress,
-        testType
+        testType,
+        reviewHistory
     } = task;
 
     return (
@@ -126,6 +129,24 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                     </DialogHeader>
                     <ScrollArea className="max-h-[60vh] scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                         <div className="space-y-4 pr-4">
+                             {reviewHistory && reviewHistory.length > 0 && (
+                                <>
+                                    <div className="space-y-4 rounded-lg bg-muted/50 p-4">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2"><History size={16} /> Review History</h3>
+                                        {reviewHistory.filter(h => h.status === 'failed' && h.reason).slice(-1).map((history, index) => (
+                                             <div key={index} className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                                                <div className="flex items-center gap-2 font-semibold text-destructive mb-1">
+                                                    <ThumbsDown size={14} />
+                                                    <span>Failed by {history.reviewedBy}</span>
+                                                    <span className="font-normal text-xs">({formatDistanceToNow(history.timestamp.toDate(), { addSuffix: true })})</span>
+                                                </div>
+                                                <p className="text-sm text-destructive/80 italic">"{history.reason}"</p>
+                                             </div>
+                                        ))}
+                                    </div>
+                                    <Separator/>
+                                </>
+                            )}
                             <DetailRow icon={<Folder size={16}/>} label="Project" value={projectName} />
                             <DetailRow icon={<Info size={16}/>} label="Test Type" value={<Badge variant="secondary">{testType}</Badge>} />
                             <div className="grid grid-cols-3 items-center gap-4 py-2">

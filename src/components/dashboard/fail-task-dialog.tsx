@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import type { Task } from './tasks-kanban-view';
 
 const formSchema = z.object({
@@ -55,9 +55,15 @@ export function FailTaskDialog({ task, isOpen, onOpenChange }: FailTaskDialogPro
     try {
         const taskRef = doc(db, 'tasks', task.id);
         await updateDoc(taskRef, {
-            status: 'In Progress',
+            status: 'In Progress', // Re-open the task for the QA
             verificationStatus: 'failed',
-            failureReason: values.reason
+            failureCount: increment(1),
+            reviewHistory: arrayUnion({
+                status: 'failed',
+                reason: values.reason,
+                timestamp: serverTimestamp(),
+                reviewedBy: localStorage.getItem('userName') || 'Admin'
+            })
         });
 
         toast({

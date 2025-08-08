@@ -56,6 +56,8 @@ export function CompleteQATaskDialog({ task, isOpen, onOpenChange, onSuccess }: 
   });
   
   const attachmentsRef = form.register('attachments');
+  const reviewCount = (task.failureCount || 0) + 1;
+  const submitButtonText = reviewCount > 1 ? `Submit for Review (${reviewCount})` : 'Submit for Review';
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
@@ -176,7 +178,7 @@ export function CompleteQATaskDialog({ task, isOpen, onOpenChange, onSuccess }: 
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button type="submit" disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit for Review
+                        {submitButtonText}
                     </Button>
                 </DialogFooter>
             </form>
