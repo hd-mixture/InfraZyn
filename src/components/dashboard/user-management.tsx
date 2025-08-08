@@ -37,7 +37,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, UserPlus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, MoreHorizontal, Edit, Trash2, Code, ShieldCheck, Palette } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { format } from 'date-fns';
@@ -85,6 +85,13 @@ const roleVariant: { [key: string]: "default" | "secondary" | "destructive" | "o
     "qa": "outline",
     "designer": "secondary"
 }
+
+const roleIcons: { [key: string]: React.ReactNode } = {
+    developer: <Code className="h-2.5 w-2.5 text-blue-500" />,
+    qa: <ShieldCheck className="h-2.5 w-2.5 text-green-500" />,
+    designer: <Palette className="h-2.5 w-2.5 text-orange-500" />,
+};
+
 
 type CreateUserFormProps = {
     userRole: 'admin' | 'manager';
@@ -457,7 +464,7 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                     const inferredManager = userToManagerMap.get(user.id);
                                     let subtext = '';
 
-                                    if (userRole === 'admin' && user.role !== 'manager') {
+                                    if (userRole === 'admin') {
                                         if (user.addedBy && user.addedBy !== 'Admin') {
                                             subtext = `(Added by ${user.addedBy})`;
                                         } else {
@@ -472,15 +479,21 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                         }
                                     }
 
-
                                     return (
                                         <TableRow key={user.id}>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
-                                                    <Avatar>
-                                                        <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
-                                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
+                                                    <div className="relative">
+                                                        <Avatar>
+                                                            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} data-ai-hint="person face" />
+                                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                        {roleIcons[user.role] && (
+                                                            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background p-0.5">
+                                                                {roleIcons[user.role]}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <div>
                                                         <div className="font-medium flex items-center gap-2">
                                                             <span>{user.name}</span>
