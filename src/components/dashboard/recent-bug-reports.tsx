@@ -170,6 +170,7 @@ export function RecentBugReports({ qaName, isDashboard = false }: RecentBugRepor
                     <TableRow>
                         <TableHead>Bug Report</TableHead>
                         <TableHead>Project</TableHead>
+                        <TableHead>Reported</TableHead>
                         <TableHead>Manager Review</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Last Updated</TableHead>
@@ -180,6 +181,7 @@ export function RecentBugReports({ qaName, isDashboard = false }: RecentBugRepor
                          <TableRow key={bug.id}>
                             <TableCell className="font-medium">{bug.taskName}</TableCell>
                             <TableCell>{getProjectName(bug.project)}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{format(bug.createdAt.toDate(), 'dd MMM, yyyy')}</TableCell>
                             <TableCell>{getReviewStatusComponent(bug)}</TableCell>
                             <TableCell>
                                 <Badge variant="outline" className={statusColor[bug.status]}>
