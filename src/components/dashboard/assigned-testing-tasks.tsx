@@ -1,37 +1,143 @@
 
 'use client'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useMemo } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
+import { Eye } from 'lucide-react';
+import { Button } from '../ui/button';
+import { ViewTaskDialog } from './view-task-dialog';
+import type { Task as KanbanTask } from './tasks-kanban-view';
 
-const tasks = [
-  { id: 1, module: "User Authentication Flow", status: "In Progress" },
-  { id: 2, module: "Payment Gateway Integration", status: "Pending" },
-  { id: 3, module: "API Performance Testing", status: "Completed" },
-  { id: 4, module: "Mobile Responsiveness", status: "In Progress" },
-]
+
+type QATask = {
+    id: string;
+    taskName: string;
+    project: string;
+    status: 'To Do' | 'In Progress' | 'Done';
+    testType: string;
+    dueDate: Timestamp;
+};
+
+type Project = {
+    id: string;
+    projectName: string;
+};
+
+type AssignedTestingTasksProps = {
+    qaName: string | null;
+    isDashboard?: boolean;
+};
 
 const statusColor: { [key: string]: string } = {
-  "Completed": "border-green-500 text-green-500",
+  "Done": "border-green-500 text-green-500",
   "In Progress": "border-blue-500 text-blue-500",
-  "Pending": "border-yellow-500 text-yellow-500",
+  "To Do": "border-yellow-500 text-yellow-500",
 }
 
-export function AssignedTestingTasks() {
+export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTestingTasksProps) {
+  const [tasks, setTasks] = useState<QATask[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewingTask, setViewingTask] = useState<KanbanTask | null>(null);
+  
+  const title = isDashboard ? "My Testing Tasks" : "All Assigned Testing Tasks";
+  const description = isDashboard ? "Your most recent testing tasks." : "A complete list of your assigned testing tasks.";
+
+  useEffect(() => {
+    if (!qaName) {
+        setLoading(false);
+        return;
+    }
+
+    const tasksQuery = query(collection(db, "tasks"), where("assignedTo", "==", qaName), where("taskRole", "==", "qa"));
+    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+        const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QATask));
+        setTasks(fetchedTasks);
+        setLoading(false);
+    }, (err) => {
+        console.error("Error fetching tasks:", err);
+        setLoading(false);
+    });
+
+    const projectsQuery = query(collection(db, "projects"));
+    const unsubscribeProjects = onSnapshot(projectsQuery, (snapshot) => {
+        const fetchedProjects = snapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
+        setProjects(fetchedProjects);
+    });
+
+    return () => {
+        unsubscribeTasks();
+        unsubscribeProjects();
+    };
+  }, [qaName]);
+
+  const getProjectName = (projectId: string) => {
+        return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
+  };
+
+  const sortedTasks = useMemo(() => {
+    const sorted = [...tasks].sort((a, b) => a.dueDate.toMillis() - b.dueDate.toMillis());
+    return isDashboard ? sorted.slice(0, 5) : sorted;
+  }, [tasks, isDashboard]);
+
   return (
+    <>
     <Card>
       <CardHeader>
-        <CardTitle>Assigned Testing Tasks</CardTitle>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {tasks.map(task => (
-            <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
-              <p className="font-medium">{task.module}</p>
-              <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
-            </div>
-          ))}
-        </div>
+         {loading ? (
+            <p className="text-center">Loading tasks...</p>
+        ) : sortedTasks.length === 0 ? (
+            <p className="text-muted-foreground text-center py-10">No testing tasks assigned yet. Enjoy the peace!</p>
+        ) : (
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Details</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {sortedTasks.map(task => (
+                        <TableRow key={task.id}>
+                            <TableCell className="font-medium">
+                                <div>{task.taskName}</div>
+                                <div className="text-xs text-muted-foreground">{task.testType}</div>
+                            </TableCell>
+                            <TableCell>{getProjectName(task.project)}</TableCell>
+                            <TableCell>{format(task.dueDate.toDate(), 'MMM dd, yyyy')}</TableCell>
+                            <TableCell>
+                                <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => setViewingTask(task as unknown as KanbanTask)}>
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        )}
       </CardContent>
     </Card>
+    {viewingTask && (
+        <ViewTaskDialog
+            task={viewingTask}
+            isOpen={!!viewingTask}
+            onOpenChange={() => setViewingTask(null)}
+        />
+    )}
+    </>
   )
 }

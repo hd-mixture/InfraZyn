@@ -5,23 +5,27 @@ import { QASidebar } from "@/components/dashboard/qa-sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BugReportStats } from "@/components/dashboard/bug-report-stats";
-import { TestCaseResults } from "@/components/dashboard/test-case-results";
-import { AssignedTestingTasks } from "@/components/dashboard/assigned-testing-tasks";
 import { RecentBugReports } from "@/components/dashboard/recent-bug-reports";
 import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { AssignedTestingTasks } from "@/components/dashboard/assigned-testing-tasks";
+import { QADashboardView } from "@/components/dashboard/qa-dashboard-view";
 
 function QADashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
+  const [qaName, setQaName] = useState<string | null>(null);
+
+  useEffect(() => {
+    setQaName(localStorage.getItem('userName'));
+  }, []);
 
   const renderContent = () => {
     switch (view) {
       case 'testing-tasks':
-        return <AssignedTestingTasks />;
+        return <AssignedTestingTasks qaName={qaName} />;
       case 'bug-reports':
-        return <RecentBugReports />;
+        return <RecentBugReports qaName={qaName} />;
       case 'test-cases':
         return <ComingSoon />;
       case 'profile':
@@ -30,18 +34,7 @@ function QADashboardContent() {
         return <ComingSoon />;
       case 'dashboard':
       default:
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <BugReportStats />
-              </div>
-              <TestCaseResults />
-            </div>
-            <AssignedTestingTasks />
-            <RecentBugReports />
-          </div>
-        );
+        return <QADashboardView qaName={qaName} />;
     }
   }
 
