@@ -11,6 +11,7 @@ import { Eye } from 'lucide-react';
 import { Button } from '../ui/button';
 import { ViewQATaskDialog } from './view-qa-task-dialog';
 import { ViewTaskDialog } from './view-task-dialog'; // Generic viewer
+import { cn } from '@/lib/utils';
 
 
 export type QATask = {
@@ -47,6 +48,13 @@ const statusColor: { [key: string]: string } = {
   "In Progress": "border-blue-500 text-blue-500",
   "To Do": "border-yellow-500 text-yellow-500",
 }
+
+const bugStatusColor: { [key: string]: string } = {
+  "Done": "border-green-500 text-green-500", // Fixed
+  "In Progress": "border-yellow-500 text-yellow-500", // Being fixed
+  "To Do": "border-red-500 text-red-500", // Not started
+}
+
 
 export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTestingTasksProps) {
   const [tasks, setTasks] = useState<QATask[]>([]);
@@ -118,7 +126,9 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {sortedTasks.map(task => (
+                    {sortedTasks.map(task => {
+                        const colors = task.testType === 'Bug Reporting' ? bugStatusColor : statusColor;
+                        return (
                         <TableRow key={task.id}>
                             <TableCell className="font-medium">
                                 <div>{task.taskName}</div>
@@ -127,7 +137,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                             <TableCell>{getProjectName(task.project)}</TableCell>
                             <TableCell>{format(task.dueDate.toDate(), 'MMM dd, yyyy')}</TableCell>
                             <TableCell>
-                                <Badge variant="outline" className={statusColor[task.status]}>{task.status}</Badge>
+                                <Badge variant="outline" className={cn(colors[task.status])}>{task.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => setViewingTask(task)}>
@@ -135,7 +145,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
                                 </Button>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )})}
                 </TableBody>
             </Table>
         )}

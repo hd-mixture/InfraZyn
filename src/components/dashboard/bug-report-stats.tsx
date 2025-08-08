@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, Cell } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   ChartContainer,
@@ -28,7 +28,7 @@ const chartConfig = {
     label: "Fixed",
     color: "hsl(var(--chart-2))",
   },
-}
+} satisfies import('@/components/ui/chart').ChartConfig;
 
 type BugReportStatsProps = {
     qaName: string | null;
@@ -90,7 +90,11 @@ export function BugReportStats({ qaName }: BugReportStatsProps) {
               cursor={false}
               content={<ChartTooltipContent indicator="dot" />}
             />
-            <Bar dataKey="count" radius={8} />
+            <Bar dataKey="count" radius={8}>
+                {chartData.map((entry) => (
+                    <Cell key={`cell-${entry.status}`} fill={entry.fill} />
+                ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>
