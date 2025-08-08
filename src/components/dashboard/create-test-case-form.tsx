@@ -59,11 +59,11 @@ type CreateTestCaseFormProps = {
     projects: Project[];
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
+    canCreate: boolean;
 };
 
-export function CreateTestCaseForm({ children, qaName, projects: allProjects, isOpen, onOpenChange }: CreateTestCaseFormProps) {
+export function CreateTestCaseForm({ children, qaName, projects, isOpen, onOpenChange, canCreate }: CreateTestCaseFormProps) {
   const [loading, setLoading] = useState(false);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -84,47 +84,6 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
     name: 'steps',
   });
   
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!qaName) {
-        setFilteredProjects([]);
-        return;
-      }
-
-      try {
-        // 1. Find the QA user to get their manager's name
-        const usersQuery = query(collection(db, 'users'), where('name', '==', qaName));
-        const userSnapshot = await getDocs(usersQuery);
-        
-        if (userSnapshot.empty) {
-          setFilteredProjects([]);
-          return;
-        }
-
-        const qaData = userSnapshot.docs[0].data() as User;
-        const managerName = qaData.addedBy;
-
-        // 2. If a manager is found, fetch only that manager's projects
-        if (managerName) {
-          const projectsQuery = query(collection(db, 'projects'), where('projectManager', '==', managerName));
-          const projectsSnapshot = await getDocs(projectsQuery);
-          const userProjects = projectsSnapshot.docs.map(doc => ({ id: doc.id, projectName: doc.data().projectName } as Project));
-          setFilteredProjects(userProjects);
-        } else {
-          // 3. If no manager is assigned, the QA should see no projects.
-          setFilteredProjects([]);
-        }
-      } catch (error) {
-        console.error("Error fetching projects for QA: ", error);
-        setFilteredProjects([]); // Set to empty on error
-      }
-    };
-    
-    if (isOpen) {
-        fetchProjects();
-    }
-  }, [isOpen, qaName]);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!qaName) return;
     setLoading(true);
@@ -147,9 +106,16 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
         setLoading(false);
     }
   }
+  
+  const handleOpenChange = (openState: boolean) => {
+    if (canCreate) {
+        onOpenChange(openState);
+    }
+  }
+
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen && canCreate} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
@@ -167,12 +133,12 @@ export function CreateTestCaseForm({ children, qaName, projects: allProjects, is
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FormField control={form.control} name="projectId" render={({ field }) => (
                                 <FormItem className="md:col-span-2"><FormLabel>Project</FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select an active project" /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                        {filteredProjects.length === 0 ? (
-                                            <div className="p-2 text-sm text-muted-foreground">No projects found for your team.</div>
+                                        {projects.length === 0 ? (
+                                            <div className="p-2 text-sm text-muted-foreground">No active projects found.</div>
                                         ) : (
-                                            filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))
+                                            projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.projectName}</SelectItem>))
                                         )}
                                     </SelectContent>
                                 </Select><FormMessage /></FormItem>

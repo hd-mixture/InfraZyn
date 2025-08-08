@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { CreateTestCaseForm } from './create-test-case-form';
 import { ViewTestCaseDialog } from './view-test-case-dialog';
+import type { Task } from './tasks-kanban-view';
 
 export type TestCase = {
     id: string;
@@ -56,6 +57,7 @@ const priorityColor: { [key: string]: string } = {
 export function TestCasesView({ qaName, searchQuery }: TestCasesViewProps) {
     const [testCases, setTestCases] = useState<TestCase[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [viewingTestCase, setViewingTestCase] = useState<TestCase | null>(null);
@@ -82,11 +84,23 @@ export function TestCasesView({ qaName, searchQuery }: TestCasesViewProps) {
             setProjects(fetchedProjects);
         });
 
+        const tasksQuery = query(collection(db, 'tasks'), where('assignedTo', '==', qaName));
+        const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+            const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+            setTasks(fetchedTasks);
+        });
+
         return () => {
             unsubscribeTestCases();
             unsubscribeProjects();
+            unsubscribeTasks();
         };
     }, [qaName]);
+    
+    const activeProjectsForQA = useMemo(() => {
+        const projectIdsWithTasks = new Set(tasks.map(task => task.project));
+        return projects.filter(project => projectIdsWithTasks.has(project.id));
+    }, [tasks, projects]);
     
     const getProjectName = (projectId: string) => {
         return projects.find(p => p.id === projectId)?.projectName || 'Unknown Project';
@@ -118,6 +132,8 @@ export function TestCasesView({ qaName, searchQuery }: TestCasesViewProps) {
         );
     }, [testCases, projects, searchQuery]);
 
+    const canCreateTestCase = activeProjectsForQA.length > 0;
+
     if (loading) return <p>Loading test cases...</p>;
 
     return (
@@ -130,11 +146,12 @@ export function TestCasesView({ qaName, searchQuery }: TestCasesViewProps) {
                     </div>
                     <CreateTestCaseForm 
                         qaName={qaName} 
-                        projects={projects}
+                        projects={activeProjectsForQA}
                         isOpen={isCreateDialogOpen}
                         onOpenChange={setIsCreateDialogOpen}
+                        canCreate={canCreateTestCase}
                     >
-                        <Button>
+                        <Button disabled={!canCreateTestCase}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Create Test Case
                         </Button>
                     </CreateTestCaseForm>
