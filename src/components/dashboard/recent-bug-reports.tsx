@@ -16,7 +16,11 @@ type BugReportTask = {
     project: string;
     status: 'To Do' | 'In Progress' | 'Done';
     createdAt: Timestamp;
+    completedAt?: Timestamp;
     verificationStatus?: 'pending' | 'passed' | 'failed';
+    reviewHistory?: {
+        timestamp: Timestamp;
+    }[];
 };
 
 type Project = {
@@ -103,6 +107,19 @@ export function RecentBugReports({ qaName, isDashboard = false }: RecentBugRepor
       }
   }
 
+  const getLastUpdatedTime = (task: BugReportTask) => {
+    let lastTime = task.createdAt.toDate();
+    if (task.completedAt && task.completedAt.toDate() > lastTime) {
+      lastTime = task.completedAt.toDate();
+    }
+    if (task.reviewHistory && task.reviewHistory.length > 0) {
+      const lastReviewTime = task.reviewHistory[task.reviewHistory.length - 1].timestamp.toDate();
+      if (lastReviewTime > lastTime) {
+        lastTime = lastReviewTime;
+      }
+    }
+    return formatDistanceToNow(lastTime, { addSuffix: true });
+  }
 
   if (isDashboard) {
       return (
@@ -153,9 +170,9 @@ export function RecentBugReports({ qaName, isDashboard = false }: RecentBugRepor
                     <TableRow>
                         <TableHead>Bug Report</TableHead>
                         <TableHead>Project</TableHead>
-                        <TableHead>Reported</TableHead>
                         <TableHead>Manager Review</TableHead>
-                        <TableHead>Current Status</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Updated</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -163,13 +180,13 @@ export function RecentBugReports({ qaName, isDashboard = false }: RecentBugRepor
                          <TableRow key={bug.id}>
                             <TableCell className="font-medium">{bug.taskName}</TableCell>
                             <TableCell>{getProjectName(bug.project)}</TableCell>
-                            <TableCell>{format(bug.createdAt.toDate(), 'dd MMM yyyy')}</TableCell>
                             <TableCell>{getReviewStatusComponent(bug)}</TableCell>
                             <TableCell>
                                 <Badge variant="outline" className={statusColor[bug.status]}>
                                     {bug.status === 'Done' ? 'Fixed' : bug.status}
                                 </Badge>
                             </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{getLastUpdatedTime(bug)}</TableCell>
                          </TableRow>
                     ))}
                 </TableBody>
