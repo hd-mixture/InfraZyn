@@ -6,9 +6,9 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RecentBugReports } from "@/components/dashboard/recent-bug-reports";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
 import { AssignedTestingTasks } from "@/components/dashboard/assigned-testing-tasks";
 import { QADashboardView } from "@/components/dashboard/qa-dashboard-view";
+import { TestCasesView } from "@/components/dashboard/test-cases-view";
 
 function QADashboardContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +27,7 @@ function QADashboardContent() {
       case 'bug-reports':
         return <RecentBugReports qaName={qaName} />;
       case 'test-cases':
-        return <ComingSoon />;
+        return <TestCasesView qaName={qaName} searchQuery={searchQuery} />;
       case 'profile':
         return <ComingSoon />;
       case 'settings':
