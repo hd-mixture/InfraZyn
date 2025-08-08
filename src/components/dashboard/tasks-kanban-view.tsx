@@ -317,7 +317,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
                 verificationStatus: 'passed',
                 reviewHistory: arrayUnion({
                     status: 'passed',
-                    timestamp: serverTimestamp(),
+                    timestamp: Timestamp.now(),
                     reviewedBy: managerName || 'Admin'
                 })
             });

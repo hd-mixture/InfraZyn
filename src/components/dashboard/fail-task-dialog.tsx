@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, increment, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, arrayUnion, Timestamp } from 'firebase/firestore';
 import type { Task } from './tasks-kanban-view';
 
 const formSchema = z.object({
@@ -61,7 +61,7 @@ export function FailTaskDialog({ task, isOpen, onOpenChange }: FailTaskDialogPro
             reviewHistory: arrayUnion({
                 status: 'failed',
                 reason: values.reason,
-                timestamp: serverTimestamp(),
+                timestamp: Timestamp.now(),
                 reviewedBy: localStorage.getItem('userName') || 'Admin'
             })
         });
