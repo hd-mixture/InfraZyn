@@ -98,6 +98,7 @@ export default {
   },
   plugins: [
     require('tailwindcss-animate'),
+    require('tailwind-scrollbar')({ nocompatible: true }),
     function ({ addUtilities }: { addUtilities: any }) {
       addUtilities({
         '.scrollbar-hide': {
