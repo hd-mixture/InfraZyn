@@ -455,16 +455,17 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                             ) : (
                                 filteredUsers.map((user) => {
                                     const inferredManager = userToManagerMap.get(user.id);
-                                    let addedByText = '';
+                                    let subtext = '';
                                     if (userRole === 'admin') {
-                                        if (user.addedBy) {
-                                            addedByText = `(Added by ${user.addedBy})`;
-                                        } else if (inferredManager && inferredManager !== 'Multiple') {
-                                            addedByText = `(Managed by ${inferredManager})`;
-                                        } else if (user.assignedManager) {
-                                            addedByText = `(Managed by ${user.assignedManager})`;
-                                        } else if (!user.addedBy && user.role !== 'manager') {
-                                            addedByText = '(Added by You)';
+                                        const managerForUser = user.assignedManager || (inferredManager !== 'Multiple' ? inferredManager : null);
+                                        if (managerForUser) {
+                                            subtext = `(Managed by ${managerForUser})`;
+                                        } else if (user.addedBy && user.addedBy !== 'Admin') {
+                                            subtext = `(Added by ${user.addedBy})`;
+                                        }
+                                    } else if (userRole === 'manager') {
+                                        if (user.addedBy === 'Admin') {
+                                            subtext = '(Added by Admin)';
                                         }
                                     }
 
@@ -479,9 +480,9 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                                     <div>
                                                         <div className="font-medium flex items-center gap-2">
                                                             <span>{user.name}</span>
-                                                            {addedByText && (
+                                                            {subtext && (
                                                                 <span className="text-xs text-muted-foreground italic">
-                                                                    {addedByText}
+                                                                    {subtext}
                                                                 </span>
                                                             )}
                                                         </div>
