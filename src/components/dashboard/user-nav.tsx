@@ -11,9 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Code, ShieldCheck, Palette } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
+
+const roleIcons: { [key: string]: React.ReactNode } = {
+    developer: <Code className="h-3 w-3 text-blue-500" />,
+    qa: <ShieldCheck className="h-3 w-3 text-green-500" />,
+    designer: <Palette className="h-3 w-3 text-orange-500" />,
+};
 
 export function UserNav() {
   const [userName, setUserName] = useState('Admin');
@@ -125,10 +131,17 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
          {userRole === 'admin' ? <AdminAvatar /> : (
-            <Avatar className="h-9 w-9">
-                <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
-                <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-9 w-9">
+                  <AvatarImage src={avatar || `https://placehold.co/40x40.png?text=${userName.charAt(0)}`} data-ai-hint="person face" alt="User avatar" />
+                  <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              {roleIcons[userRole] && (
+                  <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-background p-0.5">
+                      {roleIcons[userRole]}
+                  </div>
+              )}
+            </div>
          )}
         </Button>
       </DropdownMenuTrigger>
