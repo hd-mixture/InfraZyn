@@ -456,18 +456,22 @@ export function UserManagement({ userRole = 'admin', managerName }: UserManageme
                                 filteredUsers.map((user) => {
                                     const inferredManager = userToManagerMap.get(user.id);
                                     let subtext = '';
-                                    if (userRole === 'admin') {
-                                        const managerForUser = user.assignedManager || (inferredManager !== 'Multiple' ? inferredManager : null);
-                                        if (managerForUser) {
-                                            subtext = `(Managed by ${managerForUser})`;
-                                        } else if (user.addedBy && user.addedBy !== 'Admin') {
+
+                                    if (userRole === 'admin' && user.role !== 'manager') {
+                                        if (user.addedBy && user.addedBy !== 'Admin') {
                                             subtext = `(Added by ${user.addedBy})`;
+                                        } else {
+                                            const managerForUser = user.assignedManager || (inferredManager !== 'Multiple' ? inferredManager : null);
+                                            if (managerForUser) {
+                                                subtext = `(Managed by ${managerForUser})`;
+                                            }
                                         }
                                     } else if (userRole === 'manager') {
                                         if (user.addedBy === 'Admin') {
                                             subtext = '(Added by Admin)';
                                         }
                                     }
+
 
                                     return (
                                         <TableRow key={user.id}>
