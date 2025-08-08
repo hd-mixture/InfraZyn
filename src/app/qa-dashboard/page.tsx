@@ -48,7 +48,7 @@ function QADashboardContent() {
   return (
     <div className="flex flex-col h-full p-4 sm:p-6 lg:p-8 gap-6">
       <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-       <main className="flex-1 overflow-y-auto">
+       <main className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
         {renderContent()}
       </main>
     </div>
@@ -86,4 +86,3 @@ export default function QADashboardPage() {
     </SidebarProvider>
   );
 }
-
