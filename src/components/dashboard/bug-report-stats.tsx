@@ -91,8 +91,8 @@ export function BugReportStats({ qaName }: BugReportStatsProps) {
               content={<ChartTooltipContent indicator="dot" />}
             />
             <Bar dataKey="count" radius={8}>
-                {chartData.map((entry) => (
-                    <Cell key={`cell-${entry.status}`} fill={entry.fill} />
+                {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
             </Bar>
           </BarChart>
