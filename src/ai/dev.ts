@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/predict-task-delay.ts';
 import '@/ai/flows/delete-user-flow.ts';
+import '@/ai/flows/infra-assistant-flow.ts';

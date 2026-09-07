@@ -82,10 +82,10 @@ export function EditDesignerProfileForm({ user, isOpen, onOpenChange }: EditDesi
   });
 
   const { fields: toolFields, append: appendTool, remove: removeTool } = useFieldArray({
-    control: form.control, name: "designTools"
+    control: form.control as any, name: "designTools" as any
   });
   const { fields: specFields, append: appendSpec, remove: removeSpec } = useFieldArray({
-    control: form.control, name: "specializations"
+    control: form.control as any, name: "specializations" as any
   });
 
   useEffect(() => {

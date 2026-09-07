@@ -8,8 +8,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { useEffect } from 'react';
 
 const metadata: Metadata = {
-  title: 'Promage',
-  description: 'Free Project Management Dashboard',
+  title: 'DevTeXhHub | AI Infrastructure Project Intelligence (SIH26103 - Team InfraZyn)',
+  description: 'AI-Powered Infrastructure Project Monitoring & Early Warning Platform inspired by the MoSPI PAIMANA ecosystem. Predict. Monitor. Prevent.',
 };
 
 export default function RootLayout({

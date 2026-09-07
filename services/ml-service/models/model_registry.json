@@ -1,0 +1,206 @@
+{
+  "training_timestamp": "2026-09-03T08:35:47.138479Z",
+  "dataset_type": "Synthetic Longitudinal ML Development Dataset",
+  "dataset_disclaimer": "Trained exclusively on synthetic data for architecture demonstration. Not official government statistics.",
+  "total_dataset_size": 1200,
+  "train_records_count": 701,
+  "test_records_count": 499,
+  "temporal_cutoff": "2023-12-31",
+  "feature_count": 12,
+  "features_used": [
+    "sanctioned_cost",
+    "project_age_months",
+    "planned_duration_months",
+    "cumulative_expenditure_to_date",
+    "physical_progress_to_date",
+    "progress_gap",
+    "expenditure_intensity",
+    "terrain_complexity_index",
+    "clearance_bottlenecks_count",
+    "historical_revisions_count",
+    "spend_progress_interaction",
+    "sector"
+  ],
+  "models": {
+    "cost_overrun_baseline": {
+      "model_name": "Logistic Regression Baseline (Cost Overrun)",
+      "model_tier": "Tier 2: Statistical Baseline",
+      "model_version": "v1.0-logreg-synthetic",
+      "algorithm": "Multivariate Logistic Regression (L2 Penalty)",
+      "target": "COST_OVERRUN_BINARY (>= 10% budget escalation)",
+      "metrics": {
+        "accuracy": 0.8497,
+        "precision": 0.7676,
+        "recall": 0.7219,
+        "f1_score": 0.744,
+        "roc_auc": 0.9079,
+        "confusion_matrix": {
+          "tn": 315,
+          "fp": 33,
+          "fn": 42,
+          "tp": 109
+        }
+      }
+    },
+    "cost_overrun_xgb": {
+      "model_name": "XGBoost Classifier (Cost Overrun)",
+      "model_tier": "Tier 3: Machine Learning Model",
+      "model_version": "v1.0-xgboost-synthetic",
+      "algorithm": "Gradient Boosted Decision Trees (XGBoost)",
+      "target": "COST_OVERRUN_BINARY (>= 10% budget escalation)",
+      "metrics": {
+        "accuracy": 0.8257,
+        "precision": 0.7424,
+        "recall": 0.649,
+        "f1_score": 0.6926,
+        "roc_auc": 0.8748,
+        "confusion_matrix": {
+          "tn": 314,
+          "fp": 34,
+          "fn": 53,
+          "tp": 98
+        }
+      },
+      "feature_importance": [
+        {
+          "feature_name": "spend_progress_interaction",
+          "importance_score": 0.2061
+        },
+        {
+          "feature_name": "sector",
+          "importance_score": 0.1773
+        },
+        {
+          "feature_name": "expenditure_intensity",
+          "importance_score": 0.1214
+        },
+        {
+          "feature_name": "clearance_bottlenecks_count",
+          "importance_score": 0.1105
+        },
+        {
+          "feature_name": "terrain_complexity_index",
+          "importance_score": 0.0708
+        },
+        {
+          "feature_name": "progress_gap",
+          "importance_score": 0.0654
+        },
+        {
+          "feature_name": "sanctioned_cost",
+          "importance_score": 0.0438
+        },
+        {
+          "feature_name": "cumulative_expenditure_to_date",
+          "importance_score": 0.0431
+        },
+        {
+          "feature_name": "planned_duration_months",
+          "importance_score": 0.0425
+        },
+        {
+          "feature_name": "historical_revisions_count",
+          "importance_score": 0.0409
+        },
+        {
+          "feature_name": "project_age_months",
+          "importance_score": 0.0403
+        },
+        {
+          "feature_name": "physical_progress_to_date",
+          "importance_score": 0.038
+        }
+      ]
+    },
+    "time_overrun_baseline": {
+      "model_name": "Logistic Regression Baseline (Time Overrun)",
+      "model_tier": "Tier 2: Statistical Baseline",
+      "model_version": "v1.0-logreg-synthetic",
+      "algorithm": "Multivariate Logistic Regression (L2 Penalty)",
+      "target": "TIME_OVERRUN_BINARY (>= 12 months delay)",
+      "metrics": {
+        "accuracy": 0.7675,
+        "precision": 0.925,
+        "recall": 0.7316,
+        "f1_score": 0.817,
+        "roc_auc": 0.8752,
+        "confusion_matrix": {
+          "tn": 124,
+          "fp": 21,
+          "fn": 95,
+          "tp": 259
+        }
+      }
+    },
+    "time_overrun_xgb": {
+      "model_name": "XGBoost Classifier (Time Overrun)",
+      "model_tier": "Tier 3: Machine Learning Model",
+      "model_version": "v1.0-xgboost-synthetic",
+      "algorithm": "Gradient Boosted Decision Trees (XGBoost)",
+      "target": "TIME_OVERRUN_BINARY (>= 12 months delay)",
+      "metrics": {
+        "accuracy": 0.8317,
+        "precision": 0.8994,
+        "recall": 0.8588,
+        "f1_score": 0.8786,
+        "roc_auc": 0.9072,
+        "confusion_matrix": {
+          "tn": 111,
+          "fp": 34,
+          "fn": 50,
+          "tp": 304
+        }
+      },
+      "feature_importance": [
+        {
+          "feature_name": "sector",
+          "importance_score": 0.2135
+        },
+        {
+          "feature_name": "spend_progress_interaction",
+          "importance_score": 0.1873
+        },
+        {
+          "feature_name": "terrain_complexity_index",
+          "importance_score": 0.1071
+        },
+        {
+          "feature_name": "progress_gap",
+          "importance_score": 0.0802
+        },
+        {
+          "feature_name": "physical_progress_to_date",
+          "importance_score": 0.0755
+        },
+        {
+          "feature_name": "clearance_bottlenecks_count",
+          "importance_score": 0.0707
+        },
+        {
+          "feature_name": "cumulative_expenditure_to_date",
+          "importance_score": 0.0486
+        },
+        {
+          "feature_name": "planned_duration_months",
+          "importance_score": 0.0475
+        },
+        {
+          "feature_name": "project_age_months",
+          "importance_score": 0.046
+        },
+        {
+          "feature_name": "sanctioned_cost",
+          "importance_score": 0.044
+        },
+        {
+          "feature_name": "historical_revisions_count",
+          "importance_score": 0.0407
+        },
+        {
+          "feature_name": "expenditure_intensity",
+          "importance_score": 0.0389
+        }
+      ]
+    }
+  }
+}

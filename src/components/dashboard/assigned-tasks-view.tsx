@@ -25,7 +25,7 @@ export type Task = {
     taskName: string;
     project: string;
     status: 'To Do' | 'In Progress' | 'Done';
-    priority: 'High' | 'Medium' | 'Low';
+    priority: 'Critical' | 'High' | 'Medium' | 'Low';
     dueDate: Timestamp;
     description?: string;
     attachmentUrls?: { name: string, url: string }[];
@@ -48,6 +48,7 @@ type AssignedTasksViewProps = {
 };
 
 const priorityIcons = {
+    'Critical': <ArrowUp className="h-4 w-4 text-purple-600" />,
     'High': <ArrowUp className="h-4 w-4 text-red-500" />,
     'Medium': <ArrowRight className="h-4 w-4 text-yellow-500" />,
     'Low': <ArrowDown className="h-4 w-4 text-green-500" />

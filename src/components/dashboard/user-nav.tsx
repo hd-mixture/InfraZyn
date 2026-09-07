@@ -14,6 +14,7 @@ import {
 import { LogOut, Settings, User, Code, ShieldCheck, Palette } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
+import { mapToInfraRole } from "@/lib/utils";
 
 const roleIcons: { [key: string]: React.ReactNode } = {
     developer: <Code className="h-3 w-3 text-blue-500" />,
@@ -73,9 +74,8 @@ export function UserNav() {
         setSettingsLink('/designer-dashboard?view=settings');
         setAvatar(userAvatar);
     } else {
-        // Default to admin if no role is set (e.g., initial state)
-        setUserName('Admin');
-        setUserEmail('admin@devtexhhub.com');
+        setUserName('Director (IPMD)');
+        setUserEmail('director.ipmd@devtexhhub.com');
         setUserRole('admin');
         setProfileLink('/?view=profile');
         setSettingsLink('/?view=settings');
@@ -145,10 +145,13 @@ export function UserNav() {
          )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-64" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userName}</p>
+            <p className="text-sm font-semibold leading-none">{userName}</p>
+            <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+              {mapToInfraRole(userRole)}
+            </p>
             <p className="text-xs leading-none text-muted-foreground">
               {userEmail}
             </p>

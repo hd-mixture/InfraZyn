@@ -413,14 +413,14 @@ export function NotificationPanel() {
 
             {viewingTask && (userRole === 'manager' || userRole === 'admin') && (
                 <ViewTaskDialog
-                    task={viewingTask}
+                    task={viewingTask as any}
                     isOpen={!!viewingTask}
                     onOpenChange={handleDialogClose}
                 />
             )}
             {viewingTask && userRole === 'developer' && (
                 <ViewDeveloperTaskDialog
-                    task={viewingTask}
+                    task={viewingTask as any}
                     projectName="Loading..."
                     isOpen={!!viewingTask}
                     onOpenChange={handleDialogClose}
@@ -428,7 +428,7 @@ export function NotificationPanel() {
             )}
             {viewingTask && userRole === 'qa' && (
                  <ViewTaskDialog
-                    task={viewingTask}
+                    task={viewingTask as any}
                     isOpen={!!viewingTask}
                     onOpenChange={handleDialogClose}
                 />

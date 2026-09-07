@@ -33,16 +33,21 @@ export const Logo = () => {
   return (
     <Link
       href="/"
-      className="relative z-20 flex items-center justify-center space-x-2 py-1 font-normal text-black dark:text-white"
+      className="relative z-20 flex items-center space-x-2 py-1 font-normal text-black dark:text-white"
     >
-        <CustomLogoIcon className="h-8 w-8" />
-        <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="font-bold whitespace-pre text-black dark:text-white text-xl"
-        >
-            DevTeXhHub
-        </motion.span>
+        <CustomLogoIcon className="h-8 w-8 shrink-0" />
+        <div className="flex flex-col">
+          <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="font-bold whitespace-pre text-black dark:text-white text-lg leading-tight"
+          >
+              DevTeXhHub
+          </motion.span>
+          <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 leading-none">
+            InfraZyn • SIH26103
+          </span>
+        </div>
     </Link>
   );
 };

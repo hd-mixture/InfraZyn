@@ -5,14 +5,18 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   IconLayoutDashboard,
   IconFolders,
-  IconListCheck,
+  IconAlertTriangle,
+  IconBell,
+  IconChartBar,
+  IconTrendingUp,
+  IconCpu,
+  IconSparkles,
+  IconUpload,
+  IconClock,
   IconUsers,
   IconLogout,
   IconPlus,
-  IconClock,
-  IconClipboardList,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CreateProjectForm } from "./create-project-form";
 import { Button } from "../ui/button";
@@ -24,7 +28,6 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const currentView = searchParams.get('view');
   const { open } = useSidebar();
-
 
   const isActive = (view: string | null) => {
     if (!currentView && (view === null || view === 'dashboard')) {
@@ -44,7 +47,7 @@ export function AppSidebar() {
       label: "Dashboard",
       href: "/",
       icon: <IconLayoutDashboard className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive(null),
+      active: isActive(null) || isActive('dashboard'),
     },
     {
       label: "Projects",
@@ -53,22 +56,52 @@ export function AppSidebar() {
       active: isActive('projects'),
     },
     {
-      label: "Tasks",
-      href: "/?view=tasks",
-      icon: <IconListCheck className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('tasks'),
+      label: "Risk Monitor",
+      href: "/?view=risk-monitor",
+      icon: <IconAlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />,
+      active: isActive('risk-monitor'),
+    },
+    {
+      label: "Early Warnings",
+      href: "/?view=early-warnings",
+      icon: <IconBell className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />,
+      active: isActive('early-warnings'),
+    },
+    {
+      label: "Benchmarking",
+      href: "/?view=benchmarking",
+      icon: <IconChartBar className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('benchmarking'),
+    },
+    {
+      label: "Cost Drivers",
+      href: "/?view=cost-drivers",
+      icon: <IconTrendingUp className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('cost-drivers'),
+    },
+    {
+      label: "Model Insights",
+      href: "/?view=model-insights",
+      icon: <IconCpu className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('model-insights'),
+    },
+    {
+      label: "AI Assistant",
+      href: "/?view=ai-assistant",
+      icon: <IconSparkles className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />,
+      active: isActive('ai-assistant'),
+    },
+    {
+      label: "Data Import",
+      href: "/?view=data-import",
+      icon: <IconUpload className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+      active: isActive('data-import'),
     },
     {
       label: "Time Log",
       href: "/?view=time-log",
       icon: <IconClock className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
       active: isActive('time-log'),
-    },
-    {
-      label: "Resource Mgmt",
-      href: "/?view=resource-mgmt",
-      icon: <IconClipboardList className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      active: isActive('resource-mgmt'),
     },
     {
       label: "Users",

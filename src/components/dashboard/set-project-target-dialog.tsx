@@ -32,7 +32,7 @@ const formSchema = z.object({
 });
 
 type SetProjectTargetDialogProps = {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     currentTarget: number;
     onSetTarget: (target: number) => void;
 };

@@ -115,7 +115,7 @@ export function TaskComments({ task, currentUser }: TaskCommentsProps) {
 
             await addDoc(collection(db, 'tasks', task.id, 'comments'), commentData);
             
-            const recipient = await getOppositeUser(task, user.uid);
+            const recipient = await getOppositeUser(task as any, user.uid);
 
             if (recipient && recipient.id !== user.uid) {
                 let notificationCollection;

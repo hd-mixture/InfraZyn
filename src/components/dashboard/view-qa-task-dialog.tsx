@@ -85,7 +85,12 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                  updateData.verificationStatus = 'failed' 
             }
             await updateDoc(taskRef, updateData);
-            setTask(prev => ({...prev, status: newStatus, progress: updateData.progress ?? prev.progress, verificationStatus: updateData.verificationStatus ?? prev.verificationStatus }));
+            setTask(prev => ({
+                ...prev,
+                status: newStatus,
+                progress: updateData.progress ?? prev.progress,
+                verificationStatus: (updateData.verificationStatus as 'pending' | 'passed' | 'failed' | undefined) ?? prev.verificationStatus
+            }));
             toast({
                 title: "Status Updated",
                 description: "The task status has been successfully updated.",
@@ -137,7 +142,7 @@ export function ViewQATaskDialog({ task: initialTask, projectName, isOpen, onOpe
                                 <>
                                     <div className="space-y-4 rounded-lg bg-muted/50 p-4">
                                         <h3 className="font-semibold text-sm flex items-center gap-2"><History size={16} /> Review History</h3>
-                                        {reviewHistory.map((history, index) => (
+                                        {reviewHistory.map((history: any, index: number) => (
                                             <div key={index} className={cn("p-3 rounded-md border", history.status === 'failed' ? 'bg-destructive/10 border-destructive/20' : 'bg-green-500/10 border-green-500/20')}>
                                                 <div className={cn("flex items-center gap-2 font-semibold mb-1", history.status === 'failed' ? 'text-destructive' : 'text-green-600')}>
                                                     {history.status === 'failed' ? <ThumbsDown size={14} /> : <ThumbsUp size={14}/>}

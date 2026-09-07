@@ -64,7 +64,7 @@ export const SidebarProvider = ({
 };
 
 
-const SidebarWrapper = ({ children, className, ...props }: React.ComponentProps<typeof motion.div>) => {
+const SidebarWrapper = ({ children, className, ...props }: React.ComponentProps<typeof motion.div> & { children?: React.ReactNode }) => {
   const { isMobile, open, setOpen, animate } = useSidebar();
   if (isMobile) {
     return (
@@ -118,7 +118,7 @@ export const Sidebar = ({
   children,
   className,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<typeof motion.div> & { children?: React.ReactNode }) => {
   const { isMobile } = useSidebar();
   if (isMobile) {
       return null;
@@ -130,7 +130,7 @@ export const SidebarBody = ({
   children,
   className,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<typeof motion.div> & { children?: React.ReactNode }) => {
   const { isMobile } = useSidebar();
   if (isMobile) {
     // In mobile view, the body is rendered inside the animated overlay.

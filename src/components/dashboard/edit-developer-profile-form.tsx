@@ -76,8 +76,8 @@ export function EditDeveloperProfileForm({ user, isOpen, onOpenChange }: EditDev
   });
 
   const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "skills",
+    control: form.control as any,
+    name: "skills" as any,
   });
   
   const skillsValue = form.watch('skills') || [];

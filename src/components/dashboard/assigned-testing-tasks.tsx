@@ -33,6 +33,8 @@ export type QATask = {
     taskRole: 'qa';
     verificationStatus?: 'pending' | 'passed' | 'failed';
     failureReason?: string;
+    failureCount?: number;
+    reviewHistory?: any[];
 };
 
 type Project = {
@@ -176,7 +178,7 @@ export function AssignedTestingTasks({ qaName, isDashboard = false }: AssignedTe
     )}
      {viewingTask && isDashboard && (
         <ViewTaskDialog
-            task={viewingTask}
+            task={viewingTask as any}
             isOpen={!!viewingTask}
             onOpenChange={(isOpen) => !isOpen && setViewingTask(null)}
         />

@@ -32,7 +32,7 @@ export async function getOppositeUser(
   }
 
   let recipientName: string | null = null;
-  let recipientRole: 'manager' | 'developer' | 'qa' | 'admin' | null = null;
+  let recipientRole: 'manager' | 'developer' | 'qa' | 'admin' | 'designer' | null = null;
   
   if (isCurrentUserAssignee) {
       // If current user is the assignee, the recipient is the project manager (or admin).
@@ -70,4 +70,21 @@ export async function getOppositeUser(
   
   console.error(`Could not find user document for: ${recipientName} with role: ${recipientRole}`);
   return null;
+}
+
+export function mapToInfraRole(role: string | null): string {
+  switch (role) {
+    case 'admin':
+      return 'Director / Administrator (IPMD)';
+    case 'manager':
+      return 'Monitoring Officer';
+    case 'qa':
+      return 'Infrastructure Analyst';
+    case 'developer':
+      return 'Executive / Policymaker';
+    case 'designer':
+      return 'Technical Spatial Architect';
+    default:
+      return 'Project Officer';
+  }
 }

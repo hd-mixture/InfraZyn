@@ -70,8 +70,8 @@ export function EditQAProfileForm({ user, isOpen, onOpenChange }: EditQAProfileF
     },
   });
 
-  const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control: form.control, name: "skills" });
-  const { fields: toolFields, append: appendTool, remove: removeTool } = useFieldArray({ control: form.control, name: "testingTools" });
+  const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control: form.control as any, name: "skills" as any });
+  const { fields: toolFields, append: appendTool, remove: removeTool } = useFieldArray({ control: form.control as any, name: "testingTools" as any });
 
   useEffect(() => {
     if (isOpen) form.reset({ ...user, phone: user.phone || '', bio: user.bio || '', skills: user.skills || [], testingTools: user.testingTools || [] });

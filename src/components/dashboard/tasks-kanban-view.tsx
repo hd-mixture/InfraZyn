@@ -409,7 +409,7 @@ export function TasksKanbanView({ searchQuery, userRole, managerName }: TasksKan
             </ScrollArea>
              {viewingTask && (
                 <ViewTaskDialog
-                    task={viewingTask}
+                    task={viewingTask as any}
                     isOpen={!!viewingTask}
                     onOpenChange={() => setViewingTask(null)}
                 />

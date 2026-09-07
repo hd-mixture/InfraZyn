@@ -13,7 +13,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import type { Task } from './tasks-kanban-view';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
-import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Code, File, Flag, Info, Paperclip, ShieldCheck, Tag, User, TrendingUp, CheckCircle, Palette } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
@@ -37,10 +37,11 @@ const statusColor: { [key: string]: string } = {
     "To Do": "border-yellow-500 text-yellow-500",
 };
 
-const roleIcons = {
+const roleIcons: Record<string, React.ReactNode> = {
     'developer': <Code className="h-4 w-4 text-blue-500" />,
-    'qa': <ShieldCheck className="h-4 w-4 text-green-500" />
-}
+    'qa': <ShieldCheck className="h-4 w-4 text-green-500" />,
+    'designer': <Palette className="h-4 w-4 text-orange-500" />,
+};
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
     <div className="grid grid-cols-3 items-start gap-4">

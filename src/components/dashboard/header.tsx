@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, ImageIcon, Bug, FileText } from "lucide-react";
+import { Search, Bell, LayoutDashboard, Users, Folders, ListChecks, Timer, ClipboardList, UsersRound, User, Settings, Menu, Palette, ImageIcon, Bug, FileText, AlertTriangle, Scale, TrendingUp, Cpu, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "@/components/dashboard/user-nav";
@@ -102,9 +102,21 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
 
         switch (view) {
             case 'projects':
-                return { title: 'Projects', icon: <Folders className="h-7 w-7" /> };
-            case 'tasks':
-                return { title: 'Tasks', icon: <ListChecks className="h-7 w-7" /> };
+                return { title: 'National Projects Registry', icon: <Folders className="h-7 w-7 text-blue-600" /> };
+            case 'risk-monitor':
+                return { title: 'Risk Monitor & Triage', icon: <AlertTriangle className="h-7 w-7 text-amber-600" /> };
+            case 'early-warnings':
+                return { title: 'Early Warning Distress Signals', icon: <Bell className="h-7 w-7 text-red-600" /> };
+            case 'benchmarking':
+                return { title: 'Benchmarking Analytics', icon: <Scale className="h-7 w-7 text-indigo-600" /> };
+            case 'cost-drivers':
+                return { title: 'Cost Escalation Drivers', icon: <TrendingUp className="h-7 w-7 text-amber-600" /> };
+            case 'model-insights':
+                return { title: 'Statistical Baseline vs ML Insights', icon: <Cpu className="h-7 w-7 text-blue-600" /> };
+            case 'ai-assistant':
+                return { title: 'AI Project Intelligence Assistant', icon: <Sparkles className="h-7 w-7 text-blue-600" /> };
+            case 'data-import':
+                return { title: 'Data Ingestion Pipeline', icon: <Upload className="h-7 w-7 text-slate-700 dark:text-slate-300" /> };
             case 'time-log':
                 return { title: 'Time Log', icon: <Timer className="h-7 w-7" /> };
             case 'resource-mgmt':
@@ -116,7 +128,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
             case 'settings':
                 return { title: 'Settings', icon: <Settings className="h-7 w-7" /> };
             default:
-                return { title: 'Dashboard', icon: <LayoutDashboard className="h-7 w-7" /> };
+                return { title: 'Infrastructure Monitoring Dashboard', icon: <LayoutDashboard className="h-7 w-7 text-blue-600" /> };
         }
     }, [view, pathname]);
     
