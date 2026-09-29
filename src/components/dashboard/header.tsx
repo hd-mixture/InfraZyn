@@ -118,7 +118,7 @@ export function DashboardHeader({ searchQuery, setSearchQuery }: DashboardHeader
             case 'data-import':
                 return { title: 'Data Ingestion Pipeline', icon: <Upload className="h-7 w-7 text-slate-700 dark:text-slate-300" /> };
             case 'time-log':
-                return { title: 'Time Log', icon: <Timer className="h-7 w-7" /> };
+                return { title: 'National Infrastructure Milestone & Audit Logs', icon: <Timer className="h-7 w-7 text-blue-600" /> };
             case 'resource-mgmt':
                 return { title: 'Resource Management', icon: <ClipboardList className="h-7 w-7" /> };
             case 'users':

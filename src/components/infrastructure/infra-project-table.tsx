@@ -39,7 +39,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Plus,
 } from 'lucide-react';
+import { CreateProjectForm } from '@/components/dashboard/create-project-form';
 
 interface InfraProjectTableProps {
   projects: InfraProject[];
@@ -195,6 +197,13 @@ export function InfraProjectTable({ projects, onSelectProject }: InfraProjectTab
                 <SelectItem value="LOW">Low Risk</SelectItem>
               </SelectContent>
             </Select>
+
+            <CreateProjectForm>
+              <Button size="sm" className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-semibold text-white shadow-xs">
+                <Plus className="h-3.5 w-3.5" />
+                <span>Enroll Project</span>
+              </Button>
+            </CreateProjectForm>
           </div>
         </div>
       </CardHeader>

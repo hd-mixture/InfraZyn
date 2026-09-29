@@ -37,7 +37,7 @@ export default function RootLayout({
         <title>{String(metadata.title)}</title>
         <meta name="description" content={String(metadata.description)} />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased" suppressHydrationWarning>
         {children}
         <Toaster />
       </body>

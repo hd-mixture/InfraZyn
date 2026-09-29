@@ -45,6 +45,22 @@ function DashboardContent() {
   useEffect(() => {
     const loaded = getStoredProjects();
     setInfraProjects(loaded);
+
+    const handleProjectsUpdated = (e?: Event) => {
+      const refreshed = getStoredProjects();
+      setInfraProjects(refreshed);
+      if (e instanceof CustomEvent && e.detail) {
+        setSelectedInfraProject(e.detail);
+      }
+    };
+
+    window.addEventListener('infra_projects_updated', handleProjectsUpdated);
+    window.addEventListener('storage', handleProjectsUpdated);
+
+    return () => {
+      window.removeEventListener('infra_projects_updated', handleProjectsUpdated);
+      window.removeEventListener('storage', handleProjectsUpdated);
+    };
   }, []);
 
   // When changing view away from projects, clear selected project
@@ -163,9 +179,11 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
     const role = localStorage.getItem('userRole');
     if (role) {
       setIsAuthenticated(true);
@@ -177,8 +195,15 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  if (!isAuthenticated) {
-    return <div className="flex h-screen items-center justify-center">Loading platform...</div>;
+  if (!mounted || !isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <span className="text-xs text-muted-foreground font-medium">Initializing DevTeXhHub Platform...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
